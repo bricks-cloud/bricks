@@ -1,0 +1,20 @@
+{
+  "name": "bricks-core",
+  "version": "0.0.1",
+  "description": "Converts Figma nodes into Bricks nodes",
+  "main": "code.js",
+  "scripts": {
+    "dev": "NODE_ENV=development webpack --mode=development --watch"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@figma/plugin-typings": "*",
+    "ts-loader": "^9.4.2",
+    "typescript": "*",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "dependencies": {
+    "base64-js": "^1.5.1"
+  }
+}

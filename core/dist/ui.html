@@ -1,0 +1,10 @@
+<h2>Bricks Core Tester</h2>
+<button id="create">Generate</button>
+<script>
+  document.getElementById("create").onclick = () => {
+    parent.postMessage(
+      { pluginMessage: { type: "generate-bricks-nodes" } },
+      "*"
+    );
+  };
+</script>
