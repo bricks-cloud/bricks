@@ -1,5 +1,5 @@
-import { generateBricksTree } from "./src/grouping";
-import { generateStyledBricksNode } from "./src/StyledBricksNode";
+import { generateBricksTree } from "../src/grouping";
+import { generateStyledBricksNode } from "../src/StyledBricksNode";
 
 figma.showUI(__html__);
 

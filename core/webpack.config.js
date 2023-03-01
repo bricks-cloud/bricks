@@ -1,14 +1,18 @@
+/**
+ * Webpack config for building the minimal figma plugin for testing Bricks core
+ */
 const path = require("path");
 const webpack = require("webpack");
+const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = (env, argv) => ({
-  mode: argv.mode === "production" ? "production" : "development",
+  mode: "development",
 
   // This is necessary because Figma's 'eval' works differently than normal eval
-  devtool: argv.mode === "production" ? false : "inline-source-map",
+  devtool: "inline-source-map",
 
   entry: {
-    code: "./code.ts", // The entry point for your plugin code
+    code: "./minimal-figma-plugin/code.ts", // The entry point for your plugin code
   },
 
   module: {
@@ -42,6 +46,15 @@ module.exports = (env, argv) => ({
     }),
     new webpack.DefinePlugin({
       global: {}, // Fix missing symbol error when running in developer VM
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: "minimal-figma-plugin/ui.html", to: "ui.html" },
+        {
+          from: "minimal-figma-plugin/manifest.json",
+          to: "manifest.json",
+        },
+      ],
     }),
   ],
 });

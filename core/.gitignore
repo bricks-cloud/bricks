@@ -1,4 +1,2 @@
 node_modules
-dist/*
-!dist/ui.html
-!dist/manifest.json
+dist
