@@ -1,6 +1,6 @@
-import { BricksNode } from "./BricksNode";
+import { IBricksNode } from "./IBricksNode";
 
-export function isAutoLayout(node: SceneNode | BricksNode): boolean {
+export function isAutoLayout(node: SceneNode | IBricksNode): boolean {
   return !!(
     node.type === "FRAME" &&
     node.layoutMode &&

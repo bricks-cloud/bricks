@@ -1,10 +1,10 @@
 import { isAutoLayout } from "../utils";
-import { BricksNode } from "../BricksNode";
+import { IBricksNode } from "../IBricksNode";
 
 export async function convertToBricksNodes(
   figmaNodes: SceneNode[]
-): Promise<BricksNode[]> {
-  let nodesGroupedByAutolayout: BricksNode[] = [];
+): Promise<IBricksNode[]> {
+  let nodesGroupedByAutolayout: IBricksNode[] = [];
 
   for (let i = 0; i < figmaNodes.length; i++) {
     const currentNode = figmaNodes[i];
@@ -13,7 +13,7 @@ export async function convertToBricksNodes(
       // if the node has auto layout, we know that it is of type FRAME
       const currentFrameNode = currentNode as FrameNode;
 
-      const newNode: BricksNode = {
+      const newNode: IBricksNode = {
         source: "figma",
         children: [],
         id: currentFrameNode.id,

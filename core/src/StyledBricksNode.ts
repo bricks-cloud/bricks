@@ -1,4 +1,4 @@
-import { BricksNode } from "./BricksNode";
+import { IBricksNode } from "./IBricksNode";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -23,7 +23,7 @@ export class BricksElementNode {
   base64image?: string;
 
   async generateStylesFromFigmaNode(
-    bricksNode: BricksNode,
+    bricksNode: IBricksNode,
     figmaNode: SceneNode
   ) {
     if (figmaNode.type === "FRAME" || figmaNode.type === "RECTANGLE") {
@@ -218,7 +218,7 @@ export class BricksElementNode {
     }
   }
 
-  generateSpacingStyles(bricksNode: BricksNode) {
+  generateSpacingStyles(bricksNode: IBricksNode) {
     if (bricksNode.layoutMode !== "NONE") {
       this.attributes["display"] = "flex";
     }
@@ -544,7 +544,7 @@ class BricksSvgNode {
 type Attributes = { [key: string]: string };
 
 export async function generateStyledBricksNode(
-  bricksNode: BricksNode
+  bricksNode: IBricksNode
 ): Promise<StyledBricksNode> {
   const figmaNode = figma.currentPage.findOne(
     (figmaNode) => figmaNode.id === bricksNode.id

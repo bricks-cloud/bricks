@@ -1,12 +1,12 @@
-import { BricksNode } from "../../BricksNode";
+import { IBricksNode } from "../../IBricksNode";
 import { isAutoLayout } from "../../utils";
 import { groupNodes } from "./group-nodes";
 
 export function groupBySimilarity(
-  nodes: BricksNode[],
+  nodes: IBricksNode[],
   skipGrouping: boolean = false
-): BricksNode[] {
-  let result: BricksNode[] = nodes;
+): IBricksNode[] {
+  let result: IBricksNode[] = nodes;
 
   if (!skipGrouping) {
     let textNodes = nodes.filter((n) => n.type === "TEXT");

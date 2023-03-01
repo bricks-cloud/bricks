@@ -1,7 +1,7 @@
-import { BricksNode } from "../../BricksNode";
+import { IBricksNode } from "../../IBricksNode";
 import { groupNodes } from "./group-nodes";
 
-export function groupTextNodes(nodes: BricksNode[]): BricksNode[] {
+export function groupTextNodes(nodes: IBricksNode[]): IBricksNode[] {
   const textNodes = nodes.filter((node) => node.type === "TEXT");
   const nonTextNodes = nodes.filter((node) => node.type !== "TEXT");
 

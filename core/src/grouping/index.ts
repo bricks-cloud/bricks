@@ -1,4 +1,4 @@
-import { BricksNode } from "../BricksNode";
+import { IBricksNode } from "../IBricksNode";
 import { isAutoLayout } from "../utils";
 import { convertToBricksNodes } from "./group-by-autolayout";
 import { groupByContainers } from "./group-by-containers";
@@ -7,7 +7,7 @@ import { groupBySimilarity } from "./group-by-similarity";
 
 export async function generateBricksTree(
   figmaNodes: readonly SceneNode[]
-): Promise<BricksNode[]> {
+): Promise<IBricksNode[]> {
   // post order needed for convertToBricksNodes() to work
   const ungroupedFigmaNodes = figmaNodes.map(extractNodesInPostOrder).flat(1);
 

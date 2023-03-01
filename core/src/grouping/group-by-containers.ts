@@ -1,6 +1,6 @@
-import { BricksNode } from "../BricksNode";
+import { IBricksNode } from "../IBricksNode";
 
-export function groupByContainers(nodes: BricksNode[]): BricksNode[] {
+export function groupByContainers(nodes: IBricksNode[]): IBricksNode[] {
   for (let i = nodes.length - 1; i >= 0; i--) {
     const currentNode = nodes[i];
 
@@ -28,10 +28,10 @@ export function groupByContainers(nodes: BricksNode[]): BricksNode[] {
 }
 
 function findNodesOverlappingMe(
-  me: BricksNode,
-  candidateNodes: BricksNode[]
-): BricksNode[] {
-  const overlappingNodes: BricksNode[] = [];
+  me: IBricksNode,
+  candidateNodes: IBricksNode[]
+): IBricksNode[] {
+  const overlappingNodes: IBricksNode[] = [];
   for (const candidateNode of candidateNodes) {
     // do not consider myself
     if (candidateNode.id === me.id) {
@@ -46,7 +46,7 @@ function findNodesOverlappingMe(
   return overlappingNodes;
 }
 
-function isOverlapping(node1: BricksNode, node2: BricksNode): boolean {
+function isOverlapping(node1: IBricksNode, node2: IBricksNode): boolean {
   const RectA = {
     Left: node1.absoluteRenderbounds.x,
     Right: node1.absoluteRenderbounds.x + node1.absoluteRenderbounds.width,
@@ -69,7 +69,10 @@ function isOverlapping(node1: BricksNode, node2: BricksNode): boolean {
   );
 }
 
-function isMyAreaTheLargest(me: BricksNode, otherNodes: BricksNode[]): boolean {
+function isMyAreaTheLargest(
+  me: IBricksNode,
+  otherNodes: IBricksNode[]
+): boolean {
   const myArea = me.absoluteRenderbounds.height * me.absoluteRenderbounds.width;
 
   const areasOfOtherNodes = otherNodes.map(

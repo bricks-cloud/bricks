@@ -1,4 +1,4 @@
-import { BricksNode } from "../BricksNode";
+import { IBricksNode } from "../IBricksNode";
 import { isAutoLayout } from "../utils";
 import { DBSCAN } from "./dbscan";
 import {
@@ -13,17 +13,17 @@ import {
 } from "./group-by-similarity/utils";
 
 export function groupByRepetition(
-  nodes: BricksNode[],
+  nodes: IBricksNode[],
   skipGrouping: boolean = false
-): BricksNode[] {
+): IBricksNode[] {
   if (nodes.length === 0) {
     return [];
   }
 
-  let result: BricksNode[] = nodes;
+  let result: IBricksNode[] = nodes;
 
   if (!skipGrouping) {
-    const nodesGroupedByRepetition: BricksNode[] = [];
+    const nodesGroupedByRepetition: IBricksNode[] = [];
 
     const assignedNodeIds = new Set<string>();
 
@@ -94,7 +94,7 @@ export function groupByRepetition(
   return result;
 }
 
-function findNodesAlignedInCounterAxis(nodes: BricksNode[]): BricksNode[] {
+function findNodesAlignedInCounterAxis(nodes: IBricksNode[]): IBricksNode[] {
   const startingNode = nodes[0];
 
   if (startingNode.layoutMode === "NONE") {
@@ -172,9 +172,9 @@ function findNodesAlignedInCounterAxis(nodes: BricksNode[]): BricksNode[] {
 }
 
 function isThereAnythingBetween(
-  me: BricksNode,
-  you: BricksNode,
-  otherNodes: BricksNode[]
+  me: IBricksNode,
+  you: IBricksNode,
+  otherNodes: IBricksNode[]
 ): boolean {
   const ourBounds = getBoundingBox([
     me.absoluteRenderbounds,
@@ -210,7 +210,7 @@ function isThereAnythingBetween(
   return false;
 }
 
-function rearrangeNodes(nodes: BricksNode[]): BricksNode[] {
+function rearrangeNodes(nodes: IBricksNode[]): IBricksNode[] {
   const result = [];
   const newDirection =
     nodes[0].layoutMode === "HORIZONTAL" ? "VERTICAL" : "HORIZONTAL";

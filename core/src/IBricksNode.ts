@@ -1,6 +1,6 @@
-export interface BricksNode {
+export interface IBricksNode {
   source: "figma" | "bricks";
-  children: BricksNode[];
+  children: IBricksNode[];
   id: string;
   name: string;
   type: NodeType;

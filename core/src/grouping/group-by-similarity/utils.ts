@@ -1,10 +1,10 @@
-import { BricksNode } from "../../BricksNode";
+import { IBricksNode } from "../../IBricksNode";
 import { DBSCAN } from "../dbscan";
 
 export function resolveConflictByArea(
-  node: BricksNode,
-  ...groups: BricksNode[][]
-): BricksNode[][] {
+  node: IBricksNode,
+  ...groups: IBricksNode[][]
+): IBricksNode[][] {
   let groupToAssignTo = 0;
   let minDifferenceToGroupAvgArea = Infinity;
   for (let i = 0; i < groups.length; i++) {
@@ -28,7 +28,7 @@ export function resolveConflictByArea(
   return groups;
 }
 
-function differenceToGroupAvgArea(node: BricksNode, group: BricksNode[]) {
+function differenceToGroupAvgArea(node: IBricksNode, group: IBricksNode[]) {
   const groupAvgArea =
     group.reduce((prev, cur) => {
       const { absoluteRenderbounds } = cur;
@@ -42,10 +42,10 @@ function differenceToGroupAvgArea(node: BricksNode, group: BricksNode[]) {
 }
 
 export function resolveConflictByDist(
-  node: BricksNode,
+  node: IBricksNode,
   direction: "VERTICAL" | "HORIZONTAL",
-  ...groups: BricksNode[][]
-): BricksNode[][] {
+  ...groups: IBricksNode[][]
+): IBricksNode[][] {
   let groupToAssignTo = 0;
   let minDistToGroup = Infinity;
   let maxGroupSize = -Infinity;
@@ -79,8 +79,8 @@ export function resolveConflictByDist(
 }
 
 function minDifferenceToGroup(
-  node: BricksNode,
-  group: BricksNode[],
+  node: IBricksNode,
+  group: IBricksNode[],
   direction: "VERTICAL" | "HORIZONTAL"
 ) {
   return Math.min(
@@ -114,7 +114,7 @@ function minDifferenceToGroup(
   );
 }
 
-function removeNodeFromGroup(node: BricksNode, group: BricksNode[]) {
+function removeNodeFromGroup(node: IBricksNode, group: IBricksNode[]) {
   const indexToRemove = group.findIndex((n) => n.id === node.id);
 
   if (indexToRemove >= 0) {
@@ -123,9 +123,9 @@ function removeNodeFromGroup(node: BricksNode, group: BricksNode[]) {
 }
 
 export function intersection(
-  groupsOne: BricksNode[],
-  groupsTwo: BricksNode[]
-): BricksNode[] {
+  groupsOne: IBricksNode[],
+  groupsTwo: IBricksNode[]
+): IBricksNode[] {
   return groupsOne.filter((node) =>
     groupsTwo.map((n) => n.id).includes(node.id)
   );
@@ -149,7 +149,7 @@ export function intersectionNum(...arrays: number[][]): number[] {
 }
 
 export function groupWithId(id: string) {
-  return (group: BricksNode[]) => group.some((node) => node.id === id);
+  return (group: IBricksNode[]) => group.some((node) => node.id === id);
 }
 
 /**
@@ -160,10 +160,10 @@ export function groupWithId(id: string) {
  *  Then, for each sub-array with length > 1, wrap it in a container node.
  */
 export function groupByGap(
-  nodes: BricksNode[],
+  nodes: IBricksNode[],
   direction: "VERTICAL" | "HORIZONTAL",
   counterAxisAlignItems: "MIN" | "CENTER" | "MAX"
-): BricksNode[] {
+): IBricksNode[] {
   if (nodes.length === 1) {
     return nodes;
   }
@@ -215,10 +215,10 @@ export function groupByGap(
 }
 
 export function wrapInContainerNode(
-  nodes: BricksNode[],
+  nodes: IBricksNode[],
   layoutMode: "VERTICAL" | "HORIZONTAL",
   counterAxisAlignItems: "MIN" | "CENTER" | "MAX"
-): BricksNode {
+): IBricksNode {
   if (nodes.length === 0) {
     throw new Error("Cannot create a container for nothing!");
   }
@@ -260,33 +260,33 @@ export function getBoundingBox(rects: Rect[]): Rect {
   };
 }
 
-export function ascendinglyByBoundingBoxXThenY(a: BricksNode, b: BricksNode) {
+export function ascendinglyByBoundingBoxXThenY(a: IBricksNode, b: IBricksNode) {
   return (
     a.absoluteBoundingBox.x - b.absoluteBoundingBox.x ||
     a.absoluteBoundingBox.y - b.absoluteBoundingBox.y
   );
 }
 
-export function getBottomY(node: BricksNode): [number] {
+export function getBottomY(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.y + node.absoluteBoundingBox.height];
 }
 
-export function getCenterY(node: BricksNode): [number] {
+export function getCenterY(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.y + node.absoluteBoundingBox.height / 2];
 }
 
-export function getTopY(node: BricksNode): [number] {
+export function getTopY(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.y];
 }
 
-export function getLeftX(node: BricksNode): [number] {
+export function getLeftX(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.x];
 }
 
-export function getCenterX(node: BricksNode): [number] {
+export function getCenterX(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.x + node.absoluteBoundingBox.width / 2];
 }
 
-export function getRightX(node: BricksNode): [number] {
+export function getRightX(node: IBricksNode): [number] {
   return [node.absoluteBoundingBox.x + node.absoluteBoundingBox.width];
 }

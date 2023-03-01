@@ -1,4 +1,4 @@
-import { BricksNode } from "../../BricksNode";
+import { IBricksNode } from "../../IBricksNode";
 import { DBSCAN } from "../dbscan";
 import {
   groupByGap,
@@ -14,7 +14,7 @@ import {
   getRightX,
 } from "./utils";
 
-export function groupNodes(nodes: BricksNode[]): BricksNode[] {
+export function groupNodes(nodes: IBricksNode[]): IBricksNode[] {
   if (nodes.length === 0) {
     return [];
   }
@@ -93,7 +93,7 @@ export function groupNodes(nodes: BricksNode[]): BricksNode[] {
   });
 
   // remove empty arrays
-  const nonEmptyGroup = (group: BricksNode[]) => group.length > 0;
+  const nonEmptyGroup = (group: IBricksNode[]) => group.length > 0;
   alignBottomGroups = alignBottomGroups.filter(nonEmptyGroup);
   alignVerticalCentersGroups = alignVerticalCentersGroups.filter(nonEmptyGroup);
   alignTopGroups = alignTopGroups.filter(nonEmptyGroup);
