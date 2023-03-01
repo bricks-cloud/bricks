@@ -2,10 +2,10 @@ import { BricksNode } from "../BricksNode";
 import { isAutoLayout } from "../utils";
 import { convertToBricksNodes } from "./group-by-autolayout";
 import { groupByContainers } from "./group-by-containers";
-import { groupByRepetition } from "./group-by-repetition";
+// import { groupByRepetition } from "./group-by-repetition";
 import { groupBySimilarity } from "./group-by-similarity";
 
-export async function generateBricksTree(
+export async function generateBricksNode(
   figmaNodes: readonly SceneNode[]
 ): Promise<BricksNode[]> {
   // post order needed for convertToBricksNodes() to work
