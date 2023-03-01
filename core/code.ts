@@ -10,12 +10,16 @@ figma.clientStorage.getAsync("size").then((size) => {
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "generate-bricks-nodes") {
-    const result = await generateBricksTree(figma.currentPage.selection);
-    const nodes = await Promise.all(result.map(generateStyledBricksNode));
-    console.log(nodes);
+    const bricksNodes = await generateBricksTree(figma.currentPage.selection);
+    const styledBricksNodes = await Promise.all(
+      bricksNodes.map(generateStyledBricksNode)
+    );
+
+    console.log(styledBricksNodes);
+
     figma.ui.postMessage({
       type: "render-nodes",
-      nodes,
+      nodes: styledBricksNodes,
     });
   }
   if (msg.type === "resize") {

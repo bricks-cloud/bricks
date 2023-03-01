@@ -23,9 +23,9 @@ export async function generateBricksTree(
   bricksNodes = groupBySimilarity(bricksNodes);
   console.log("groupBySimilarity", JSON.parse(JSON.stringify(bricksNodes)));
 
-  // group nodes by repetition
-  bricksNodes = groupByRepetition(bricksNodes);
-  console.log("groupByRepetition", JSON.parse(JSON.stringify(bricksNodes)));
+  // group nodes by repetition, commenting out for now as we don't see much use case and we want to simply the code
+  // bricksNodes = groupByRepetition(bricksNodes);
+  // console.log("groupByRepetition", JSON.parse(JSON.stringify(bricksNodes)));
 
   return bricksNodes;
 }
