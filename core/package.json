@@ -4,11 +4,13 @@
   "description": "Converts Figma nodes into Bricks nodes",
   "main": "code.js",
   "scripts": {
-    "dev": "NODE_ENV=development webpack --mode=development --watch"
+    "dev": "NODE_ENV=development webpack --mode=development --watch",
+    "prettier": "prettier --write ."
   },
   "license": "MIT",
   "devDependencies": {
     "@figma/plugin-typings": "*",
+    "prettier": "2.8.4",
     "ts-loader": "^9.4.2",
     "typescript": "*",
     "webpack": "^5.75.0",
