@@ -1,0 +1,14 @@
+{
+  "name": "bricks-tailwindcss-utils",
+  "version": "0.0.1",
+  "description": "Utility functions for converting CSS properties into Tailwindcss classes.",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "color-parse": "^1.4.2"
+  }
+}

@@ -531,7 +531,7 @@ export class BricksTextNode {
   }
 }
 
-class BricksSvgNode {
+export class BricksSvgNode {
   readonly type = "svg";
   attributes: Attributes = {};
   svg: string;
@@ -541,7 +541,7 @@ class BricksSvgNode {
   }
 }
 
-type Attributes = { [key: string]: string };
+export type Attributes = { [key: string]: string };
 
 export async function generateStyledBricksNode(
   bricksNode: IBricksNode

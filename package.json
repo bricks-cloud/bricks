@@ -1,0 +1,20 @@
+{
+  "name": "bricks",
+  "description": "Bricks is an open source tool for converting Figma designs into high-quality frontend code.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bricks-cloud/bricks.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bricks-cloud/bricks/issues"
+  },
+  "homepage": "https://github.com/bricks-cloud/bricks#readme",
+  "workspaces": [
+    "core",
+    "plugins/html",
+    "plugins/utils/tailwindcss"
+  ]
+}
