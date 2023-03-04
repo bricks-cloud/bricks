@@ -1,5 +1,4 @@
-import { generateBricksTree } from "../src/grouping";
-import { generateStyledBricksNode } from "../src/StyledBricksNode";
+import { parse } from "../src/index";
 
 figma.showUI(__html__);
 
@@ -10,10 +9,7 @@ figma.clientStorage.getAsync("size").then((size) => {
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "generate-bricks-nodes") {
-    const bricksNodes = await generateBricksTree(figma.currentPage.selection);
-    const styledBricksNodes = await Promise.all(
-      bricksNodes.map(generateStyledBricksNode)
-    );
+    const styledBricksNodes = await parse(figma.currentPage.selection);
 
     console.log(styledBricksNodes);
 
@@ -22,6 +18,7 @@ figma.ui.onmessage = async (msg) => {
       nodes: styledBricksNodes,
     });
   }
+
   if (msg.type === "resize") {
     figma.ui.resize(msg.size.w, msg.size.h);
     figma.clientStorage.setAsync("size", msg.size).catch((err) => {}); // save size
