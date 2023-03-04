@@ -6,24 +6,28 @@ import {
 } from "bricks-core/src/StyledBricksNode";
 import plugin from "./index";
 
-describe("generates HTML code with inline style", () => {
+describe("generates React code with inline style objects", () => {
   test("returns empty array when input is empty", () => {
     expect(plugin.transform([])).toEqual([]);
   });
 
-  test("generates nodes with inline style", () => {
+  test("generates nodes with inline style objects", () => {
     const node = new BricksElementNode();
     node.attributes = {
-      foo: "bar",
-      baz: "qux",
+      "background-color": "rainbow",
+      "font-size": "gigantic",
     };
 
     const input: StyledBricksNode[] = [node];
 
     expect(plugin.transform(input)).toEqual([
       {
-        path: "/GeneratedComponent.html",
-        content: '<div style="foo: bar; baz: qux"></div>',
+        path: "/GeneratedComponent.jsx",
+        content: `const GeneratedComponent = () => (
+  <div style={{ backgroundColor: "rainbow", fontSize: "gigantic" }}></div>
+);
+export default GeneratedComponent;
+`,
       },
     ]);
   });
@@ -33,8 +37,10 @@ describe("generates HTML code with inline style", () => {
 
     expect(plugin.transform(input)).toEqual([
       {
-        path: "/GeneratedComponent.html",
-        content: "<p>foo</p>",
+        path: "/GeneratedComponent.jsx",
+        content: `const GeneratedComponent = () => <p>foo</p>;
+export default GeneratedComponent;
+`,
       },
     ]);
   });
@@ -52,8 +58,11 @@ describe("generates HTML code with inline style", () => {
         content: Buffer.from(node.base64image, "base64"),
       },
       {
-        path: "/GeneratedComponent.html",
-        content: '<img src="/assets/img_1.png">',
+        path: "/GeneratedComponent.jsx",
+        content: `import img_1 from "./assets/img_1.png";
+const GeneratedComponent = () => <img src={img_1} />;
+export default GeneratedComponent;
+`,
       },
     ]);
   });
@@ -69,8 +78,11 @@ describe("generates HTML code with inline style", () => {
         content: svg,
       },
       {
-        path: "/GeneratedComponent.html",
-        content: '<img src="/assets/svg_1.svg">',
+        path: "/GeneratedComponent.jsx",
+        content: `import svg_1 from "./assets/svg_1.svg";
+const GeneratedComponent = () => <img src={svg_1} />;
+export default GeneratedComponent;
+`,
       },
     ]);
   });
@@ -83,8 +95,14 @@ describe("generates HTML code with inline style", () => {
 
     expect(plugin.transform(input)).toEqual([
       {
-        path: "/GeneratedComponent.html",
-        content: "<div><div></div></div>",
+        path: "/GeneratedComponent.jsx",
+        content: `const GeneratedComponent = () => (
+  <div>
+    <div></div>
+  </div>
+);
+export default GeneratedComponent;
+`,
       },
     ]);
   });
@@ -99,12 +117,27 @@ describe("generates HTML code with Tailwind", () => {
 
     const input: StyledBricksNode[] = [node];
 
-    const htmlFile = plugin
-      .transform(input, { tailwindcss: true })
-      .find((file) => file.path.endsWith(".html"));
-    expect(htmlFile).toEqual({
-      path: "/GeneratedComponent.html",
-      content: '<div class="h-px"></div>',
+    const files = plugin.transform(input, { tailwindcss: true });
+
+    expect(files.find((f) => f.path.endsWith(".jsx"))).toEqual({
+      path: "/GeneratedComponent.jsx",
+      content: `import "./style.css";
+const GeneratedComponent = () => <div className="h-px"></div>;
+export default GeneratedComponent;
+`,
     });
+    expect(files.find((f) => f.path === "/style.css")).toBeTruthy();
+    expect(files.find((f) => f.path === "/tailwind.config.js")).toBeTruthy();
+  });
+});
+
+describe("generates React code in TypeScript", () => {
+  test("generates the correct file extension", () => {
+    const node = new BricksElementNode();
+    expect(
+      plugin
+        .transform([node], { typescript: true })
+        .find((file) => file.path.endsWith(".tsx"))
+    ).toBeTruthy();
   });
 });

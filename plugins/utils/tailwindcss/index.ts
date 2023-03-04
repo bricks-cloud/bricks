@@ -13,6 +13,9 @@ import {
   twUnitMap,
   twWidthMap,
 } from "./tw-value-maps";
+import * as prettier from "prettier/standalone";
+import * as cssParser from "prettier/parser-postcss";
+import * as babelParser from "prettier/parser-babel";
 
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
@@ -794,7 +797,8 @@ export const buildTwcConfigFileContent = (
 ) => {
   const fontFamilies = Object.entries(fonts)
     .map(
-      ([fontFamily, metadata]) => `${metadata.tailwindAlias}: "${fontFamily}",`
+      ([fontFamily, metadata]) =>
+        `"${metadata.tailwindAlias}": "${fontFamily}",`
     )
     .join("\n");
 
@@ -804,15 +808,20 @@ export const buildTwcConfigFileContent = (
     },`
     : "";
 
-  return `module.exports = {
+  const config = `module.exports = {
   content: ["./*.${mainComponentFileExtension}"],
   theme: {
     ${fontFamilyConfig}
-    extend: {},
-  },
-  plugins: [],
-};
-`;
+      extend: {},
+    },
+    plugins: [],
+  };
+  `;
+
+  return prettier.format(config, {
+    plugins: [babelParser],
+    parser: "babel",
+  });
 };
 
 export const buildTwcCssFileContent = (fonts: Record<string, FontMetadata>) => {
@@ -828,5 +837,8 @@ export const buildTwcCssFileContent = (fonts: Record<string, FontMetadata>) => {
 ${fontImportStatements}
 `;
 
-  return file;
+  return prettier.format(file, {
+    parser: "css",
+    plugins: [cssParser],
+  });
 };
