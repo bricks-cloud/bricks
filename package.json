@@ -16,6 +16,7 @@
     "core",
     "plugins/html",
     "plugins/react",
-    "plugins/utils/tailwindcss"
+    "plugins/utils/tailwindcss",
+    "vscode"
   ]
 }

@@ -1,0 +1,11 @@
+html,
+body,
+iframe {
+  height: 100%;
+}
+
+iframe {
+  width: 100%;
+  border: none;
+  background: white; /* Browsers default to a white background */
+}
