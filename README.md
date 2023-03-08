@@ -4,14 +4,18 @@ Bricks is an open source tool for converting Figma designs into high-quality fro
 
 ## Try Bricks
 
-1. Install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode)
-2. Launch the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering)
-3. Update settings to select desired frameworks and CSS libraries
-4. In Figma, select a component to convert to code
-5. Click “Generate”
-6. Done! The generated code shows up in VS Code, along with a live preview
-7. You can tinker with the generated code, and see changes instantly in the preview
-8. When you’re happy with the code, just drop it into your codebase 👏
+### Prerequisites
+
+Install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
+
+### How to use
+
+1. In VS Code, open the command palette (Command + Shift + P) and type "Activate Bricks" to start up Bricks.
+2. In Figma, select a component to convert to code
+3. Click “Generate”
+4. Done! The generated code shows up in VS Code, along with a live preview
+5. You can tinker with the generated code, and see changes instantly in the preview
+6. When you’re happy with the code, just drop it into your codebase 👏
 
 ## Project Structure
 

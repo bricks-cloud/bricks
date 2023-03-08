@@ -74,7 +74,7 @@
   "scripts": {
     "vscode:prepublish": "node esbuild.prod.js",
     "watch": "node esbuild.dev.js",
-    "dev:install": "vsce package && code --install-extension d2c-vscode-0.0.5.vsix --force"
+    "dev:install": "vsce package && code --install-extension d2c-vscode-0.0.6.vsix --force"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
