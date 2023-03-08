@@ -1,0 +1,81 @@
+{
+  "name": "bricks-figma-plugin",
+  "version": "1.0.0",
+  "description": "The Official Bricks Figma Plugin.",
+  "license": "MIT",
+  "homepage": "https://github.com/bricks-cloud/bricks#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bricks-cloud/bricks.git",
+    "directory": "figma"
+  },
+  "bugs": {
+    "url": "https://github.com/bricks-cloud/bricks/issues"
+  },
+  "scripts": {
+    "build": "webpack --mode=production --define-process-env-node-env=production",
+    "build:dev": "webpack --mode=development",
+    "build:prod": "webpack --mode=production --define-process-env-node-env=production",
+    "dev": "NODE_ENV=development webpack --mode=development --watch",
+    "watch": "webpack --watch"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.20.14",
+    "@babel/parser": "^7.20.15",
+    "@babel/template": "^7.20.7",
+    "@babel/traverse": "^7.20.13",
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@headlessui/react": "^1.7.7",
+    "@mui/material": "^5.10.16",
+    "@types/prettier": "^2.7.2",
+    "base64-js": "^1.5.1",
+    "color-parse": "^1.4.2",
+    "create-file-webpack": "^1.0.2",
+    "dotenv": "^16.0.3",
+    "html-loader": "^4.2.0",
+    "html-webpack-inline-source-plugin": "^0.0.10",
+    "postcss": "^8.4.19",
+    "postcss-loader": "^7.0.2",
+    "postcss-preset-env": "^7.8.3",
+    "postcss-scss": "^4.0.6",
+    "prettier": "^2.8.3",
+    "prismjs": "^1.29.0",
+    "process": "^0.11.10",
+    "react": "^18.2.0",
+    "react-dev-utils": "^12.0.1",
+    "react-dom": "^18.2.0",
+    "react-simple-code-editor": "^0.13.1",
+    "socket.io-client": "^4.5.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/preset-env": "^7.20.2",
+    "@figma/plugin-typings": "^1.56.0",
+    "@types/react-dom": "^18.0.9",
+    "@webpack-cli/generators": "^3.0.0",
+    "babel-loader": "^9.1.2",
+    "babel-preset-es2015": "^6.24.1",
+    "css-loader": "^6.7.2",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "^5.5.0",
+    "inline-source-webpack-plugin": "^3.0.1",
+    "mini-css-extract-plugin": "^2.7.1",
+    "style-loader": "^3.3.1",
+    "tailwindcss": "^3.2.4",
+    "ts-loader": "^9.4.2",
+    "typescript": "^4.9.3",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "figmaPlugin": {
+    "name": "Bricks D2C",
+    "id": "1178847414663679049",
+    "api": "1.0.0",
+    "main": "./code.js",
+    "editorType": [
+      "figma"
+    ],
+    "ui": "./ui.html"
+  }
+}

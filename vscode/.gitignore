@@ -1,8 +1,0 @@
-out
-dist
-node_modules
-.vscode-test/
-*.vsix
-preview/*
-yarn-error.log
-!preview/index.html

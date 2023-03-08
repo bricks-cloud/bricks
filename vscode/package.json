@@ -1,22 +1,59 @@
 {
   "name": "bricks-vscode-extension",
-  "publisher": "bricks",
+  "version": "0.0.6",
+  "description": "Bricks is Github copilot for UI engineering. It is built by fullstack engineers for fullstack engineers.",
   "license": "MIT",
-  "icon": "vscode/assets/bricks-logo.png",
+  "homepage": "https://github.com/bricks-cloud/bricks#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/bricks-cloud/bricks.git"
   },
-  "displayName": "Bricks Design to Code",
-  "description": "Bricks is Github copilot for UI engineering. It is built by fullstack engineers for fullstack engineers.",
-  "version": "0.0.6",
+  "bugs": {
+    "url": "https://github.com/bricks-cloud/bricks/issues"
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "dev:install": "vsce package && code --install-extension d2c-vscode-0.0.6.vsix --force",
+    "vscode:prepublish": "node esbuild.prod.js",
+    "watch": "node esbuild.dev.js"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.13",
+    "esbuild-sass-plugin": "^2.5.0",
+    "esbuild-wasm": "^0.17.8",
+    "express": "^4.18.2",
+    "get-port": "^6.1.2",
+    "mkdirp": "^0.5.1",
+    "postcss": "^8.4.21",
+    "postcss-preset-env": "^8.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rimraf": "^2.6.2",
+    "sass": "^1.58.3",
+    "socket.io": "^4.5.4",
+    "tailwindcss": "^3.2.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/mkdirp": "^0.5.2",
+    "@types/node": "^18.11.19",
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
+    "@types/rimraf": "^2.0.2",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "esbuild": "^0.17.8",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
     "Other"
   ],
-  "main": "./out/extension.js",
+  "activationEvents": [],
   "contributes": {
     "views": {
       "explorer": [
@@ -71,43 +108,7 @@
       }
     ]
   },
-  "scripts": {
-    "vscode:prepublish": "node esbuild.prod.js",
-    "watch": "node esbuild.dev.js",
-    "dev:install": "vsce package && code --install-extension d2c-vscode-0.0.6.vsix --force"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.17",
-    "@types/mkdirp": "^0.5.2",
-    "@types/node": "^18.11.19",
-    "@types/react": "^18.0.27",
-    "@types/react-dom": "^18.0.10",
-    "@types/rimraf": "^2.0.2",
-    "@types/vscode": "^1.74.0",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
-    "esbuild": "^0.17.8",
-    "eslint": "^8.28.0",
-    "typescript": "^4.9.3"
-  },
-  "dependencies": {
-    "autoprefixer": "^10.4.13",
-    "esbuild-sass-plugin": "^2.5.0",
-    "esbuild-wasm": "^0.17.8",
-    "express": "^4.18.2",
-    "get-port": "^6.1.2",
-    "mkdirp": "^0.5.1",
-    "postcss": "^8.4.21",
-    "postcss-preset-env": "^8.0.1",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "rimraf": "^2.6.2",
-    "sass": "^1.58.3",
-    "socket.io": "^4.5.4",
-    "tailwindcss": "^3.2.4"
-  },
-  "bugs": {
-    "url": "https://github.com/bricks-cloud/bricks/issues"
-  },
-  "homepage": "https://github.com/bricks-cloud/bricks#readme"
+  "displayName": "Bricks Design to Code",
+  "icon": "assets/bricks-logo.png",
+  "publisher": "bricks"
 }

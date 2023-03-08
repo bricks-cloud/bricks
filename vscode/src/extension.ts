@@ -118,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
       );
 
       vscode.window.showInformationMessage(
-        "Command + Shift + P then type in Activate to start the Bricks VSCode plugin asdfasdfasdf"
+        "Command + Shift + P then type in Activate to start the Bricks VSCode plugin"
       );
     }
   }

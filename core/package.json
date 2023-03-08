@@ -2,12 +2,25 @@
   "name": "bricks-core",
   "version": "0.0.1",
   "description": "Converts Figma nodes into Bricks nodes",
+  "license": "MIT",
+  "homepage": "https://github.com/bricks-cloud/bricks#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bricks-cloud/bricks.git",
+    "directory": "core"
+  },
+  "bugs": {
+    "url": "https://github.com/bricks-cloud/bricks/issues"
+  },
   "main": "code.js",
   "scripts": {
     "dev": "NODE_ENV=development webpack --mode=development --watch",
+    "get-metadata": "node ./src/google/get-google-fonts-metadata.js",
     "prettier": "prettier --write ."
   },
-  "license": "MIT",
+  "dependencies": {
+    "base64-js": "^1.5.1"
+  },
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "copy-webpack-plugin": "^11.0.0",
@@ -16,8 +29,5 @@
     "typescript": "*",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"
-  },
-  "dependencies": {
-    "base64-js": "^1.5.1"
   }
 }

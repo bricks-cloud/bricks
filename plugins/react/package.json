@@ -1,22 +1,22 @@
 {
   "name": "bricks-react-plugin",
-  "type": "module",
   "version": "0.0.1",
   "description": "Official React plugin for generating React code.",
+  "license": "MIT",
+  "homepage": "https://github.com/bricks-cloud/bricks#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bricks-cloud/bricks.git",
+    "directory": "plugins/react"
+  },
+  "bugs": {
+    "url": "https://github.com/bricks-cloud/bricks/issues"
+  },
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "test": "jest"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bricks-cloud/bricks.git"
-  },
-  "author": "",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/bricks-cloud/bricks/issues"
-  },
-  "homepage": "https://github.com/bricks-cloud/bricks#readme",
   "devDependencies": {
     "@figma/plugin-typings": "^1.58.0",
     "@types/jest": "^29.4.0",

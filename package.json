@@ -6,7 +6,6 @@
     "url": "git+https://github.com/bricks-cloud/bricks.git"
   },
   "keywords": [],
-  "author": "",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/bricks-cloud/bricks/issues"
@@ -17,6 +16,7 @@
     "plugins/html",
     "plugins/react",
     "plugins/utils/tailwindcss",
-    "vscode"
+    "vscode",
+    "figma"
   ]
 }
