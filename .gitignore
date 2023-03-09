@@ -1,6 +1,2 @@
 node_modules
 dist
-out
-preview
-!preview/index.html
-*.vsix

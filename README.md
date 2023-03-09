@@ -21,23 +21,22 @@ Install the [VS Code extension](https://marketplace.visualstudio.com/items?itemN
 
 #### First time set up
 
-1. Run `npm install` in the repository's root directory.
-2. Import Bricks Figma plugin into Figma Desktop:
+1. Install [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install).
+2. Run `yarn` in the repository's root directory.
+3. Import Bricks Figma plugin into Figma Desktop:
    - Open a design file in Figma Desktop.
    - Right click on the page, "Plugins", "Development", "Import plugin from manifest...".
    - Select the `manifest.json` file from the `dist` folder.
 
-#### Start up Bricks in VS Code and Figma
+#### Start up Bricks Figma Plugin
 
-1. Run Bricks VS Code extension locally by hitting `F5` in VS Code.
-2. Run Bricks Figma plugin locally by right clicking on the page, "Plugins", "Development", "Bricks D2C".
+Run Bricks Figma plugin locally by right clicking on the page, "Plugins", "Development", "Bricks D2C".
 
 ## Project Structure
 
 Bricks is composed of a number of components. Below is a description of each component:
 
 - `figma`: the Figma plugin for Bricks.
-- `vscode`: the VS Code extension for Bricks.
 - `core`: converts Figma nodes into `StyledBricksNode`s.
 - `plugins/html`: converts `StyledBricksNode`s into HTML code.
 - `plugins/react`: converts `StyledBricksNode`s into React code.
