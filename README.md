@@ -32,6 +32,7 @@ Run Bricks Figma plugin locally by right clicking on the page, "Plugins", "Devel
 Bricks is composed of a number of components. Below is a description of each component:
 
 - `figma`: the Figma plugin for Bricks.
+- `vscode`: the VS Code extension for Bricks.
 - `core`: converts Figma nodes into `StyledBricksNode`s.
 - `plugins/html`: converts `StyledBricksNode`s into HTML code.
 - `plugins/react`: converts `StyledBricksNode`s into React code.
