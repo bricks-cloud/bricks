@@ -23,16 +23,13 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+**Software Versions (please fill if applicable):**
+ - OS: [e.g. macOS 12.2.1]
+ - Browser (if using Figma web): [e.g. chrome, safari]
+ - Figma Desktop App (if using Figma desktop): [e.g. 116.6.3]
+ - Bricks Figma Plugin: [e.g. 6]
+ - VS Code: [e.g. 1.76.0]
+ - Bricks VS Code: [e.g. 0.0.6]
 
 **Additional context**
 Add any other context about the problem here.
