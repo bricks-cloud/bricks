@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "bricks",
   "description": "Bricks is an open source tool for converting Figma designs into high-quality frontend code.",
   "repository": {
@@ -16,7 +17,6 @@
     "plugins/html",
     "plugins/react",
     "plugins/utils/tailwindcss",
-    "vscode",
     "figma"
   ]
 }
