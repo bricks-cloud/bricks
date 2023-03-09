@@ -4,25 +4,21 @@ Bricks is an open source tool for converting Figma designs into high-quality fro
 
 ## Try Bricks
 
-### Prerequisites
-
-Install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
-
-### Try out Bricks!
-
-1. In VS Code, open the command palette (Command + Shift + P) and type "Activate Bricks" to start up Bricks.
-2. In Figma, select a component to convert to code
-3. Click “Generate”
-4. Done! The generated code shows up in VS Code, along with a live preview
-5. You can tinker with the generated code, and see changes instantly in the preview
-6. When you’re happy with the code, just drop it into your codebase 👏
+1. Install both the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
+2. In VS Code, open the command palette (Command + Shift + P) and type "Activate Bricks" to start up Bricks.
+3. In Figma, select a component to convert to code
+4. Click “Generate”
+5. Done! The generated code shows up in VS Code, along with a live preview
+6. You can tinker with the generated code, and see changes instantly in the preview
+7. When you’re happy with the code, just drop it into your codebase 👏
 
 ### How to run Bricks locally
 
 #### First time set up
 
-1. Run `npm install` in the repository's root directory.
-2. Import Bricks Figma plugin into Figma Desktop:
+1. Install [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install).
+2. Run `yarn` in the repository's root directory.
+3. Import Bricks Figma plugin into Figma Desktop:
    - Open a design file in Figma Desktop.
    - Right click on the page, "Plugins", "Development", "Import plugin from manifest...".
    - Select the `manifest.json` file from the `dist` folder.
