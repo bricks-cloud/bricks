@@ -18,6 +18,6 @@ plugin.transform(nodes, options);
 
 If `tailwindcss` is set to true, the HTML code will be styled with Tailwind CSS classes. Otherwise, the HTML code will be styled with inline CSS.
 
-## Testing
+## Running tests
 
-`npm run test -w bricks-html-plugin`
+`yarn workspace bricks-html-plugin test`

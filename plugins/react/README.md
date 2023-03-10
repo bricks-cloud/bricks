@@ -21,6 +21,6 @@ If `tailwindcss` is set to true, the React code will be styled with Tailwind CSS
 
 If `typescript` is set to true, the React code will be in TypeScript. Otherwise, the React code will be in JavaScript.
 
-## Testing
+## Running tests
 
-`npm run test -w bricks-react-plugin`
+`yarn workspace bricks-react-plugin test`
