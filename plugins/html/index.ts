@@ -7,6 +7,8 @@ import {
   getTailwindCssClass,
   getTWCFontMetadata,
 } from "bricks-tailwindcss-utils";
+import * as prettier from "prettier/standalone";
+import * as htmlParser from "prettier/parser-html";
 
 type Options = {
   tailwindcss?: boolean;
@@ -100,9 +102,13 @@ const plugin: IPlugin<Options> = {
       return html;
     }
 
+    const html = generateHtml(nodes);
     files.push({
       path: "/GeneratedComponent.html",
-      content: generateHtml(nodes),
+      content: prettier.format(html, {
+        parser: "html",
+        plugins: [htmlParser],
+      }),
     });
 
     if (tailwindcss) {

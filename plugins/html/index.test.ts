@@ -23,7 +23,7 @@ describe("generates HTML code with inline style", () => {
     expect(plugin.transform(input)).toEqual([
       {
         path: "/GeneratedComponent.html",
-        content: '<div style="foo: bar; baz: qux"></div>',
+        content: '<div style="foo: bar; baz: qux"></div>\n',
       },
     ]);
   });
@@ -34,7 +34,7 @@ describe("generates HTML code with inline style", () => {
     expect(plugin.transform(input)).toEqual([
       {
         path: "/GeneratedComponent.html",
-        content: "<p>foo</p>",
+        content: "<p>foo</p>\n",
       },
     ]);
   });
@@ -53,7 +53,7 @@ describe("generates HTML code with inline style", () => {
       },
       {
         path: "/GeneratedComponent.html",
-        content: '<img src="/assets/img_1.png">',
+        content: '<img src="/assets/img_1.png" />\n',
       },
     ]);
   });
@@ -70,7 +70,7 @@ describe("generates HTML code with inline style", () => {
       },
       {
         path: "/GeneratedComponent.html",
-        content: '<img src="/assets/svg_1.svg">',
+        content: '<img src="/assets/svg_1.svg" />\n',
       },
     ]);
   });
@@ -84,7 +84,7 @@ describe("generates HTML code with inline style", () => {
     expect(plugin.transform(input)).toEqual([
       {
         path: "/GeneratedComponent.html",
-        content: "<div><div></div></div>",
+        content: "<div><div></div></div>\n",
       },
     ]);
   });
@@ -104,7 +104,27 @@ describe("generates HTML code with Tailwind", () => {
       .find((file) => file.path.endsWith(".html"));
     expect(htmlFile).toEqual({
       path: "/GeneratedComponent.html",
-      content: '<div class="h-px"></div>',
+      content: '<div class="h-px"></div>\n',
     });
   });
+});
+
+test("output code should be formatted", () => {
+  // Triple-nested divs: <div><div><div></div></div></div>
+  const nestedNode = new BricksElementNode();
+  nestedNode.children = [new BricksElementNode()];
+  const node = new BricksElementNode();
+  node.children = [nestedNode];
+
+  const input: StyledBricksNode[] = [node];
+
+  expect(plugin.transform(input)).toEqual([
+    {
+      path: "/GeneratedComponent.html",
+      content: `<div>
+  <div><div></div></div>
+</div>
+`,
+    },
+  ]);
 });
