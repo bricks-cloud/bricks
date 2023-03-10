@@ -19,7 +19,8 @@
     "prettier": "prettier --write ."
   },
   "dependencies": {
-    "base64-js": "^1.5.1"
+    "base64-js": "^1.5.1",
+    "react-native-uuid": "^2.0.1"
   },
   "devDependencies": {
     "@figma/plugin-typings": "*",
