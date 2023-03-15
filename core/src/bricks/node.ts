@@ -19,7 +19,7 @@ export enum NodeType {
 class BaseNode {
     readonly id: string;
     readonly type: string;
-    private children: Node[] = [];
+    children: Node[] = [];
 
     constructor(type: string) {
         this.id = uuid.v1() as string;
@@ -47,12 +47,95 @@ class BaseNode {
     }
 }
 
+const computePositionalRelationship = (currentCoordinates: BoundingBoxCoordinates, targetCoordinates: BoundingBoxCoordinates): PostionalRelationship => {
+    if (targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y
+        && targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x
+        && targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x
+        && targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y) {
+        return PostionalRelationship.INCLUDE;
+    }
+
+    if (targetCoordinates.leftTop.y === currentCoordinates.leftTop.y
+        && targetCoordinates.leftTop.x === currentCoordinates.leftTop.x
+        && targetCoordinates.rightBot.x === currentCoordinates.rightBot.x
+        && targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
+    ) {
+        return PostionalRelationship.COMPLETE_OVERLAP;
+    }
+
+    if (doOverlap(currentCoordinates, targetCoordinates)) {
+        return PostionalRelationship.OVERLAP;
+    }
+
+    return PostionalRelationship.OUTSIDE;
+}
+
 export class GroupNode extends BaseNode {
     readonly id: string;
+    absRenderingBox: BoundingBoxCoordinates;
 
     constructor(children: Node[]) {
         super(NodeType.GROUP);
         this.setChildren(children);
+        this.absRenderingBox = this.computeAbsRenderingBox();
+    }
+
+    setChildren(children: Node[]) {
+        this.children = children;
+        this.absRenderingBox = this.computeAbsRenderingBox();
+    };
+
+    getAbsRenderingBox() {
+        return this.absRenderingBox;
+    }
+
+    getPositionalRelationship(targetNode: Node): PostionalRelationship {
+        return computePositionalRelationship(this.absRenderingBox, targetNode.getAbsRenderingBox());
+    }
+
+    private computeAbsRenderingBox(): BoundingBoxCoordinates {
+        let xl = Infinity;
+        let xr = -Infinity;
+        let yt = Infinity;
+        let yb = -Infinity;
+
+        for (const child of this.getChildren()) {
+            const coordinates = child.getAbsRenderingBox();
+            if (coordinates.leftTop.x < xl) {
+                xl = coordinates.leftTop.x;
+            }
+
+            if (coordinates.rightBot.x > xr) {
+                xr = coordinates.rightBot.x;
+            }
+
+            if (coordinates.leftTop.y < yt) {
+                yt = coordinates.leftTop.y;
+            }
+
+            if (coordinates.rightBot.y > yb) {
+                yb = coordinates.leftBot.y;
+            }
+        }
+
+        return {
+            leftTop: {
+                x: xl,
+                y: yt,
+            },
+            leftBot: {
+                x: xl,
+                y: yb,
+            },
+            rightTop: {
+                x: xr,
+                y: yt,
+            },
+            rightBot: {
+                x: xr,
+                y: yb,
+            },
+        };
     }
 }
 
@@ -64,37 +147,19 @@ export class VisibleNode extends BaseNode {
         this.node = node;
     }
 
-    getType() {
-        return NodeType.VISIBLE;
+    debug() {
+        console.log(this.node.getOriginalId());
+    }
+
+    getOriginalId(): string {
+        return this.node.getOriginalId();
     }
 
     getAbsRenderingBox(): BoundingBoxCoordinates {
         return this.node.getBoundingBoxCoordinates();
     }
 
-    getPositionalRelationship(targetNode: VisibleNode): PostionalRelationship {
-        const targetCoordinates = targetNode.getAbsRenderingBox();
-        const coordinates = this.node.getBoundingBoxCoordinates();
-
-        if (targetCoordinates.leftTop.y > coordinates.leftTop.y
-            && targetCoordinates.leftTop.x > coordinates.leftTop.x
-            && targetCoordinates.rightBot.x < coordinates.rightBot.x
-            && targetCoordinates.rightBot.y < coordinates.rightBot.y) {
-            return PostionalRelationship.INCLUDE;
-        }
-
-        if (targetCoordinates.leftTop.y === coordinates.leftTop.y
-            && targetCoordinates.leftTop.x === coordinates.leftTop.x
-            && targetCoordinates.rightBot.x === coordinates.rightBot.x
-            && targetCoordinates.rightBot.y === coordinates.rightTop.y
-        ) {
-            return PostionalRelationship.COMPLETE_OVERLAP;
-        }
-
-        if (doOverlap(coordinates, targetCoordinates)) {
-            return PostionalRelationship.OVERLAP;
-        }
-
-        return PostionalRelationship.OUTSIDE;
+    getPositionalRelationship(targetNode: Node): PostionalRelationship {
+        return computePositionalRelationship(this.getAbsRenderingBox(), targetNode.getAbsRenderingBox());
     }
 }

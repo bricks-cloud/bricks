@@ -9,6 +9,10 @@ export class FigmaNodeAdapter {
         this.node = node;
     }
 
+    getOriginalId() {
+        return this.node.id;
+    }
+
     getBoundingBoxCoordinates(): BoundingBoxCoordinates {
 
         const boundingBox = this.node.absoluteBoundingBox;
@@ -34,23 +38,41 @@ export class FigmaNodeAdapter {
     }
 }
 
+enum NodeType {
+    GROUP = "GROUP",
+}
+
 export const convertFigmaNodesToBricksNodes = (figmaNodes: readonly SceneNode[]): Node[] => {
-    if (isEmpty(figmaNodes)) {
-        return [];
+    let reordered = [...figmaNodes];
+    if (reordered.length > 1) {
+        reordered.sort((a, b) => {
+            if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
+                return -1;
+            }
+
+            return 1;
+        });
+
     }
 
     let result: Node[] = [];
-    for (const figmaNode of figmaNodes) {
+    for (const figmaNode of reordered) {
         if (figmaNode.visible) {
             const adaptedNode = new FigmaNodeAdapter(figmaNode);
 
-            const newNode = new VisibleNode(adaptedNode);
+            let newNode = new VisibleNode(adaptedNode);
 
             //@ts-ignore
             if (!isEmpty(figmaNode?.children)) {
 
                 //@ts-ignore
                 const childrenNode = convertFigmaNodesToBricksNodes(figmaNode.children);
+
+                if (childrenNode.length === 1 && figmaNode.type === NodeType.GROUP) {
+                    result = result.concat(childrenNode);
+                    continue;
+                }
+
                 newNode.setChildren(childrenNode);
             }
 

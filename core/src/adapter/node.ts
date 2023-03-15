@@ -1,6 +1,6 @@
 export type Coordinate = {
-    x: Number,
-    y: Number,
+    x: number,
+    y: number,
 }
 
 export type BoundingBoxCoordinates = {
@@ -12,5 +12,6 @@ export type BoundingBoxCoordinates = {
 
 export interface Node {
     getBoundingBoxCoordinates(): BoundingBoxCoordinates
+    getOriginalId(): string
 }
 
