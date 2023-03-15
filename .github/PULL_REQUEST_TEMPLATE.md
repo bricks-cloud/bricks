@@ -4,7 +4,7 @@
 
   Before submitting a pull request, please make sure the following is done:
 
-  - Format your code with [prettier](https://github.com/prettier/prettier) (`npm run prettier`).
+  - Format your code with [prettier](https://github.com/prettier/prettier) (`yarn prettier --write .`).
 -->
 
 ## Summary

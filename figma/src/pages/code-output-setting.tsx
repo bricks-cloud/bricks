@@ -39,7 +39,7 @@ function classNames(...classes) {
 function updateSettings(
   uiFramework: string,
   cssFramework: string,
-  language: string,
+  language: string
 ) {
   parent.postMessage(
     {
@@ -56,15 +56,23 @@ function updateSettings(
   );
 }
 
-
 const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
-  const baseClassName = "border rounded-md py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 hover:cursor-pointer";
+  const baseClassName =
+    "border rounded-md py-3 px-3 flex items-center justify-center text-sm font-medium sm:flex-1 hover:cursor-pointer";
   if (disabled) {
-    return classNames("bg-gray-300 border-gray-300 text-gray-500", baseClassName);
+    return classNames(
+      "bg-gray-300 border-gray-300 text-gray-500",
+      baseClassName
+    );
   }
 
   if (checked) {
-    return classNames("bg-blue-50 border-blue-700 border-2 text-white hover:bg-blue-50", "shadow-md", "text-gray-900", baseClassName);
+    return classNames(
+      "bg-blue-50 border-blue-700 border-2 text-white hover:bg-blue-50",
+      "shadow-md",
+      "text-gray-900",
+      baseClassName
+    );
   }
 
   return classNames("shadow-md", "text-gray-900", baseClassName);
