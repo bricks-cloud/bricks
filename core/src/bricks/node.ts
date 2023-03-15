@@ -12,18 +12,19 @@ export enum PostionalRelationship {
 export type Node = GroupNode | VisibleNode;
 
 export enum NodeType {
+  BASE = "BASE",
   GROUP = "GROUP",
   VISIBLE = "VISIBLE",
+  TEXT = "TEXT",
+  VECTOR = "VECTOR"
 }
 
 class BaseNode {
   readonly id: string;
-  readonly type: string;
   children: Node[] = [];
 
-  constructor(type: string) {
+  constructor() {
     this.id = uuid.v1() as string;
-    this.type = type;
   }
 
   addChildren(children: Node[]) {
@@ -39,7 +40,7 @@ class BaseNode {
   }
 
   getType() {
-    return this.type;
+    return NodeType.BASE;;
   }
 
   getId() {
@@ -75,9 +76,14 @@ export class GroupNode extends BaseNode {
   absRenderingBox: BoundingBoxCoordinates;
 
   constructor(children: Node[]) {
-    super(NodeType.GROUP);
+    super();
     this.setChildren(children);
     this.absRenderingBox = this.computeAbsRenderingBox();
+  }
+
+
+  getType(): NodeType {
+    return NodeType.GROUP;
   }
 
   setChildren(children: Node[]) {
@@ -143,18 +149,17 @@ export class VisibleNode extends BaseNode {
   readonly node: AdaptedNode;
 
   constructor(node: AdaptedNode) {
-    super(NodeType.VISIBLE);
+    super();
     this.node = node;
   }
 
-  getType() {
+  getType(): NodeType {
     return NodeType.VISIBLE;
   }
 
   getAbsRenderingBox(): BoundingBoxCoordinates {
     return this.node.getBoundingBoxCoordinates();
   }
-
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(this.getAbsRenderingBox(), targetNode.getAbsRenderingBox());
@@ -166,5 +171,26 @@ export class VisibleNode extends BaseNode {
 
   getOriginalId(): string {
     return this.node.getOriginalId();
+  }
+}
+
+
+export class TextNode extends VisibleNode {
+  constructor(node: AdaptedNode) {
+    super(node);
+  }
+
+  getType(): NodeType {
+    return NodeType.TEXT;
+  }
+}
+
+export class VectorNode extends VisibleNode {
+  constructor(node: AdaptedNode) {
+    super(node);
+  }
+
+  getType(): NodeType {
+    return NodeType.VECTOR;
   }
 }

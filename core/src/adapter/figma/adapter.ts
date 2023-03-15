@@ -1,4 +1,4 @@
-import { Node, VisibleNode } from "../../bricks/node";
+import { GroupNode, Node, TextNode, VectorNode, VisibleNode } from "../../bricks/node";
 import { isEmpty } from "lodash";
 import { BoundingBoxCoordinates } from "../node";
 
@@ -6,6 +6,10 @@ export class FigmaNodeAdapter {
   private node: SceneNode;
   constructor(node: SceneNode) {
     this.node = node;
+  }
+
+  getType() {
+    return this.node.type;
   }
 
   getOriginalId() {
@@ -38,6 +42,9 @@ export class FigmaNodeAdapter {
 
 enum NodeType {
   GROUP = "GROUP",
+  TEXT = "TEXT",
+  VECTOR = "VECTOR",
+  ELLIPSE = "ELLIPSE"
 }
 
 export const convertFigmaNodesToBricksNodes = (figmaNodes: readonly SceneNode[]): Node[] => {
@@ -54,11 +61,23 @@ export const convertFigmaNodesToBricksNodes = (figmaNodes: readonly SceneNode[])
   }
 
   let result: Node[] = [];
-  for (const figmaNode of reordered) {
+  for (let i = 0; i < reordered.length; i++) {
+    const figmaNode = reordered[i];
     if (figmaNode.visible) {
       const adaptedNode = new FigmaNodeAdapter(figmaNode);
 
-      let newNode = new VisibleNode(adaptedNode);
+      let newNode: Node = new VisibleNode(adaptedNode);
+      switch (figmaNode.type) {
+        case NodeType.GROUP:
+          newNode = new GroupNode([]);
+          break;
+        case NodeType.TEXT:
+          newNode = new TextNode(adaptedNode)
+          break;
+        case NodeType.VECTOR:
+        case NodeType.ELLIPSE:
+          newNode = new VectorNode(adaptedNode);
+      }
 
       //@ts-ignore
       if (!isEmpty(figmaNode?.children)) {
