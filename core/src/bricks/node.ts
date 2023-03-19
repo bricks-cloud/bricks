@@ -1,5 +1,5 @@
 import uuid from "react-native-uuid";
-import { Node as AdaptedNode, BoundingBoxCoordinates } from "../adapter/node";
+import { Node as AdaptedNode, BoundingBoxCoordinates, Attributes } from "../design/adapter/node";
 import { doOverlap } from "./util";
 
 export enum PostionalRelationship {
@@ -9,7 +9,7 @@ export enum PostionalRelationship {
   OUTSIDE = "OUTSIDE",
 }
 
-export type Node = GroupNode | VisibleNode;
+export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
 
 export enum NodeType {
   BASE = "BASE",
@@ -19,7 +19,7 @@ export enum NodeType {
   VECTOR = "VECTOR"
 }
 
-class BaseNode {
+export class BaseNode {
   readonly id: string;
   children: Node[] = [];
 
@@ -35,7 +35,7 @@ class BaseNode {
     this.children = children;
   }
 
-  getChildren() {
+  getChildren(): Node[] {
     return this.children;
   }
 
@@ -80,7 +80,6 @@ export class GroupNode extends BaseNode {
     this.setChildren(children);
     this.absRenderingBox = this.computeAbsRenderingBox();
   }
-
 
   getType(): NodeType {
     return NodeType.GROUP;
@@ -147,10 +146,16 @@ export class GroupNode extends BaseNode {
 
 export class VisibleNode extends BaseNode {
   readonly node: AdaptedNode;
+  type: NodeType;
 
   constructor(node: AdaptedNode) {
     super();
+
     this.node = node;
+  }
+
+  getCSSAttributes(): Attributes {
+    return this.node.getCSSAttributes();
   }
 
   getType(): NodeType {
@@ -178,6 +183,10 @@ export class VisibleNode extends BaseNode {
 export class TextNode extends VisibleNode {
   constructor(node: AdaptedNode) {
     super(node);
+  }
+
+  getText(): string {
+    return this.node.getText();
   }
 
   getType(): NodeType {

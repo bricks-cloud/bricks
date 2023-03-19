@@ -1,5 +1,5 @@
 import { isEmpty } from "lodash";
-import { BoundingBoxCoordinates } from "../adapter/node";
+import { BoundingBoxCoordinates } from "../design/adapter/node";
 import {
   Node,
   VisibleNode,
@@ -89,7 +89,7 @@ export const getNonGroupChildrenNodes = (nodes: Node[]): Node[][] => {
 
   let result = [];
   for (const node of nodes) {
-    if (node.type != NodeType.GROUP) {
+    if (node.getType() != NodeType.GROUP) {
       result.push(node.getChildren());
       continue;
     }

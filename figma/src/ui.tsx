@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
-import { StyledBricksNode } from "bricks-core/src/StyledBricksNode";
-import { IFile } from "bricks-core/src/IFile";
-import htmlPlugin from "bricks-html-plugin";
-import reactPlugin from "bricks-react-plugin";
+// import { Node } from "bricks-core/src/bricks/node";
+// import { convertToTailwindCssFiles } from "bricks-core/src/code/adapter/tailwindcss/adapter";
+// import { IFile } from "bricks-core/src/IFile";
+// import htmlPlugin from "bricks-html-plugin";
+// import reactPlugin from "bricks-react-plugin";
 import Home from "./pages/home";
 import PostCodeGeneration from "./pages/post-code-generation";
 import CodeGenerationStatus from "./pages/code-generation-status";
@@ -72,31 +73,41 @@ const UI = () => {
       setCurrentPage(PAGES.HOME);
     }
 
-    if (pluginMessage.type === "styled-bricks-nodes") {
-      const styledBricksNodes: StyledBricksNode[] =
-        pluginMessage.styledBricksNodes;
 
-      let files: IFile[] = [];
-
-      if (selectedUiFramework === UiFramework.html) {
-        files = htmlPlugin.transform(styledBricksNodes, {
-          tailwindcss: selectedCssFramework === CssFramework.tailwindcss,
-        });
-      }
-
-      if (selectedUiFramework === UiFramework.react) {
-        files = reactPlugin.transform(styledBricksNodes, {
-          typescript: selectedLanguage === Language.typescript,
-          tailwindcss: selectedCssFramework === CssFramework.tailwindcss,
-        });
-      }
-
-      socket.emit("code-generation", { files }, (response) => {
+    if (pluginMessage.type === "new-styled-bricks-nodes") {
+      socket.emit("code-generation", { files: pluginMessage.files }, (response) => {
         if (response.status === "ok") {
           setIsGeneratingCode(false);
         }
       });
+
     }
+
+    // if (pluginMessage.type === "styled-bricks-nodes") {
+    //   const styledBricksNodes: StyledBricksNode[] =
+    //     pluginMessage.styledBricksNodes;
+
+    //   let files: IFile[] = [];
+
+    //   if (selectedUiFramework === UiFramework.html) {
+    //     files = htmlPlugin.transform(styledBricksNodes, {
+    //       tailwindcss: selectedCssFramework === CssFramework.tailwindcss,
+    //     });
+    //   }
+
+    //   if (selectedUiFramework === UiFramework.react) {
+    //     files = reactPlugin.transform(styledBricksNodes, {
+    //       typescript: selectedLanguage === Language.typescript,
+    //       tailwindcss: selectedCssFramework === CssFramework.tailwindcss,
+    //     });
+    //   }
+
+    //   socket.emit("code-generation", { files }, (response) => {
+    //     if (response.status === "ok") {
+    //       setIsGeneratingCode(false);
+    //     }
+    //   });
+    // }
   };
 
   return (
