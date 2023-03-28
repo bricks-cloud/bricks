@@ -9,5 +9,5 @@
     "resolveJsonModule": true,
     "typeRoots": ["../node_modules/@types", "../node_modules/@figma"]
   },
-  "include": ["src/**/*.ts", "minimal-figma-plugin/code.ts"]
+  "include": ["src/**/*.ts"]
 }

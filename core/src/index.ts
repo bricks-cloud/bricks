@@ -1,16 +1,14 @@
 import { generateBricksNode } from "./grouping";
 import { generateStyledBricksNode } from "./StyledBricksNode";
 import { convertFigmaNodesToBricksNodes } from "./design/adapter/figma/adapter";
-import { convertToTailwindCssFiles } from "./code/adapter/tailwindcss/adapter";
+import { convertToTwcssFiles } from "./code/adapter/tailwindcss/adapter";
+import { Option } from "./code/code";
 import { File, UiFramework, Language, CssFramework } from "./code/code";
-import { groupNodes } from "./bricks/util";
+import { groupNodes } from "./bricks/grouping";
+import { addPositionalCSSAttributesToNodes } from "./bricks/positional-css";
 import { Node, GroupNode } from "./bricks/node";
 
 export async function parse(figmaNodes: readonly SceneNode[]) {
-  const converted = convertFigmaNodesToBricksNodes(figmaNodes);
-  const restructured = groupNodes(converted);
-  console.log("restructured: ", restructured);
-
   const bricksNodes = await generateBricksNode(figmaNodes);
   const styledBricksNodes = await Promise.all(
     bricksNodes.map(generateStyledBricksNode)
@@ -18,38 +16,21 @@ export async function parse(figmaNodes: readonly SceneNode[]) {
   return styledBricksNodes;
 }
 
-
-export const convertToCode = (figmaNodes: readonly SceneNode[]): File[] => {
-  console.log("figmaNodes: ", figmaNodes);
-
-
-
+export const convertToCode = (figmaNodes: readonly SceneNode[], option: Option): File[] => {
   const converted = convertFigmaNodesToBricksNodes(figmaNodes);
-
-
-  console.log("converted: ", converted);
-
-  const restructured = groupNodes(converted);
-
-
-  console.log("restructured: ", restructured);
-
-
-  let node: Node;
-
-  if (restructured.length > 1) {
-    node = new GroupNode(restructured);
+  if (converted.length < 1) {
+    return [];
   }
 
-  if (restructured.length === 1) {
-    node = restructured[0];
-  }
+  let startingNode: Node = converted.length > 1 ? new GroupNode(converted) : converted[0];
+  groupNodes(startingNode);
+  addPositionalCSSAttributesToNodes(startingNode);
 
-  console.log("node: ", node);
+  console.log(option);
 
-  return convertToTailwindCssFiles(node, {
+  return convertToTwcssFiles(startingNode, {
     uiFramework: UiFramework.react,
-    language: Language.javascript,
+    language: option.language,
     cssFramework: CssFramework.tailwindcss,
   });
 }

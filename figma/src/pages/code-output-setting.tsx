@@ -68,7 +68,7 @@ const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
 
   if (checked) {
     return classNames(
-      "bg-blue-50 border-blue-700 border-2 text-white hover:bg-blue-50",
+      "bg-blue-50 border-blue-700 border-2 text-gray-900 hover:bg-blue-50",
       "shadow-md",
       "text-gray-900",
       baseClassName

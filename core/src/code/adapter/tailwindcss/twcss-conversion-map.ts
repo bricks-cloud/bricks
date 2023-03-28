@@ -1,3 +1,9 @@
+export const tailwindTextDecorationMap = {
+  underline: "underline",
+  "line-through": "line-through",
+  none: "no-underline",
+};
+
 export const twHeightMap = {
     "h-0": "0px",
     "h-px": "1px",

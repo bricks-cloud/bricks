@@ -8,7 +8,7 @@ export type Attributes = {
 }
 
 
-export type BoundingBoxCoordinates = {
+export type BoxCoordinates = {
   leftTop: Coordinate;
   leftBot: Coordinate;
   rightTop: Coordinate;
@@ -16,8 +16,15 @@ export type BoundingBoxCoordinates = {
 };
 
 export interface Node {
-  getBoundingBoxCoordinates(): BoundingBoxCoordinates
+  getRenderingBoundsCoordinates(): BoxCoordinates
+  getAbsoluteBoundingBoxCoordinates(): BoxCoordinates
   getOriginalId(): string
-  getText(): string
   getCSSAttributes(): Attributes
+}
+
+
+export interface TextNode extends Node {
+  getText(): string
+  isItalic(): boolean
+  getFamilyName(): string
 }

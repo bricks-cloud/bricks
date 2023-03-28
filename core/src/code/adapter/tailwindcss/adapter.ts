@@ -3,14 +3,13 @@ import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType, TextNode, VisibleNode } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
 import { getFileExtensionFromLanguage } from "../util";
-import { getTailwindCssClass } from "./css-to-twcss";
+import { getTwcssClass } from "./css-to-twcss";
+import { instantiateFontsRegistryGlobalInstance, FontsRegistryGlobalInstance } from "./fonts-registry";
 
-// interface FontMetadata {
-//     source: string;
-//     tailwindAlias: string;
-// }
+// convertToTwcssFiles converts a Bricks node to tailwindcss files according to different options.
+export const convertToTwcssFiles = (node: Node, option: Option): File[] => {
+    instantiateFontsRegistryGlobalInstance(node);
 
-export const convertToTailwindCssFiles = (node: Node, option: Option): File[] => {
     const mainComponentName = "GeneratedComponent";
     const mainFileExtension = getFileExtensionFromLanguage(option.language);
     const mainFile: File = {
@@ -18,24 +17,20 @@ export const convertToTailwindCssFiles = (node: Node, option: Option): File[] =>
         path: `/GeneratedComponent.${getFileExtensionFromLanguage(option.language)}`,
     };
 
-    const twConfigFile: File = {
-        content: `module.exports = {
-            content: ["./*.${mainFileExtension}"],
-            plugins: [],
-          };`,
+    const twcssConfigFile: File = {
+        content: buildTwcssConfigFileContent(mainFileExtension),
         path: `/tailwind.config.js`,
     };
 
-    const twCssFile: File = {
-        content: `@tailwind base;
-        @tailwind components;
-        @tailwind utilities;`,
+    const twcssFile: File = {
+        content: buildTwcssCssFileContent(),
         path: `/style.css`,
     }
 
-    return [mainFile, twConfigFile, twCssFile];
+    return [mainFile, twcssConfigFile, twcssFile];
 };
 
+// generateMainFileContent generates the main file given Bricks node and options.
 const generateMainFileContent = (node: Node, option: Option, mainComponentName: string): string => {
     const importStatements = [
         `import React from "react";`,
@@ -52,13 +47,14 @@ const generateMainFileContent = (node: Node, option: Option, mainComponentName: 
     return importStatements.join("\n") + "\n\n" + mainComponent + "\n\n" + exportStatements.join("\n");
 };
 
+// generateMainComponentFromNode generates jsx elements from a single node and options.
 const generateMainComponentFromNode = (node: Node, option: Option): string => {
     const classPropName = option.uiFramework === UiFramework.react ? "className" : "class";
 
     switch (node.getType()) {
         case NodeType.TEXT:
             const textNode = node as TextNode;
-            const textNodeClassProps = `${classPropName}="${convertCssClassesToTwcClasses(textNode.getCSSAttributes())}"`;
+            const textNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses(textNode.getCSSAttributes())}"`;
 
             return `<p ${textNodeClassProps}>${textNode.getText()}</p>`;
         case NodeType.GROUP:
@@ -67,22 +63,29 @@ const generateMainComponentFromNode = (node: Node, option: Option): string => {
                 return `<div />`;
             }
 
-            return generateMainComponentFromNodes(node.getChildren(), ["<div>", "</div>"], classPropName);
+            const groupNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses({
+                ...node.getPositionalCssAttributes(),
+                ...node.getCSSAttributes(),
+            })}"`;
+
+            return generateMainComponentFromNodes(node.getChildren(), [`<div ${groupNodeClassProps}>`, "</div>"], classPropName);
         case NodeType.VISIBLE:
             const visibleNode = node as VisibleNode;
-            const visibleNodeClassProps = `${classPropName}="${convertCssClassesToTwcClasses(visibleNode.getCSSAttributes())}"`;
+            const visibleNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses({
+                ...visibleNode.getCSSAttributes(),
+                ...visibleNode.getPositionalCssAttributes(),
+            })}"`;
             if (isEmpty(node.getChildren())) {
                 return `<div ${visibleNodeClassProps} />`;
             }
 
             return generateMainComponentFromNodes(node.getChildren(), [`<div ${visibleNodeClassProps}>`, "</div>"], classPropName);
-
     }
 
     return `<div />`;
 };
 
-
+// generateMainComponentFromNodes generates jsx elements from nodes, options and opening closing HTML tag recursively.
 const generateMainComponentFromNodes = (nodes: Node[], [openingTag, closingTag]: string[], classPropName: string): string => {
     let childrenCodeStrings: string[] = [];
 
@@ -90,7 +93,7 @@ const generateMainComponentFromNodes = (nodes: Node[], [openingTag, closingTag]:
         switch (child.getType()) {
             case NodeType.TEXT:
                 const textNode = child as TextNode;
-                const textNodeClassProps = `${classPropName}="${convertCssClassesToTwcClasses(textNode.getCSSAttributes())}"`;
+                const textNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses(textNode.getCSSAttributes())}"`;
                 childrenCodeStrings.push(`<p ${textNodeClassProps}>${textNode.getText()}</p>`);
                 continue;
             case NodeType.GROUP:
@@ -100,11 +103,19 @@ const generateMainComponentFromNodes = (nodes: Node[], [openingTag, closingTag]:
                     continue;
                 }
 
-                childrenCodeStrings.push(generateMainComponentFromNodes(child.getChildren(), ["<div>", "</div>"], classPropName));
+                const groupNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses({
+                    ...child.getCSSAttributes(),
+                    ...child.getPositionalCssAttributes(),
+                })}"`;
+
+                childrenCodeStrings.push(generateMainComponentFromNodes(child.getChildren(), [`<div ${groupNodeClassProps}>`, "</div>"], classPropName));
                 continue;
             case NodeType.VISIBLE:
                 const visibleNode = child as VisibleNode;
-                const visibleNodeClassProps = `${classPropName}="${convertCssClassesToTwcClasses(visibleNode.getCSSAttributes())}"`;
+                const visibleNodeClassProps = `${classPropName}="${convertCssClassesToTwcssClasses({
+                    ...visibleNode.getCSSAttributes(),
+                    ...visibleNode.getPositionalCssAttributes(),
+                })}"`;
                 if (isEmpty(child.getChildren())) {
                     childrenCodeStrings.push(`<div ${visibleNodeClassProps} />`);
                     continue;
@@ -120,65 +131,66 @@ const generateMainComponentFromNodes = (nodes: Node[], [openingTag, closingTag]:
     return openingTag + childrenCodeStrings.join("") + closingTag
 };
 
-const convertCssClassesToTwcClasses = (attributes: Attributes) => {
+// convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
+const convertCssClassesToTwcssClasses = (attributes: Attributes): string => {
     let content = "";
 
     Object.entries(attributes).forEach(([property, value]) => {
-        content = content + " " + getTailwindCssClass(property, value, attributes);
+        content = content + " " + getTwcssClass(property, value, attributes);
     });
 
-    return content.trimStart();
+    return content.trim();
 }
 
+// buildTwcssConfigFileContent builds file content for tailwind.config.js.
+export const buildTwcssConfigFileContent = (
+    mainComponentFileExtension: string
+) => {
+    let fontFamilies = "";
+    const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();
 
-// export const buildTwcConfigFileContent = (
-//     fonts: Record<string, FontMetadata>,
-//     mainComponentFileExtension: string
-// ) => {
-//     const fontFamilies = Object.entries(fonts)
-//         .map(
-//             ([fontFamily, metadata]) =>
-//                 `"${metadata.tailwindAlias}": "${fontFamily}",`
-//         )
-//         .join("\n");
+    if (!isEmpty(entries)) {
+        fontFamilies = entries
+            .map(
+                (metadata) =>
+                    `"${metadata.alias}": "${metadata.familyCss}",`
+            )
+            .join("")
+    }
 
-//     const fontFamilyConfig = fonts
-//         ? `fontFamily: {
-//         ${fontFamilies}
-//       },`
-//         : "";
 
-//     const config = `module.exports = {
-//     content: ["./*.${mainComponentFileExtension}"],
-//     theme: {
-//       ${fontFamilyConfig}
-//         extend: {},
-//       },
-//       plugins: [],
-//     };
-//     `;
+    const fontFamilyConfig = !isEmpty(fontFamilies)
+        ? `fontFamily: {
+      ${fontFamilies}
+    },`
+        : "";
 
-//     return prettier.format(config, {
-//         plugins: [babelParser],
-//         parser: "babel",
-//     });
-// };
+    const file = `module.exports = {
+    content: ["./*.${mainComponentFileExtension}"],
+    theme: {
+      ${fontFamilyConfig}
+        extend: {},
+      },
+      plugins: [],
+    };
+    `;
 
-// export const buildTwcCssFileContent = (fonts: Record<string, FontMetadata>) => {
-//     const fontImportStatements = fonts
-//         ? Object.values(fonts).reduce((acc, curr) => {
-//             return (acc += `@import url("${curr.source}");`);
-//         }, "")
-//         : "";
+    return file;
+};
 
-//     const file = `@tailwind base;
-//   @tailwind components;
-//   @tailwind utilities;
-//   ${fontImportStatements}
-//   `;
+// buildTwcssCssFileContent builds file content for tailwindcss style.css.
+export const buildTwcssCssFileContent = () => {
+    let fontImportStatements = "";
+    const googleFontUrl = FontsRegistryGlobalInstance.getGoogleFontUrl();
+    if (!isEmpty(googleFontUrl)) {
+        fontImportStatements = `@import url("${googleFontUrl}");`
+    }
 
-//     return prettier.format(file, {
-//         parser: "css",
-//         plugins: [cssParser],
-//     });
-// };
+    const file = `@tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  ${fontImportStatements}
+  `;
+
+    return file;
+};

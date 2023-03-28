@@ -20,7 +20,7 @@ export enum CssFramework {
 }
 
 export interface Option {
-    language: Language
-    uiFramework: UiFramework
-    cssFramework: CssFramework
+    language?: Language
+    uiFramework?: UiFramework
+    cssFramework?: CssFramework
 }

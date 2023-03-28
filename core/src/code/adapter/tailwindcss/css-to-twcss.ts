@@ -1,4 +1,5 @@
 import parseColor from "color-parse";
+import { isEmpty } from "lodash";
 import {
     twBorderRadiusMap,
     twBroderWidthMap,
@@ -11,13 +12,16 @@ import {
     twOpacities,
     twUnitMap,
     twWidthMap,
+    tailwindTextDecorationMap,
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
+import { FontsRegistryGlobalInstance } from "./fonts-registry";
 
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
 
-const findClosestTailwindCSSColor = (cssColor: string) => {
+// findClosestTwcssColor finds the closest tailwindcss color to css color.
+const findClosestTwcssColor = (cssColor: string) => {
     if (cssColor === "inherit") {
         return "inherit";
     }
@@ -38,7 +42,7 @@ const findClosestTailwindCSSColor = (cssColor: string) => {
         Object.entries(twColorMap).forEach(([twClass, twColorString]) => {
             const parsedTwColor = parseColor(twColorString);
 
-            if (parsedTwColor.space) {
+            if (parsedTwColor.alpha !== 0) {
                 const [targetR, targetG, targetB] = parsedTwColor.values;
                 const diff =
                     Math.abs(targetR - r) + Math.abs(targetG - g) + Math.abs(targetB - b);
@@ -50,6 +54,7 @@ const findClosestTailwindCSSColor = (cssColor: string) => {
         });
 
         tailwindCSSProperty += twColorClassToUse;
+
 
         if (givenColor.alpha < 1) {
             let minOpacityDiff = Infinity;
@@ -70,7 +75,8 @@ const findClosestTailwindCSSColor = (cssColor: string) => {
     return tailwindCSSProperty;
 };
 
-const findClosestTailwindCSSOpacity = (cssColorWithOpacity: string) => {
+// findClosestTwcssOpacity finds the closest tailwindcss opacity given the css color opacity.
+const findClosestTwcssOpacity = (cssColorWithOpacity: string) => {
     const color = parseColor(cssColorWithOpacity);
 
     const roundedOpacity = Math.round(color.alpha * 100);
@@ -83,7 +89,8 @@ const findClosestTailwindCSSOpacity = (cssColorWithOpacity: string) => {
     ).toString()}`;
 };
 
-const findClosestTailwindCSSFontSize = (cssFontSize: string) => {
+// findClosestTwcssFontSize finds the closest font size given the css font size.
+const findClosestTwcssFontSize = (cssFontSize: string) => {
     let closestTailwindFontSize = "text-xs";
 
     const parsedCSSFontSize = parseInt(cssFontSize.slice(0, -2), 10);
@@ -102,10 +109,14 @@ const findClosestTailwindCSSFontSize = (cssFontSize: string) => {
     return closestTailwindFontSize;
 };
 
+// "0px" -> 0
 const extractPixelNumberFromString = (pixelStr: string) =>
     parseInt(pixelStr.slice(0, -2), 10);
 
-const findClosestTwClassUsingPixel = (
+// findClosestTwcssClassUsingPixel finds the closest pixel representation in tailwindcss.
+// 4px to 1
+// 8px to 2
+const findClosestTwcssClassUsingPixel = (
     targetPixelStr: string,
     twClassToPixelMap: Record<string, string>,
     defaultClass: string
@@ -128,19 +139,15 @@ const findClosestTwClassUsingPixel = (
     return closestTwClass;
 };
 
-const tailwindTextDecorationMap = {
-    underline: "underline",
-    "line-through": "line-through",
-    none: "no-underline",
-};
-
-const findTailwindTextDecoration = (textDecorationCSSValue: string) => {
+// findTwcssTextDecoration translates text-decoration from css to tailwindcss
+const findTwcssTextDecoration = (textDecorationCSSValue: string) => {
     return tailwindTextDecorationMap[textDecorationCSSValue];
 };
 
-const findClosestTailwindCSSLineHeight = (lineHeight: string): string => {
-    let twClassToUse = "leading-none";
 
+// findClosestTwcssLineHeight finds the closest line-height tailwindcss value given the corresponding css value
+const findClosestTwcssLineHeight = (lineHeight: string): string => {
+    let twClassToUse = "leading-none";
     const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(%|px)$/.exec(lineHeight);
 
     if (regexExecResult) {
@@ -149,7 +156,7 @@ const findClosestTailwindCSSLineHeight = (lineHeight: string): string => {
         let minDiff = Infinity;
 
         Object.entries(twLineHeightMap).forEach(([twClass, cssValue]) => {
-            let diff = -Infinity;
+            let diff = Infinity;
 
             if (unit === "px" && cssValue.endsWith("px")) {
                 diff = Math.abs(
@@ -173,7 +180,8 @@ const findClosestTailwindCSSLineHeight = (lineHeight: string): string => {
     return twClassToUse;
 };
 
-const findClosestTailwindCSSLetterSpacing = (
+// findClosestTwcssLetterSpacing finds the closest tailwindcss letter spacing given the fontsize and css letter spacing
+const findClosestTwcssLetterSpacing = (
     letterSpacing: string,
     fontSize: number
 ): string => {
@@ -205,7 +213,8 @@ const findClosestTailwindCSSLetterSpacing = (
     return twClassToUse;
 };
 
-const findClosestTailwindCSSFontWeight = (fontWeight: string): string => {
+// findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
+const findClosestTwcssFontWeight = (fontWeight: string): string => {
     const givenFontWeight = parseInt(fontWeight);
 
     if (isNaN(givenFontWeight)) return "";
@@ -225,7 +234,9 @@ const findClosestTailwindCSSFontWeight = (fontWeight: string): string => {
     return twClassToUse;
 };
 
-const findClosestTailwindSize = (cssSize: string): string => {
+
+// findClosestTwcssSize finds the closest size in tailwindcss given css value.
+const findClosestTwcssSize = (cssSize: string): string => {
     const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
 
     let twSize = "";
@@ -262,18 +273,14 @@ const findClosestTailwindSize = (cssSize: string): string => {
     return twSize;
 };
 
-const renderTWProperty = (prefix: string, value: string) => {
+// renderTwcssProperty stripes the tailwindcss property prefix if the value is empty.
+const renderTwcssProperty = (prefix: string, value: string) => {
     if (!!value) {
         return prefix + value;
     }
 
     return "";
 };
-
-interface FontMetadata {
-    source: string;
-    tailwindAlias: string;
-}
 
 /**
  *
@@ -283,7 +290,7 @@ interface FontMetadata {
  * @param fonts
  * @returns A Tailwind CSS class as a string
  */
-export const getTailwindCssClass = (
+export const getTwcssClass = (
     cssProperty: string,
     cssValue: string,
     cssAttributes: Attributes,
@@ -295,7 +302,7 @@ export const getTailwindCssClass = (
                 return `h-[${heightNum}px]`;
             }
 
-            return findClosestTwClassUsingPixel(cssValue, twHeightMap, "h-0");
+            return findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
 
         case "width":
             const widthNum = extractPixelNumberFromString(cssValue);
@@ -303,13 +310,13 @@ export const getTailwindCssClass = (
                 return `w-[${widthNum}px]`;
             }
 
-            return findClosestTwClassUsingPixel(cssValue, twWidthMap, "w-0");
+            return findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
 
         case "border-color":
-            return "border-" + findClosestTailwindCSSColor(cssValue);
+            return "border-" + findClosestTwcssColor(cssValue);
 
         case "border-width": {
-            const borderWidthTwSize = findClosestTwClassUsingPixel(
+            const borderWidthTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBroderWidthMap,
                 "0"
@@ -323,7 +330,7 @@ export const getTailwindCssClass = (
         }
 
         case "border-top-width": {
-            const borderTopWidthTwSize = findClosestTwClassUsingPixel(
+            const borderTopWidthTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBroderWidthMap,
                 "0"
@@ -337,7 +344,7 @@ export const getTailwindCssClass = (
         }
 
         case "border-bottom-width": {
-            const borderBottomWidthTwSize = findClosestTwClassUsingPixel(
+            const borderBottomWidthTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBroderWidthMap,
                 "0"
@@ -351,7 +358,7 @@ export const getTailwindCssClass = (
         }
 
         case "border-left-width": {
-            const borderLeftWidthTwSize = findClosestTwClassUsingPixel(
+            const borderLeftWidthTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBroderWidthMap,
                 "0"
@@ -365,7 +372,7 @@ export const getTailwindCssClass = (
         }
 
         case "border-right-width": {
-            const borderRightWidthTwSize = findClosestTwClassUsingPixel(
+            const borderRightWidthTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBroderWidthMap,
                 "0"
@@ -379,7 +386,7 @@ export const getTailwindCssClass = (
         }
 
         case "border-radius": {
-            const borderRadiusTwSize = findClosestTwClassUsingPixel(
+            const borderRadiusTwSize = findClosestTwcssClassUsingPixel(
                 cssValue,
                 twBorderRadiusMap,
                 "none"
@@ -393,7 +400,7 @@ export const getTailwindCssClass = (
         }
 
         case "background-color":
-            return `bg-${findClosestTailwindCSSColor(cssValue)}`;
+            return `bg-${findClosestTwcssColor(cssValue)}`;
 
         case "box-shadow": {
             // A very naive conversion for now, because parsing box-shadow string is too complicated
@@ -543,51 +550,71 @@ export const getTailwindCssClass = (
         }
 
         case "padding": {
-            return renderTWProperty("p-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("p-", findClosestTwcssSize(cssValue));
         }
 
         case "padding-top": {
-            return renderTWProperty("pt-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("pt-", findClosestTwcssSize(cssValue));
         }
 
         case "padding-bottom": {
-            return renderTWProperty("pb-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("pb-", findClosestTwcssSize(cssValue));
         }
 
         case "padding-left": {
-            return renderTWProperty("pl-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("pl-", findClosestTwcssSize(cssValue));
         }
 
         case "padding-right": {
-            return renderTWProperty("pr-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("pr-", findClosestTwcssSize(cssValue));
+        }
+
+        case "margin-top": {
+            return renderTwcssProperty("mt-", findClosestTwcssSize(cssValue));
+        }
+
+        case "margin-bottom": {
+            return renderTwcssProperty("mb-", findClosestTwcssSize(cssValue));
+        }
+
+        case "margin-left": {
+            return renderTwcssProperty("ml-", findClosestTwcssSize(cssValue));
+        }
+
+        case "margin-right": {
+            return renderTwcssProperty("mr-", findClosestTwcssSize(cssValue));
         }
 
         case "gap": {
-            return renderTWProperty("gap-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("gap-", findClosestTwcssSize(cssValue));
         }
 
         case "column-gap": {
-            return renderTWProperty("gap-x-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("gap-x-", findClosestTwcssSize(cssValue));
         }
 
         case "row-gap": {
-            return renderTWProperty("gap-y-", findClosestTailwindSize(cssValue));
+            return renderTwcssProperty("gap-y-", findClosestTwcssSize(cssValue));
         }
 
-        // text properties
-        // case "font-family":
-        //     return `font-${fonts[cssValue].tailwindAlias}`;
+        case "font-family":
+            const alias = FontsRegistryGlobalInstance.getTwcssAlias(cssValue);
+            if (isEmpty(alias)) {
+                return "";
+            }
+
+            return `font-${alias}`;
 
         case "font-size":
-            return findClosestTailwindCSSFontSize(cssValue);
+            return findClosestTwcssFontSize(cssValue);
 
         case "text-decoration":
-            return findTailwindTextDecoration(cssValue);
+            return findTwcssTextDecoration(cssValue);
 
         case "color":
-            return `text-${findClosestTailwindCSSColor(
+            return `text-${findClosestTwcssColor(
                 cssValue
-            )} ${findClosestTailwindCSSOpacity(cssValue)}`;
+            )} ${findClosestTwcssOpacity(cssValue)}`;
 
         case "text-transform":
             switch (cssValue) {
@@ -602,13 +629,19 @@ export const getTailwindCssClass = (
             }
 
         case "line-height": {
-            return findClosestTailwindCSSLineHeight(cssValue);
+            return findClosestTwcssLineHeight(cssValue);
+        }
+
+        case "overflow-wrap": {
+            if (cssValue === "break-word") {
+                return "break-words";
+            }
         }
 
         case "letter-spacing": {
             // assume font size is always in px
             const fontSize = parseInt(cssAttributes["font-size"].slice(0, -2), 10);
-            const twClass = findClosestTailwindCSSLetterSpacing(cssValue, fontSize);
+            const twClass = findClosestTwcssLetterSpacing(cssValue, fontSize);
             return twClass;
         }
 
@@ -631,6 +664,19 @@ export const getTailwindCssClass = (
             }
         }
 
+        case "vertical-align": {
+            switch (cssValue) {
+                case "center":
+                    return "align-middle";
+                case "top":
+                    return "align-top";
+                case "bottom":
+                    return "align-bottom";
+                default:
+                    return "";
+            }
+        }
+
         case "font-style": {
             switch (cssValue) {
                 case "italic":
@@ -643,7 +689,7 @@ export const getTailwindCssClass = (
         }
 
         case "font-weight": {
-            return findClosestTailwindCSSFontWeight(cssValue);
+            return findClosestTwcssFontWeight(cssValue);
         }
 
         default:

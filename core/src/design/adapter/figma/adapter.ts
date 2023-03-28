@@ -1,14 +1,13 @@
-import { GroupNode, Node, TextNode, VectorNode, VisibleNode } from "../../../bricks/node";
+import { GroupNode, Node, TextNode as BricksTextNode, VectorNode, VisibleNode } from "../../../bricks/node";
 import { isEmpty } from "lodash";
-import { BoundingBoxCoordinates, Attributes } from "../node";
+import { BoxCoordinates, Attributes } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
   rgbaToString,
+  isFrameNodeTransparent,
 } from "./util";
-import { GoogleFonts } from "../../../google/google-fonts";
-
-const googleFontsMetadata = new GoogleFonts();
+import { GoogleFontsInstance } from "../../../google/google-fonts";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -19,8 +18,17 @@ enum NodeType {
   RECTANGLE = "RECTANGLE"
 }
 
+// getCSSAttributes extracts styling information from figmaNode to css attributes
 const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
+
+  if (figmaNode.type === NodeType.GROUP) {
+    // width
+    attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+
+    // height
+    attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+  };
 
   if (figmaNode.type === NodeType.FRAME || figmaNode.type === NodeType.RECTANGLE) {
     // corner radius
@@ -137,7 +145,7 @@ const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
     if (figmaNode.fontName !== figma.mixed) {
       attributes[
         "font-family"
-      ] = `'${fontFamily}', ${googleFontsMetadata.getGenericFontFamily(
+      ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
         fontFamily
       )}`;
     }
@@ -150,25 +158,41 @@ const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
     // width and height
     const { absoluteRenderBounds } = figmaNode;
 
-    switch (figmaNode.textAutoResize) {
-      case "NONE": {
-        attributes["width"] = `${absoluteRenderBounds.width}px`;
-        attributes["height"] = `${absoluteRenderBounds.height}px`;
-        break;
-      }
-      case "HEIGHT": {
-        attributes["width"] = `${absoluteRenderBounds.width}px`;
-        break;
-      }
-      case "WIDTH_AND_HEIGHT": {
-        // do nothing
-        break;
-      }
-      case "TRUNCATE": {
-        attributes["width"] = `${absoluteRenderBounds.width}px`;
-        attributes["height"] = `${absoluteRenderBounds.height}px`;
-        attributes["text-overflow"] = "ellipsis";
-        break;
+    const boundingBoxWidth = figmaNode.absoluteBoundingBox.width;
+    const renderBoundsWidth = figmaNode.absoluteRenderBounds.width;
+    const renderBoundsHeight = figmaNode.absoluteRenderBounds.height;
+
+    let moreThanOneRow: boolean = false;
+    if (figmaNode.fontSize !== figma.mixed) {
+      moreThanOneRow = renderBoundsHeight > figmaNode.fontSize;
+    }
+
+    let width = absoluteRenderBounds.width + 2;
+    if (Math.abs(figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width) / figmaNode.absoluteBoundingBox.width > 0.2) {
+      width = absoluteRenderBounds.width + 4;
+    }
+
+    if (moreThanOneRow) {
+      switch (figmaNode.textAutoResize) {
+        case "NONE": {
+          attributes["width"] = `${width}px`;
+          attributes["height"] = `${absoluteRenderBounds.height}px`;
+          break;
+        }
+        case "HEIGHT": {
+          attributes["width"] = `${width}px`;
+          break;
+        }
+        case "WIDTH_AND_HEIGHT": {
+          // do nothing
+          break;
+        }
+        case "TRUNCATE": {
+          attributes["width"] = `${width}px`;
+          attributes["height"] = `${absoluteRenderBounds.height}px`;
+          attributes["text-overflow"] = "ellipsis";
+          break;
+        }
       }
     }
 
@@ -195,18 +219,45 @@ const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
       );
     }
 
-    // text alignment
-    switch (figmaNode.textAlignHorizontal) {
-      case "CENTER":
-        attributes["text-align"] = "center";
-        break;
-      case "RIGHT":
-        attributes["text-align"] = "right";
-        break;
-      case "JUSTIFIED":
-        attributes["text-align"] = "justify";
-        break;
+    const textContainingOnlyOneWord = figmaNode.characters.split(" ").length === 1;
+
+    if (moreThanOneRow && textContainingOnlyOneWord) {
+      attributes["overflow-wrap"] = "break-word";
     }
+
+    // If bounding box and rendering box are similar in size, horizontal text alignment doesn't have any
+    // actual effects therefore should be always considered as "text-align": "left" when there is only one row
+    if (Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth > 0.1 || moreThanOneRow) {
+      // text alignment
+      switch (figmaNode.textAlignHorizontal) {
+        case "CENTER":
+          attributes["text-align"] = "center";
+          break;
+        case "RIGHT":
+          attributes["text-align"] = "right";
+          break;
+        case "JUSTIFIED":
+          attributes["text-align"] = "justify";
+          break;
+      }
+    }
+
+    /* 
+    TODO: 
+    This field is causing styling differences between Figma design and rendered Bricks components.
+    Need a more comprehensive solution other than direct translation.
+    */
+    // switch (figmaNode.textAlignVertical) {
+    //   case "CENTER":
+    //     attributes["vertical-align"] = "middle";
+    //     break;
+    //   case "TOP":
+    //     attributes["vertical-align"] = "top";
+    //     break;
+    //   case "BOTTOM":
+    //     attributes["vertical-align"] = "bottom";
+    //     break;
+    // }
 
     // line height
     const lineHeight = figmaNode.lineHeight;
@@ -264,7 +315,7 @@ const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
 }
 
 export class FigmaNodeAdapter {
-  private node: SceneNode;
+  node: SceneNode;
   private cssAttributes: Attributes;
   constructor(node: SceneNode) {
     this.node = node;
@@ -279,22 +330,41 @@ export class FigmaNodeAdapter {
     return this.node.type;
   }
 
-  getText(): string {
-    // @ts-ignore
-    if (isEmpty(this.node.characters)) {
-      return "";
-    }
-
-    // @ts-ignore
-    return this.node.characters;
-  }
-
   getOriginalId() {
     return this.node.id;
   }
 
-  getBoundingBoxCoordinates(): BoundingBoxCoordinates {
-    const boundingBox = this.node.absoluteBoundingBox;
+  getAbsoluteBoundingBoxCoordinates(): BoxCoordinates {
+    let boundingBox = this.node.absoluteBoundingBox;
+
+    return {
+      leftTop: {
+        x: boundingBox.x,
+        y: boundingBox.y,
+      },
+      leftBot: {
+        x: boundingBox.x,
+        y: boundingBox.y + boundingBox.height,
+      },
+      rightTop: {
+        x: boundingBox.x + boundingBox.width,
+        y: boundingBox.y,
+      },
+      rightBot: {
+        x: boundingBox.x + boundingBox.width,
+        y: boundingBox.y + boundingBox.height,
+      },
+    };
+  }
+
+  getRenderingBoundsCoordinates(): BoxCoordinates {
+    let boundingBox = this.node.absoluteBoundingBox;
+    // @ts-ignore
+
+    if (this.node.absoluteRenderBounds) {
+      // @ts-ignore
+      boundingBox = this.node.absoluteRenderBounds;
+    }
 
     return {
       leftTop: {
@@ -317,6 +387,43 @@ export class FigmaNodeAdapter {
   }
 }
 
+export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
+  node: TextNode;
+  constructor(node: TextNode) {
+    super(node);
+    this.node = node;
+  }
+
+  getFamilyName(): string {
+
+    // @ts-ignore
+    if (this.node.fontName.family) {
+      // @ts-ignore
+      return this.node.fontName.family;
+
+    }
+
+    return "";
+  }
+
+  isItalic(): boolean {
+
+    // @ts-ignore
+    return !!(this.node.fontName?.style.toLowerCase().includes("italic"));
+  }
+
+  getText(): string {
+    // @ts-ignore
+    if (isEmpty(this.node.characters)) {
+      return "";
+    }
+
+    // @ts-ignore
+    return this.node.characters;
+  }
+}
+
+// convertFigmaNodesToBricksNodes converts Figma nodes to Bricks nodes.s
 export const convertFigmaNodesToBricksNodes = (figmaNodes: readonly SceneNode[]): Node[] => {
   let reordered = [...figmaNodes];
   if (reordered.length > 1) {
@@ -332,18 +439,20 @@ export const convertFigmaNodesToBricksNodes = (figmaNodes: readonly SceneNode[])
   let result: Node[] = [];
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
-    console.log("figmaNode.type: ", figmaNode.type);
-    console.log("figmaNode.visible: ", figmaNode.visible);
     if (figmaNode.visible) {
       const adaptedNode = new FigmaNodeAdapter(figmaNode);
-
       let newNode: Node = new VisibleNode(adaptedNode);
       switch (figmaNode.type) {
         case NodeType.GROUP:
           newNode = new GroupNode([]);
           break;
+        case NodeType.FRAME:
+          if (isFrameNodeTransparent(figmaNode)) {
+            newNode = new GroupNode([]);
+          }
+          break;
         case NodeType.TEXT:
-          newNode = new TextNode(adaptedNode)
+          newNode = new BricksTextNode(new FigmaTextNodeAdapter(figmaNode))
           break;
         case NodeType.VECTOR:
         case NodeType.ELLIPSE:

@@ -2,15 +2,19 @@ import React, { useContext, PropsWithChildren } from "react";
 import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
+import { CssFramework, UiFramework, Language } from "../constants";
 
 export interface Props {
   connectedToVSCode: boolean;
+  selectedUiFramework: UiFramework,
+  selectedCssFramework: CssFramework,
+  selectedLanguage: Language,
   isComponentSelected: boolean;
   setIsGeneratingCode: (value: boolean) => void;
 }
 
 const Home = (props: PropsWithChildren<Props>) => {
-  const { connectedToVSCode, isComponentSelected, setIsGeneratingCode } = props;
+  const { connectedToVSCode, isComponentSelected, setIsGeneratingCode, selectedUiFramework, selectedCssFramework, selectedLanguage } = props;
 
   const { setCurrentPage } = useContext(PageContext);
 
@@ -18,7 +22,10 @@ const Home = (props: PropsWithChildren<Props>) => {
     parent.postMessage(
       {
         pluginMessage: {
-          type: "generate-styled-bricks-nodes",
+          type: selectedUiFramework === UiFramework.react && selectedCssFramework === CssFramework.tailwindcss ? "new-styled-bricks-nodes" : "styled-bricks-nodes",
+          options: {
+            language: selectedLanguage,
+          },
         },
       },
       "*"

@@ -5,7 +5,7 @@ import {
   isAutoLayout,
   rgbaToString,
 } from "./utils";
-import { computeURL, GoogleFonts } from "./google/google-fonts";
+import { computeURL, GoogleFontsInstance } from "./google/google-fonts";
 import base64js from "base64-js";
 
 export type StyledBricksNode =
@@ -13,7 +13,6 @@ export type StyledBricksNode =
   | BricksTextNode
   | BricksSvgNode;
 
-const googleFontsMetadata = new GoogleFonts();
 
 export class BricksElementNode {
   readonly type = "element";
@@ -407,7 +406,7 @@ export class BricksTextNode {
     if (figmaNode.fontName !== figma.mixed) {
       this.attributes[
         "font-family"
-      ] = `'${fontFamily}', ${googleFontsMetadata.getGenericFontFamily(
+      ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
         fontFamily
       )}`;
     }
