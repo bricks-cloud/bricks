@@ -1,9 +1,5 @@
 import { isEmpty } from "lodash";
-import {
-  Node,
-  PostionalRelationship,
-  GroupNode,
-} from "./node";
+import { Node, PostionalRelationship, GroupNode } from "./node";
 
 const overlapAnnotation: string = "checkedForOverlap";
 
@@ -27,7 +23,11 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
       continue;
     }
 
-    const overlappingNodes = findOverlappingNodes(currentNode, nodes, new Set());
+    const overlappingNodes = findOverlappingNodes(
+      currentNode,
+      nodes,
+      new Set()
+    );
 
     if (isEmpty(overlappingNodes)) {
       processed.push(currentNode);
@@ -47,7 +47,11 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
 };
 
 // findOverlappingNodes finds all the overlapping nodes given a starting node.
-export const findOverlappingNodes = (startingNode: Node, targetNodes: Node[], currentPath: Set<string>): Node[] => {
+export const findOverlappingNodes = (
+  startingNode: Node,
+  targetNodes: Node[],
+  currentPath: Set<string>
+): Node[] => {
   for (let i = 0; i < targetNodes.length; i++) {
     let targetNode = targetNodes[i];
 
@@ -57,7 +61,10 @@ export const findOverlappingNodes = (startingNode: Node, targetNodes: Node[], cu
 
     const overlappingNodes = [];
 
-    if (startingNode.getPositionalRelationship(targetNode) === PostionalRelationship.OVERLAP) {
+    if (
+      startingNode.getPositionalRelationship(targetNode) ===
+      PostionalRelationship.OVERLAP
+    ) {
       overlappingNodes.push(targetNode);
 
       if (!currentPath.has(startingNode.getId())) {
@@ -70,7 +77,11 @@ export const findOverlappingNodes = (startingNode: Node, targetNodes: Node[], cu
 
     let completePath = [...overlappingNodes];
     for (const overlappingNode of overlappingNodes) {
-      const result = findOverlappingNodes(overlappingNode, targetNodes, currentPath);
+      const result = findOverlappingNodes(
+        overlappingNode,
+        targetNodes,
+        currentPath
+      );
       completePath = completePath.concat(...result);
     }
 

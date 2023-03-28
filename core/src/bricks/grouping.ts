@@ -1,10 +1,11 @@
 import { isEmpty } from "lodash";
-import {
-  Node,
-} from "./node";
+import { Node } from "./node";
 import { Direction } from "./direction";
-import { decideBetweenDirectionalOverlappingNodes, groupNodesByDirectionalOverlap } from "./directional-overlap";
-import { groupNodesByOverlap } from "./overlap"
+import {
+  decideBetweenDirectionalOverlappingNodes,
+  groupNodesByDirectionalOverlap,
+} from "./directional-overlap";
+import { groupNodesByOverlap } from "./overlap";
 import { groupNodesByInclusion } from "./inclusion";
 
 export const groupNodes = (parentNode: Node): Node => {
@@ -21,10 +22,18 @@ export const groupNodes = (parentNode: Node): Node => {
   let groupedNodes = groupNodesByInclusion(children);
   groupedNodes = groupNodesByOverlap(groupedNodes);
 
-  const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(groupedNodes, Direction.HORIZONTAL);
-  const verticalSegmentedNodes = groupNodesByDirectionalOverlap(groupedNodes, Direction.VERTICAL);
-  const decided = decideBetweenDirectionalOverlappingNodes(horizontalSegmentedNodes, verticalSegmentedNodes);
-
+  const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(
+    groupedNodes,
+    Direction.HORIZONTAL
+  );
+  const verticalSegmentedNodes = groupNodesByDirectionalOverlap(
+    groupedNodes,
+    Direction.VERTICAL
+  );
+  const decided = decideBetweenDirectionalOverlappingNodes(
+    horizontalSegmentedNodes,
+    verticalSegmentedNodes
+  );
 
   if (!isEmpty(decided)) {
     groupedNodes = decided;

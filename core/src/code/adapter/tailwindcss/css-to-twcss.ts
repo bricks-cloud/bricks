@@ -1,18 +1,18 @@
 import parseColor from "color-parse";
 import { isEmpty } from "lodash";
 import {
-    twBorderRadiusMap,
-    twBroderWidthMap,
-    twColorMap,
-    twFontSizeMap,
-    twFontWeightMap,
-    twHeightMap,
-    twLetterSpacingMap,
-    twLineHeightMap,
-    twOpacities,
-    twUnitMap,
-    twWidthMap,
-    tailwindTextDecorationMap,
+  twBorderRadiusMap,
+  twBroderWidthMap,
+  twColorMap,
+  twFontSizeMap,
+  twFontWeightMap,
+  twHeightMap,
+  twLetterSpacingMap,
+  twLineHeightMap,
+  twOpacities,
+  twUnitMap,
+  twWidthMap,
+  tailwindTextDecorationMap,
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
@@ -22,264 +22,261 @@ const largestTWCWidthInPixels = 384;
 
 // findClosestTwcssColor finds the closest tailwindcss color to css color.
 const findClosestTwcssColor = (cssColor: string) => {
-    if (cssColor === "inherit") {
-        return "inherit";
-    }
+  if (cssColor === "inherit") {
+    return "inherit";
+  }
 
-    if (cssColor === "currentColor") {
-        return "current";
-    }
+  if (cssColor === "currentColor") {
+    return "current";
+  }
 
-    const givenColor = parseColor(cssColor);
+  const givenColor = parseColor(cssColor);
 
-    let tailwindCSSProperty = "";
+  let tailwindCSSProperty = "";
 
-    if (givenColor.space) {
-        let minColorDiff = Infinity;
-        let twColorClassToUse = "black";
+  if (givenColor.space) {
+    let minColorDiff = Infinity;
+    let twColorClassToUse = "black";
 
-        const [r, g, b] = givenColor.values;
-        Object.entries(twColorMap).forEach(([twClass, twColorString]) => {
-            const parsedTwColor = parseColor(twColorString);
+    const [r, g, b] = givenColor.values;
+    Object.entries(twColorMap).forEach(([twClass, twColorString]) => {
+      const parsedTwColor = parseColor(twColorString);
 
-            if (parsedTwColor.alpha !== 0) {
-                const [targetR, targetG, targetB] = parsedTwColor.values;
-                const diff =
-                    Math.abs(targetR - r) + Math.abs(targetG - g) + Math.abs(targetB - b);
-                if (diff < minColorDiff) {
-                    minColorDiff = diff;
-                    twColorClassToUse = twClass;
-                }
-            }
-        });
-
-        tailwindCSSProperty += twColorClassToUse;
-
-
-        if (givenColor.alpha < 1) {
-            let minOpacityDiff = Infinity;
-            let twOpacityToUse = 1;
-
-            twOpacities.forEach((twOpacity) => {
-                const diff = Math.abs(givenColor.alpha - twOpacity);
-                if (diff < minOpacityDiff) {
-                    minOpacityDiff = diff;
-                    twOpacityToUse = twOpacity;
-                }
-            });
-
-            tailwindCSSProperty += `/${twOpacityToUse * 100}`;
+      if (parsedTwColor.alpha !== 0) {
+        const [targetR, targetG, targetB] = parsedTwColor.values;
+        const diff =
+          Math.abs(targetR - r) + Math.abs(targetG - g) + Math.abs(targetB - b);
+        if (diff < minColorDiff) {
+          minColorDiff = diff;
+          twColorClassToUse = twClass;
         }
-    }
+      }
+    });
 
-    return tailwindCSSProperty;
+    tailwindCSSProperty += twColorClassToUse;
+
+    if (givenColor.alpha < 1) {
+      let minOpacityDiff = Infinity;
+      let twOpacityToUse = 1;
+
+      twOpacities.forEach((twOpacity) => {
+        const diff = Math.abs(givenColor.alpha - twOpacity);
+        if (diff < minOpacityDiff) {
+          minOpacityDiff = diff;
+          twOpacityToUse = twOpacity;
+        }
+      });
+
+      tailwindCSSProperty += `/${twOpacityToUse * 100}`;
+    }
+  }
+
+  return tailwindCSSProperty;
 };
 
 // findClosestTwcssOpacity finds the closest tailwindcss opacity given the css color opacity.
 const findClosestTwcssOpacity = (cssColorWithOpacity: string) => {
-    const color = parseColor(cssColorWithOpacity);
+  const color = parseColor(cssColorWithOpacity);
 
-    const roundedOpacity = Math.round(color.alpha * 100);
+  const roundedOpacity = Math.round(color.alpha * 100);
 
-    const closetNumber = Math.floor(roundedOpacity / 5) * 5;
+  const closetNumber = Math.floor(roundedOpacity / 5) * 5;
 
-    return `text-opacity-${(roundedOpacity % 5 >= 3
-        ? closetNumber + 5
-        : closetNumber
-    ).toString()}`;
+  return `text-opacity-${(roundedOpacity % 5 >= 3
+    ? closetNumber + 5
+    : closetNumber
+  ).toString()}`;
 };
 
 // findClosestTwcssFontSize finds the closest font size given the css font size.
 const findClosestTwcssFontSize = (cssFontSize: string) => {
-    let closestTailwindFontSize = "text-xs";
+  let closestTailwindFontSize = "text-xs";
 
-    const parsedCSSFontSize = parseInt(cssFontSize.slice(0, -2), 10);
-    let smallestDiff = Infinity;
+  const parsedCSSFontSize = parseInt(cssFontSize.slice(0, -2), 10);
+  let smallestDiff = Infinity;
 
-    Object.entries(twFontSizeMap).forEach(([key, val]) => {
-        const parsedTailwindCSSFontSize = parseInt(val.slice(0, -2), 10);
-        const diff = parsedTailwindCSSFontSize - parsedCSSFontSize;
+  Object.entries(twFontSizeMap).forEach(([key, val]) => {
+    const parsedTailwindCSSFontSize = parseInt(val.slice(0, -2), 10);
+    const diff = parsedTailwindCSSFontSize - parsedCSSFontSize;
 
-        if (diff <= smallestDiff && diff >= 0) {
-            smallestDiff = diff;
-            closestTailwindFontSize = key;
-        }
-    });
+    if (diff <= smallestDiff && diff >= 0) {
+      smallestDiff = diff;
+      closestTailwindFontSize = key;
+    }
+  });
 
-    return closestTailwindFontSize;
+  return closestTailwindFontSize;
 };
 
 // "0px" -> 0
 const extractPixelNumberFromString = (pixelStr: string) =>
-    parseInt(pixelStr.slice(0, -2), 10);
+  parseInt(pixelStr.slice(0, -2), 10);
 
 // findClosestTwcssClassUsingPixel finds the closest pixel representation in tailwindcss.
 // 4px to 1
 // 8px to 2
 const findClosestTwcssClassUsingPixel = (
-    targetPixelStr: string,
-    twClassToPixelMap: Record<string, string>,
-    defaultClass: string
+  targetPixelStr: string,
+  twClassToPixelMap: Record<string, string>,
+  defaultClass: string
 ) => {
-    let closestTwClass = defaultClass;
-    const targetPixelNum = extractPixelNumberFromString(targetPixelStr);
+  let closestTwClass = defaultClass;
+  const targetPixelNum = extractPixelNumberFromString(targetPixelStr);
 
-    let smallestDiff = Infinity;
-    Object.entries(twClassToPixelMap).forEach(([key, val]) => {
-        const pixelNum = extractPixelNumberFromString(val);
-        if (val.endsWith("px")) {
-            const diff = Math.abs(targetPixelNum - pixelNum);
-            if (diff < smallestDiff) {
-                smallestDiff = diff;
-                closestTwClass = key;
-            }
-        }
-    });
+  let smallestDiff = Infinity;
+  Object.entries(twClassToPixelMap).forEach(([key, val]) => {
+    const pixelNum = extractPixelNumberFromString(val);
+    if (val.endsWith("px")) {
+      const diff = Math.abs(targetPixelNum - pixelNum);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestTwClass = key;
+      }
+    }
+  });
 
-    return closestTwClass;
+  return closestTwClass;
 };
 
 // findTwcssTextDecoration translates text-decoration from css to tailwindcss
 const findTwcssTextDecoration = (textDecorationCSSValue: string) => {
-    return tailwindTextDecorationMap[textDecorationCSSValue];
+  return tailwindTextDecorationMap[textDecorationCSSValue];
 };
-
 
 // findClosestTwcssLineHeight finds the closest line-height tailwindcss value given the corresponding css value
 const findClosestTwcssLineHeight = (lineHeight: string): string => {
-    let twClassToUse = "leading-none";
-    const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(%|px)$/.exec(lineHeight);
+  let twClassToUse = "leading-none";
+  const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(%|px)$/.exec(lineHeight);
 
-    if (regexExecResult) {
-        const [_, givenLineHeight, unit] = regexExecResult;
+  if (regexExecResult) {
+    const [_, givenLineHeight, unit] = regexExecResult;
 
-        let minDiff = Infinity;
+    let minDiff = Infinity;
 
-        Object.entries(twLineHeightMap).forEach(([twClass, cssValue]) => {
-            let diff = Infinity;
+    Object.entries(twLineHeightMap).forEach(([twClass, cssValue]) => {
+      let diff = Infinity;
 
-            if (unit === "px" && cssValue.endsWith("px")) {
-                diff = Math.abs(
-                    parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2))
-                );
-            }
+      if (unit === "px" && cssValue.endsWith("px")) {
+        diff = Math.abs(
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2))
+        );
+      }
 
-            if (unit === "%" && cssValue.endsWith("%")) {
-                diff = Math.abs(
-                    parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1))
-                );
-            }
+      if (unit === "%" && cssValue.endsWith("%")) {
+        diff = Math.abs(
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1))
+        );
+      }
 
-            if (diff < minDiff) {
-                minDiff = diff;
-                twClassToUse = twClass;
-            }
-        });
-    }
+      if (diff < minDiff) {
+        minDiff = diff;
+        twClassToUse = twClass;
+      }
+    });
+  }
 
-    return twClassToUse;
+  return twClassToUse;
 };
 
 // findClosestTwcssLetterSpacing finds the closest tailwindcss letter spacing given the fontsize and css letter spacing
 const findClosestTwcssLetterSpacing = (
-    letterSpacing: string,
-    fontSize: number
+  letterSpacing: string,
+  fontSize: number
 ): string => {
-    let twClassToUse = "tracking-normal";
+  let twClassToUse = "tracking-normal";
 
-    const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|em)$/.exec(letterSpacing);
+  const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|em)$/.exec(letterSpacing);
 
-    if (regexExecResult) {
-        const [_, givenLetterSpacing, unit] = regexExecResult;
+  if (regexExecResult) {
+    const [_, givenLetterSpacing, unit] = regexExecResult;
 
-        const givenLetterSpacingInEm =
-            unit === "em"
-                ? parseFloat(givenLetterSpacing)
-                : parseFloat(givenLetterSpacing) / fontSize;
+    const givenLetterSpacingInEm =
+      unit === "em"
+        ? parseFloat(givenLetterSpacing)
+        : parseFloat(givenLetterSpacing) / fontSize;
 
-        let minDiff = Infinity;
+    let minDiff = Infinity;
 
-        Object.entries(twLetterSpacingMap).forEach(([twClass, cssValue]) => {
-            const diff = Math.abs(
-                givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2))
-            );
-            if (diff < minDiff) {
-                minDiff = diff;
-                twClassToUse = twClass;
-            }
-        });
-    }
+    Object.entries(twLetterSpacingMap).forEach(([twClass, cssValue]) => {
+      const diff = Math.abs(
+        givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2))
+      );
+      if (diff < minDiff) {
+        minDiff = diff;
+        twClassToUse = twClass;
+      }
+    });
+  }
 
-    return twClassToUse;
+  return twClassToUse;
 };
 
 // findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
 const findClosestTwcssFontWeight = (fontWeight: string): string => {
-    const givenFontWeight = parseInt(fontWeight);
+  const givenFontWeight = parseInt(fontWeight);
 
-    if (isNaN(givenFontWeight)) return "";
+  if (isNaN(givenFontWeight)) return "";
 
-    let minDiff = Infinity;
-    let twClassToUse = "";
+  let minDiff = Infinity;
+  let twClassToUse = "";
 
-    Object.entries(twFontWeightMap).forEach(([twClass, twFontWeight]) => {
-        const diff = Math.abs(twFontWeight - givenFontWeight);
+  Object.entries(twFontWeightMap).forEach(([twClass, twFontWeight]) => {
+    const diff = Math.abs(twFontWeight - givenFontWeight);
 
-        if (diff < minDiff) {
-            minDiff = diff;
-            twClassToUse = twClass;
-        }
-    });
+    if (diff < minDiff) {
+      minDiff = diff;
+      twClassToUse = twClass;
+    }
+  });
 
-    return twClassToUse;
+  return twClassToUse;
 };
-
 
 // findClosestTwcssSize finds the closest size in tailwindcss given css value.
 const findClosestTwcssSize = (cssSize: string): string => {
-    const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
+  const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
 
-    let twSize = "";
+  let twSize = "";
 
-    if (regexExecResult) {
-        const [_, givenPaddingStr, givenUnit] = regexExecResult;
-        const givenPadding = parseFloat(givenPaddingStr);
+  if (regexExecResult) {
+    const [_, givenPaddingStr, givenUnit] = regexExecResult;
+    const givenPadding = parseFloat(givenPaddingStr);
 
-        let minDiff = Infinity;
+    let minDiff = Infinity;
 
-        Object.entries(twUnitMap).forEach(([twValue, cssValue]) => {
-            let diff: number = Infinity;
+    Object.entries(twUnitMap).forEach(([twValue, cssValue]) => {
+      let diff: number = Infinity;
 
-            if (givenUnit === "px" && cssValue.endsWith("px")) {
-                diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -2)));
-            }
+      if (givenUnit === "px" && cssValue.endsWith("px")) {
+        diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -2)));
+      }
 
-            if (givenUnit === "px" && cssValue.endsWith("rem")) {
-                // assume root font size equals 16px, which is true in most cases
-                diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -3)) * 16);
-            }
+      if (givenUnit === "px" && cssValue.endsWith("rem")) {
+        // assume root font size equals 16px, which is true in most cases
+        diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -3)) * 16);
+      }
 
-            if (givenUnit === "rem" && cssValue.endsWith("rem")) {
-                diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -3)));
-            }
+      if (givenUnit === "rem" && cssValue.endsWith("rem")) {
+        diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -3)));
+      }
 
-            if (diff < minDiff) {
-                minDiff = diff;
-                twSize = twValue;
-            }
-        });
-    }
+      if (diff < minDiff) {
+        minDiff = diff;
+        twSize = twValue;
+      }
+    });
+  }
 
-    return twSize;
+  return twSize;
 };
 
 // renderTwcssProperty stripes the tailwindcss property prefix if the value is empty.
 const renderTwcssProperty = (prefix: string, value: string) => {
-    if (!!value) {
-        return prefix + value;
-    }
+  if (!!value) {
+    return prefix + value;
+  }
 
-    return "";
+  return "";
 };
 
 /**
@@ -291,408 +288,408 @@ const renderTwcssProperty = (prefix: string, value: string) => {
  * @returns A Tailwind CSS class as a string
  */
 export const getTwcssClass = (
-    cssProperty: string,
-    cssValue: string,
-    cssAttributes: Attributes,
+  cssProperty: string,
+  cssValue: string,
+  cssAttributes: Attributes
 ): string => {
-    switch (cssProperty) {
-        case "height":
-            const heightNum = extractPixelNumberFromString(cssValue);
-            if (heightNum > largestTWCHeightInPixels) {
-                return `h-[${heightNum}px]`;
-            }
+  switch (cssProperty) {
+    case "height":
+      const heightNum = extractPixelNumberFromString(cssValue);
+      if (heightNum > largestTWCHeightInPixels) {
+        return `h-[${heightNum}px]`;
+      }
 
-            return findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
+      return findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
 
-        case "width":
-            const widthNum = extractPixelNumberFromString(cssValue);
-            if (widthNum > largestTWCWidthInPixels) {
-                return `w-[${widthNum}px]`;
-            }
+    case "width":
+      const widthNum = extractPixelNumberFromString(cssValue);
+      if (widthNum > largestTWCWidthInPixels) {
+        return `w-[${widthNum}px]`;
+      }
 
-            return findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
+      return findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
 
-        case "border-color":
-            return "border-" + findClosestTwcssColor(cssValue);
+    case "border-color":
+      return "border-" + findClosestTwcssColor(cssValue);
 
-        case "border-width": {
-            const borderWidthTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBroderWidthMap,
-                "0"
-            );
+    case "border-width": {
+      const borderWidthTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBroderWidthMap,
+        "0"
+      );
 
-            if (borderWidthTwSize === "0") return "";
+      if (borderWidthTwSize === "0") return "";
 
-            return borderWidthTwSize === ""
-                ? "border"
-                : "border-" + borderWidthTwSize;
-        }
-
-        case "border-top-width": {
-            const borderTopWidthTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBroderWidthMap,
-                "0"
-            );
-
-            if (borderTopWidthTwSize === "0") return "";
-
-            return borderTopWidthTwSize === ""
-                ? "border-t"
-                : "border-t-" + borderTopWidthTwSize;
-        }
-
-        case "border-bottom-width": {
-            const borderBottomWidthTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBroderWidthMap,
-                "0"
-            );
-
-            if (borderBottomWidthTwSize === "0") return "";
-
-            return borderBottomWidthTwSize === ""
-                ? "border-b"
-                : "border-b-" + borderBottomWidthTwSize;
-        }
-
-        case "border-left-width": {
-            const borderLeftWidthTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBroderWidthMap,
-                "0"
-            );
-
-            if (borderLeftWidthTwSize === "0") return "";
-
-            return borderLeftWidthTwSize === ""
-                ? "border-l"
-                : "border-l-" + borderLeftWidthTwSize;
-        }
-
-        case "border-right-width": {
-            const borderRightWidthTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBroderWidthMap,
-                "0"
-            );
-
-            if (borderRightWidthTwSize === "0") return "";
-
-            return borderRightWidthTwSize === ""
-                ? "border-r"
-                : "border-r-" + borderRightWidthTwSize;
-        }
-
-        case "border-radius": {
-            const borderRadiusTwSize = findClosestTwcssClassUsingPixel(
-                cssValue,
-                twBorderRadiusMap,
-                "none"
-            );
-            if (borderRadiusTwSize === "0") {
-                return "";
-            }
-            return borderRadiusTwSize === ""
-                ? "rounded"
-                : "rounded-" + borderRadiusTwSize;
-        }
-
-        case "background-color":
-            return `bg-${findClosestTwcssColor(cssValue)}`;
-
-        case "box-shadow": {
-            // A very naive conversion for now, because parsing box-shadow string is too complicated
-            if (cssValue.includes("inset")) {
-                // inner shadow
-                return "shadow-inner";
-            } else {
-                // drop shadow
-                return "shadow";
-            }
-        }
-
-        case "display": {
-            switch (cssValue) {
-                case "block":
-                    return "block";
-                case "inline-block":
-                    return "inline-block";
-                case "inline":
-                    return "inline";
-                case "flex":
-                    return "flex";
-                case "inline-flex":
-                    return "inline-flex";
-                case "table":
-                    return "table";
-                case "inline-table":
-                    return "inline-table";
-                case "table-caption":
-                    return "table-caption";
-                case "table-cell":
-                    return "table-cell";
-                case "table-column":
-                    return "table-column";
-                case "table-column-group":
-                    return "table-column-group";
-                case "table-footer-group":
-                    return "table-footer-group";
-                case "table-header-group":
-                    return "table-header-group";
-                case "table-row-group":
-                    return "table-row-group";
-                case "table-row":
-                    return "table-row";
-                case "flow-root":
-                    return "flow-root";
-                case "grid":
-                    return "grid";
-                case "inline-grid":
-                    return "inline-grid";
-                case "contents":
-                    return "contents";
-                case "list-item":
-                    return "list-item";
-                case "none":
-                    return "hidden";
-                default:
-                    return "";
-            }
-        }
-
-        case "flex-direction": {
-            switch (cssValue) {
-                case "row":
-                    return "flex-row";
-                case "row-reverse":
-                    return "flex-row-reverse";
-                case "column":
-                    return "flex-col";
-                case "column-reverse":
-                    return "flex-col-reverse";
-                default:
-                    return "";
-            }
-        }
-
-        case "justify-content": {
-            switch (cssValue) {
-                case "flex-start":
-                    return "justify-start";
-                case "flex-end":
-                    return "justify-end";
-                case "center":
-                    return "justify-center";
-                case "space-between":
-                    return "justify-between";
-                case "space-around":
-                    return "justify-around";
-                case "space-evenly":
-                    return "justify-evenly";
-                default:
-                    return "";
-            }
-        }
-
-        case "align-items": {
-            switch (cssValue) {
-                case "flex-start":
-                    return "items-start";
-                case "flex-end":
-                    return "items-end";
-                case "center":
-                    return "items-center";
-                case "baseline":
-                    return "items-baseline";
-                case "stretch":
-                    return "items-stretch";
-                default:
-                    return "";
-            }
-        }
-
-        case "border-style": {
-            switch (cssValue) {
-                case "solid":
-                    return "border-solid";
-                case "dashed":
-                    return "border-dashed";
-                case "dotted":
-                    return "border-dotted";
-                case "double":
-                    return "border-double";
-                case "hidden":
-                    return "border-hidden";
-                case "none":
-                    return "border-none";
-                default:
-                    return "";
-            }
-        }
-
-        case "object-fit": {
-            switch (cssValue) {
-                case "contain":
-                    return "object-contain";
-                case "cover":
-                    return "object-cover";
-                case "fill":
-                    return "object-fill";
-                case "none":
-                    return "object-none";
-                case "scale-down":
-                    return "object-scale-down";
-                default:
-                    return "";
-            }
-        }
-
-        case "padding": {
-            return renderTwcssProperty("p-", findClosestTwcssSize(cssValue));
-        }
-
-        case "padding-top": {
-            return renderTwcssProperty("pt-", findClosestTwcssSize(cssValue));
-        }
-
-        case "padding-bottom": {
-            return renderTwcssProperty("pb-", findClosestTwcssSize(cssValue));
-        }
-
-        case "padding-left": {
-            return renderTwcssProperty("pl-", findClosestTwcssSize(cssValue));
-        }
-
-        case "padding-right": {
-            return renderTwcssProperty("pr-", findClosestTwcssSize(cssValue));
-        }
-
-        case "margin-top": {
-            return renderTwcssProperty("mt-", findClosestTwcssSize(cssValue));
-        }
-
-        case "margin-bottom": {
-            return renderTwcssProperty("mb-", findClosestTwcssSize(cssValue));
-        }
-
-        case "margin-left": {
-            return renderTwcssProperty("ml-", findClosestTwcssSize(cssValue));
-        }
-
-        case "margin-right": {
-            return renderTwcssProperty("mr-", findClosestTwcssSize(cssValue));
-        }
-
-        case "gap": {
-            return renderTwcssProperty("gap-", findClosestTwcssSize(cssValue));
-        }
-
-        case "column-gap": {
-            return renderTwcssProperty("gap-x-", findClosestTwcssSize(cssValue));
-        }
-
-        case "row-gap": {
-            return renderTwcssProperty("gap-y-", findClosestTwcssSize(cssValue));
-        }
-
-        case "font-family":
-            const alias = FontsRegistryGlobalInstance.getTwcssAlias(cssValue);
-            if (isEmpty(alias)) {
-                return "";
-            }
-
-            return `font-${alias}`;
-
-        case "font-size":
-            return findClosestTwcssFontSize(cssValue);
-
-        case "text-decoration":
-            return findTwcssTextDecoration(cssValue);
-
-        case "color":
-            return `text-${findClosestTwcssColor(
-                cssValue
-            )} ${findClosestTwcssOpacity(cssValue)}`;
-
-        case "text-transform":
-            switch (cssValue) {
-                case "uppercase":
-                    return "uppercase";
-                case "lowercase":
-                    return "lowercase";
-                case "capitalize":
-                    return "capitalize";
-                default:
-                    return "";
-            }
-
-        case "line-height": {
-            return findClosestTwcssLineHeight(cssValue);
-        }
-
-        case "overflow-wrap": {
-            if (cssValue === "break-word") {
-                return "break-words";
-            }
-        }
-
-        case "letter-spacing": {
-            // assume font size is always in px
-            const fontSize = parseInt(cssAttributes["font-size"].slice(0, -2), 10);
-            const twClass = findClosestTwcssLetterSpacing(cssValue, fontSize);
-            return twClass;
-        }
-
-        case "text-align": {
-            switch (cssValue) {
-                case "left":
-                    return "text-left";
-                case "center":
-                    return "text-center";
-                case "right":
-                    return "text-right";
-                case "justify":
-                    return "text-justify";
-                case "start":
-                    return "text-start";
-                case "end":
-                    return "text-end";
-                default:
-                    return "";
-            }
-        }
-
-        case "vertical-align": {
-            switch (cssValue) {
-                case "center":
-                    return "align-middle";
-                case "top":
-                    return "align-top";
-                case "bottom":
-                    return "align-bottom";
-                default:
-                    return "";
-            }
-        }
-
-        case "font-style": {
-            switch (cssValue) {
-                case "italic":
-                    return "italic";
-                case "normal":
-                    return "not-italic";
-                default:
-                    return "";
-            }
-        }
-
-        case "font-weight": {
-            return findClosestTwcssFontWeight(cssValue);
-        }
-
-        default:
-            return "";
+      return borderWidthTwSize === ""
+        ? "border"
+        : "border-" + borderWidthTwSize;
     }
+
+    case "border-top-width": {
+      const borderTopWidthTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBroderWidthMap,
+        "0"
+      );
+
+      if (borderTopWidthTwSize === "0") return "";
+
+      return borderTopWidthTwSize === ""
+        ? "border-t"
+        : "border-t-" + borderTopWidthTwSize;
+    }
+
+    case "border-bottom-width": {
+      const borderBottomWidthTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBroderWidthMap,
+        "0"
+      );
+
+      if (borderBottomWidthTwSize === "0") return "";
+
+      return borderBottomWidthTwSize === ""
+        ? "border-b"
+        : "border-b-" + borderBottomWidthTwSize;
+    }
+
+    case "border-left-width": {
+      const borderLeftWidthTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBroderWidthMap,
+        "0"
+      );
+
+      if (borderLeftWidthTwSize === "0") return "";
+
+      return borderLeftWidthTwSize === ""
+        ? "border-l"
+        : "border-l-" + borderLeftWidthTwSize;
+    }
+
+    case "border-right-width": {
+      const borderRightWidthTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBroderWidthMap,
+        "0"
+      );
+
+      if (borderRightWidthTwSize === "0") return "";
+
+      return borderRightWidthTwSize === ""
+        ? "border-r"
+        : "border-r-" + borderRightWidthTwSize;
+    }
+
+    case "border-radius": {
+      const borderRadiusTwSize = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twBorderRadiusMap,
+        "none"
+      );
+      if (borderRadiusTwSize === "0") {
+        return "";
+      }
+      return borderRadiusTwSize === ""
+        ? "rounded"
+        : "rounded-" + borderRadiusTwSize;
+    }
+
+    case "background-color":
+      return `bg-${findClosestTwcssColor(cssValue)}`;
+
+    case "box-shadow": {
+      // A very naive conversion for now, because parsing box-shadow string is too complicated
+      if (cssValue.includes("inset")) {
+        // inner shadow
+        return "shadow-inner";
+      } else {
+        // drop shadow
+        return "shadow";
+      }
+    }
+
+    case "display": {
+      switch (cssValue) {
+        case "block":
+          return "block";
+        case "inline-block":
+          return "inline-block";
+        case "inline":
+          return "inline";
+        case "flex":
+          return "flex";
+        case "inline-flex":
+          return "inline-flex";
+        case "table":
+          return "table";
+        case "inline-table":
+          return "inline-table";
+        case "table-caption":
+          return "table-caption";
+        case "table-cell":
+          return "table-cell";
+        case "table-column":
+          return "table-column";
+        case "table-column-group":
+          return "table-column-group";
+        case "table-footer-group":
+          return "table-footer-group";
+        case "table-header-group":
+          return "table-header-group";
+        case "table-row-group":
+          return "table-row-group";
+        case "table-row":
+          return "table-row";
+        case "flow-root":
+          return "flow-root";
+        case "grid":
+          return "grid";
+        case "inline-grid":
+          return "inline-grid";
+        case "contents":
+          return "contents";
+        case "list-item":
+          return "list-item";
+        case "none":
+          return "hidden";
+        default:
+          return "";
+      }
+    }
+
+    case "flex-direction": {
+      switch (cssValue) {
+        case "row":
+          return "flex-row";
+        case "row-reverse":
+          return "flex-row-reverse";
+        case "column":
+          return "flex-col";
+        case "column-reverse":
+          return "flex-col-reverse";
+        default:
+          return "";
+      }
+    }
+
+    case "justify-content": {
+      switch (cssValue) {
+        case "flex-start":
+          return "justify-start";
+        case "flex-end":
+          return "justify-end";
+        case "center":
+          return "justify-center";
+        case "space-between":
+          return "justify-between";
+        case "space-around":
+          return "justify-around";
+        case "space-evenly":
+          return "justify-evenly";
+        default:
+          return "";
+      }
+    }
+
+    case "align-items": {
+      switch (cssValue) {
+        case "flex-start":
+          return "items-start";
+        case "flex-end":
+          return "items-end";
+        case "center":
+          return "items-center";
+        case "baseline":
+          return "items-baseline";
+        case "stretch":
+          return "items-stretch";
+        default:
+          return "";
+      }
+    }
+
+    case "border-style": {
+      switch (cssValue) {
+        case "solid":
+          return "border-solid";
+        case "dashed":
+          return "border-dashed";
+        case "dotted":
+          return "border-dotted";
+        case "double":
+          return "border-double";
+        case "hidden":
+          return "border-hidden";
+        case "none":
+          return "border-none";
+        default:
+          return "";
+      }
+    }
+
+    case "object-fit": {
+      switch (cssValue) {
+        case "contain":
+          return "object-contain";
+        case "cover":
+          return "object-cover";
+        case "fill":
+          return "object-fill";
+        case "none":
+          return "object-none";
+        case "scale-down":
+          return "object-scale-down";
+        default:
+          return "";
+      }
+    }
+
+    case "padding": {
+      return renderTwcssProperty("p-", findClosestTwcssSize(cssValue));
+    }
+
+    case "padding-top": {
+      return renderTwcssProperty("pt-", findClosestTwcssSize(cssValue));
+    }
+
+    case "padding-bottom": {
+      return renderTwcssProperty("pb-", findClosestTwcssSize(cssValue));
+    }
+
+    case "padding-left": {
+      return renderTwcssProperty("pl-", findClosestTwcssSize(cssValue));
+    }
+
+    case "padding-right": {
+      return renderTwcssProperty("pr-", findClosestTwcssSize(cssValue));
+    }
+
+    case "margin-top": {
+      return renderTwcssProperty("mt-", findClosestTwcssSize(cssValue));
+    }
+
+    case "margin-bottom": {
+      return renderTwcssProperty("mb-", findClosestTwcssSize(cssValue));
+    }
+
+    case "margin-left": {
+      return renderTwcssProperty("ml-", findClosestTwcssSize(cssValue));
+    }
+
+    case "margin-right": {
+      return renderTwcssProperty("mr-", findClosestTwcssSize(cssValue));
+    }
+
+    case "gap": {
+      return renderTwcssProperty("gap-", findClosestTwcssSize(cssValue));
+    }
+
+    case "column-gap": {
+      return renderTwcssProperty("gap-x-", findClosestTwcssSize(cssValue));
+    }
+
+    case "row-gap": {
+      return renderTwcssProperty("gap-y-", findClosestTwcssSize(cssValue));
+    }
+
+    case "font-family":
+      const alias = FontsRegistryGlobalInstance.getTwcssAlias(cssValue);
+      if (isEmpty(alias)) {
+        return "";
+      }
+
+      return `font-${alias}`;
+
+    case "font-size":
+      return findClosestTwcssFontSize(cssValue);
+
+    case "text-decoration":
+      return findTwcssTextDecoration(cssValue);
+
+    case "color":
+      return `text-${findClosestTwcssColor(cssValue)} ${findClosestTwcssOpacity(
+        cssValue
+      )}`;
+
+    case "text-transform":
+      switch (cssValue) {
+        case "uppercase":
+          return "uppercase";
+        case "lowercase":
+          return "lowercase";
+        case "capitalize":
+          return "capitalize";
+        default:
+          return "";
+      }
+
+    case "line-height": {
+      return findClosestTwcssLineHeight(cssValue);
+    }
+
+    case "overflow-wrap": {
+      if (cssValue === "break-word") {
+        return "break-words";
+      }
+    }
+
+    case "letter-spacing": {
+      // assume font size is always in px
+      const fontSize = parseInt(cssAttributes["font-size"].slice(0, -2), 10);
+      const twClass = findClosestTwcssLetterSpacing(cssValue, fontSize);
+      return twClass;
+    }
+
+    case "text-align": {
+      switch (cssValue) {
+        case "left":
+          return "text-left";
+        case "center":
+          return "text-center";
+        case "right":
+          return "text-right";
+        case "justify":
+          return "text-justify";
+        case "start":
+          return "text-start";
+        case "end":
+          return "text-end";
+        default:
+          return "";
+      }
+    }
+
+    case "vertical-align": {
+      switch (cssValue) {
+        case "center":
+          return "align-middle";
+        case "top":
+          return "align-top";
+        case "bottom":
+          return "align-bottom";
+        default:
+          return "";
+      }
+    }
+
+    case "font-style": {
+      switch (cssValue) {
+        case "italic":
+          return "italic";
+        case "normal":
+          return "not-italic";
+        default:
+          return "";
+      }
+    }
+
+    case "font-weight": {
+      return findClosestTwcssFontWeight(cssValue);
+    }
+
+    default:
+      return "";
+  }
 };

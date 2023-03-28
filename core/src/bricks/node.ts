@@ -1,12 +1,18 @@
 import uuid from "react-native-uuid";
-import { Node as AdaptedNode, TextNode as AdaptedTextNode, BoxCoordinates, Attributes, Coordinate } from "../design/adapter/node";
+import {
+  Node as AdaptedNode,
+  TextNode as AdaptedTextNode,
+  BoxCoordinates,
+  Attributes,
+  Coordinate,
+} from "../design/adapter/node";
 
 export enum PostionalRelationship {
   INCLUDE = "INCLUDE",
   OVERLAP = "OVERLAP",
   COMPLETE_OVERLAP = "COMPLETE_OVERLAP",
   OUTSIDE = "OUTSIDE",
-};
+}
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
 
@@ -15,11 +21,11 @@ export enum NodeType {
   GROUP = "GROUP",
   VISIBLE = "VISIBLE",
   TEXT = "TEXT",
-  VECTOR = "VECTOR"
-};
+  VECTOR = "VECTOR",
+}
 
 export type Annotations = {
-  [key: string]: any,
+  [key: string]: any;
 };
 
 export class BaseNode {
@@ -60,7 +66,7 @@ export class BaseNode {
   }
 
   getType() {
-    return NodeType.BASE;;
+    return NodeType.BASE;
   }
 
   addAnnotations(key: string, value: any) {
@@ -74,7 +80,7 @@ export class BaseNode {
   getId() {
     return this.id;
   }
-};
+}
 
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
@@ -112,18 +118,24 @@ export const doOverlap = (
   return true;
 };
 
-const computePositionalRelationship = (currentCoordinates: BoxCoordinates, targetCoordinates: BoxCoordinates): PostionalRelationship => {
-  if (targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y
-    && targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x
-    && targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x
-    && targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y) {
+const computePositionalRelationship = (
+  currentCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
+): PostionalRelationship => {
+  if (
+    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
+    targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y
+  ) {
     return PostionalRelationship.INCLUDE;
   }
 
-  if (targetCoordinates.leftTop.y === currentCoordinates.leftTop.y
-    && targetCoordinates.leftTop.x === currentCoordinates.leftTop.x
-    && targetCoordinates.rightBot.x === currentCoordinates.rightBot.x
-    && targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
+  if (
+    targetCoordinates.leftTop.y === currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x === currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x === currentCoordinates.rightBot.x &&
+    targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
   ) {
     return PostionalRelationship.COMPLETE_OVERLAP;
   }
@@ -157,14 +169,17 @@ export class GroupNode extends BaseNode {
   setChildren(children: Node[]) {
     this.children = children;
     this.absRenderingBox = this.computeAbsRenderingBox();
-  };
+  }
 
   getAbsRenderingBox() {
     return this.absRenderingBox;
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
-    return computePositionalRelationship(this.absRenderingBox, targetNode.getAbsRenderingBox());
+    return computePositionalRelationship(
+      this.absRenderingBox,
+      targetNode.getAbsRenderingBox()
+    );
   }
 
   private computeAbsRenderingBox(): BoxCoordinates {
@@ -215,7 +230,7 @@ export class GroupNode extends BaseNode {
       },
     };
   }
-};
+}
 
 export class VisibleNode extends BaseNode {
   readonly node: AdaptedNode;
@@ -240,17 +255,20 @@ export class VisibleNode extends BaseNode {
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
-    return computePositionalRelationship(this.getAbsRenderingBox(), targetNode.getAbsRenderingBox());
+    return computePositionalRelationship(
+      this.getAbsRenderingBox(),
+      targetNode.getAbsRenderingBox()
+    );
   }
 
   getOriginalId(): string {
     return this.node.getOriginalId();
   }
-};
+}
 
 export class TextNode extends VisibleNode {
-  fontSource: string
-  node: AdaptedTextNode
+  fontSource: string;
+  node: AdaptedTextNode;
   constructor(node: AdaptedTextNode) {
     super(node);
     this.node = node;
@@ -293,4 +311,4 @@ export class VectorNode extends VisibleNode {
   getType(): NodeType {
     return NodeType.VECTOR;
   }
-};
+}

@@ -13,7 +13,6 @@ export type StyledBricksNode =
   | BricksTextNode
   | BricksSvgNode;
 
-
 export class BricksElementNode {
   readonly type = "element";
   tagName: string = "div";

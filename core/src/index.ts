@@ -16,13 +16,17 @@ export async function parse(figmaNodes: readonly SceneNode[]) {
   return styledBricksNodes;
 }
 
-export const convertToCode = (figmaNodes: readonly SceneNode[], option: Option): File[] => {
+export const convertToCode = (
+  figmaNodes: readonly SceneNode[],
+  option: Option
+): File[] => {
   const converted = convertFigmaNodesToBricksNodes(figmaNodes);
   if (converted.length < 1) {
     return [];
   }
 
-  let startingNode: Node = converted.length > 1 ? new GroupNode(converted) : converted[0];
+  let startingNode: Node =
+    converted.length > 1 ? new GroupNode(converted) : converted[0];
   groupNodes(startingNode);
   addPositionalCSSAttributesToNodes(startingNode);
 
@@ -33,5 +37,4 @@ export const convertToCode = (figmaNodes: readonly SceneNode[], option: Option):
     language: option.language,
     cssFramework: CssFramework.tailwindcss,
   });
-}
-
+};

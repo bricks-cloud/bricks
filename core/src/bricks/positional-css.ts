@@ -1,28 +1,37 @@
 import { isEmpty } from "lodash";
 import { Attributes } from "../design/adapter/node";
-import { Direction, getOppositeDirection, reorderNodesBasedOnDirection, getDirection } from "./direction";
+import {
+  Direction,
+  getOppositeDirection,
+  reorderNodesBasedOnDirection,
+  getDirection,
+} from "./direction";
 import { Node } from "./node";
-import { getContainerLineFromNodes, getLinesFromNodes, getLineBasedOnDirection } from "./line";
+import {
+  getContainerLineFromNodes,
+  getLinesFromNodes,
+  getLineBasedOnDirection,
+} from "./line";
 
 enum JustifyContent {
   FLEX_START = "flex-start",
   FLEX_END = "flex-end",
   CENTER = "center",
-  SPACE_BETWEEN = "space-between"
-};
+  SPACE_BETWEEN = "space-between",
+}
 
 enum AlignItems {
   FLEX_START = "flex-start",
   FLEX_END = "flex-end",
   CENTER = "center",
-  SPACE_BETWEEN = "space-between"
-};
+  SPACE_BETWEEN = "space-between",
+}
 
 enum RelativePoisition {
   LEFT = "LEFT",
   RIGHT = "RIGHT",
-  CONTAIN = "CONTAIN"
-};
+  CONTAIN = "CONTAIN",
+}
 
 // addPositionalCSSAttributesToNodes adds positional css information to a node and its children.
 export const addPositionalCSSAttributesToNodes = (node: Node) => {
@@ -41,7 +50,12 @@ export const addPositionalCSSAttributesToNodes = (node: Node) => {
 };
 
 // getPaddingInPixels calculates paddings given a node.
-export const getPaddingInPixels = (node: Node, direction: Direction, justifyContentValue: JustifyContent, alignItemsValue: AlignItems): number[] => {
+export const getPaddingInPixels = (
+  node: Node,
+  direction: Direction,
+  justifyContentValue: JustifyContent,
+  alignItemsValue: AlignItems
+): number[] => {
   let paddingTop: number = 0;
   let paddingBot: number = 0;
   let paddingLeft: number = 0;
@@ -49,15 +63,23 @@ export const getPaddingInPixels = (node: Node, direction: Direction, justifyCont
 
   const targetLine = getContainerLineFromNodes(node.getChildren(), direction);
   const parentLine = getContainerLineFromNodes([node], direction);
-  const perpendicularTargetLine = getContainerLineFromNodes(node.getChildren(), getOppositeDirection(direction));
-  const perpendicularParentLine = getContainerLineFromNodes([node], getOppositeDirection(direction));
+  const perpendicularTargetLine = getContainerLineFromNodes(
+    node.getChildren(),
+    getOppositeDirection(direction)
+  );
+  const perpendicularParentLine = getContainerLineFromNodes(
+    [node],
+    getOppositeDirection(direction)
+  );
 
   if (direction === Direction.VERTICAL) {
     let leftGap: number = targetLine.lower - parentLine.lower;
     let rightGap: number = parentLine.upper - targetLine.upper;
 
-    let topGap: number = perpendicularTargetLine.lower - perpendicularParentLine.lower;
-    let botGap: number = perpendicularParentLine.upper - perpendicularTargetLine.upper;
+    let topGap: number =
+      perpendicularTargetLine.lower - perpendicularParentLine.lower;
+    let botGap: number =
+      perpendicularParentLine.upper - perpendicularTargetLine.upper;
 
     switch (justifyContentValue) {
       case JustifyContent.SPACE_BETWEEN:
@@ -79,7 +101,7 @@ export const getPaddingInPixels = (node: Node, direction: Direction, justifyCont
       case AlignItems.FLEX_END:
         paddingBot = botGap;
         break;
-    };
+    }
 
     return [paddingTop, paddingRight, paddingBot, paddingLeft];
   }
@@ -87,8 +109,10 @@ export const getPaddingInPixels = (node: Node, direction: Direction, justifyCont
   let topGap: number = targetLine.lower - parentLine.lower;
   let botGap: number = parentLine.upper - targetLine.upper;
 
-  let leftGap: number = perpendicularTargetLine.lower - perpendicularParentLine.lower;
-  let rightGap: number = perpendicularParentLine.upper - perpendicularTargetLine.upper;
+  let leftGap: number =
+    perpendicularTargetLine.lower - perpendicularParentLine.lower;
+  let rightGap: number =
+    perpendicularParentLine.upper - perpendicularTargetLine.upper;
 
   switch (justifyContentValue) {
     case JustifyContent.SPACE_BETWEEN:
@@ -122,18 +146,23 @@ const filterAttributes = (attributes: Attributes): Attributes => {
   Object.entries(attributes).forEach(([key, value]) => {
     if (value !== "0px") {
       filteredAttributes[key] = value;
-    };
-  })
+    }
+  });
 
   return filteredAttributes;
 };
 
 // setMarginsForChildren sets margins for a node's children.
-const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyContentValue: JustifyContent, alignItemsValue: AlignItems, paddings: number[]) => {
+const setMarginsForChildren = (
+  parentNode: Node,
+  direction: Direction,
+  justifyContentValue: JustifyContent,
+  alignItemsValue: AlignItems,
+  paddings: number[]
+) => {
   const children = parentNode.getChildren();
 
   const [paddingTop, paddingRight, paddingBot, paddingLeft] = paddings;
-
 
   for (let i = 0; i < children.length; i++) {
     const targetNode = children[i];
@@ -150,8 +179,14 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
 
     const targetLine = getLineBasedOnDirection(targetNode, direction);
     const parentLine = getLineBasedOnDirection(parentNode, direction);
-    const perpendicularTargetLine = getLineBasedOnDirection(targetNode, getOppositeDirection(direction));
-    const perpendicularParentLine = getLineBasedOnDirection(parentNode, getOppositeDirection(direction));
+    const perpendicularTargetLine = getLineBasedOnDirection(
+      targetNode,
+      getOppositeDirection(direction)
+    );
+    const perpendicularParentLine = getLineBasedOnDirection(
+      parentNode,
+      getOppositeDirection(direction)
+    );
 
     let prevTarget = children[i];
     if (i > 0) {
@@ -166,8 +201,14 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
     const nextTargetLine = getLineBasedOnDirection(nextTarget, direction);
 
     if (direction === Direction.HORIZONTAL) {
-      botGap = i === children.length - 1 ? parentLine.upper - targetLine.upper - paddingBot : nextTargetLine.lower - targetLine.upper;
-      topGap = i === 0 ? targetLine.lower - parentLine.lower - paddingTop : prevTargetLine.upper - targetLine.lower;
+      botGap =
+        i === children.length - 1
+          ? parentLine.upper - targetLine.upper - paddingBot
+          : nextTargetLine.lower - targetLine.upper;
+      topGap =
+        i === 0
+          ? targetLine.lower - parentLine.lower - paddingTop
+          : prevTargetLine.upper - targetLine.lower;
 
       switch (justifyContentValue) {
         case JustifyContent.SPACE_BETWEEN:
@@ -194,9 +235,14 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
           break;
       }
 
-
-      leftGap = perpendicularTargetLine.lower - perpendicularParentLine.lower - paddingLeft;
-      rightGap = perpendicularParentLine.lower - perpendicularTargetLine.upper - paddingRight;
+      leftGap =
+        perpendicularTargetLine.lower -
+        perpendicularParentLine.lower -
+        paddingLeft;
+      rightGap =
+        perpendicularParentLine.lower -
+        perpendicularTargetLine.upper -
+        paddingRight;
 
       switch (alignItemsValue) {
         case AlignItems.FLEX_START:
@@ -207,17 +253,25 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
           break;
       }
 
-      targetNode.addPositionalCssAttributes(filterAttributes({
-        "margin-top": `${marginTop}px`,
-        "margin-bottom": `${marginBot}px`,
-        "margin-right": `${marginRight}px`,
-        "margin-left": `${marginLeft}px`,
-      }));
+      targetNode.addPositionalCssAttributes(
+        filterAttributes({
+          "margin-top": `${marginTop}px`,
+          "margin-bottom": `${marginBot}px`,
+          "margin-right": `${marginRight}px`,
+          "margin-left": `${marginLeft}px`,
+        })
+      );
       continue;
     }
 
-    rightGap = i === children.length - 1 ? parentLine.upper - targetLine.upper - paddingRight : nextTargetLine.lower - targetLine.upper;
-    leftGap = i === 0 ? targetLine.lower - parentLine.lower - paddingLeft : targetLine.lower - prevTargetLine.upper;
+    rightGap =
+      i === children.length - 1
+        ? parentLine.upper - targetLine.upper - paddingRight
+        : nextTargetLine.lower - targetLine.upper;
+    leftGap =
+      i === 0
+        ? targetLine.lower - parentLine.lower - paddingLeft
+        : targetLine.lower - prevTargetLine.upper;
 
     switch (justifyContentValue) {
       case JustifyContent.SPACE_BETWEEN:
@@ -245,8 +299,14 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
         break;
     }
 
-    topGap = perpendicularTargetLine.lower - perpendicularParentLine.lower - paddingTop;
-    botGap = perpendicularParentLine.lower - perpendicularTargetLine.upper - paddingBot;
+    topGap =
+      perpendicularTargetLine.lower -
+      perpendicularParentLine.lower -
+      paddingTop;
+    botGap =
+      perpendicularParentLine.lower -
+      perpendicularTargetLine.upper -
+      paddingBot;
 
     switch (alignItemsValue) {
       case AlignItems.FLEX_START:
@@ -257,17 +317,22 @@ const setMarginsForChildren = (parentNode: Node, direction: Direction, justifyCo
         break;
     }
 
-    targetNode.addPositionalCssAttributes(filterAttributes({
-      "margin-top": `${marginTop}px`,
-      "margin-bottom": `${marginBot}px`,
-      "margin-right": `${marginRight}px`,
-      "margin-left": `${marginLeft}px`,
-    }));
+    targetNode.addPositionalCssAttributes(
+      filterAttributes({
+        "margin-top": `${marginTop}px`,
+        "margin-bottom": `${marginBot}px`,
+        "margin-right": `${marginRight}px`,
+        "margin-left": `${marginLeft}px`,
+      })
+    );
   }
 };
 
 // getPositionalCSSAttributes gets positional css information of a node in relation to its children.
-export const getPositionalCSSAttributes = (node: Node, direction: Direction): Attributes => {
+export const getPositionalCSSAttributes = (
+  node: Node,
+  direction: Direction
+): Attributes => {
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
@@ -280,13 +345,20 @@ export const getPositionalCSSAttributes = (node: Node, direction: Direction): At
   }
 
   const justifyContentValue = getJustifyContentValue(node, direction);
-  const alignItemsValue = getAlignItemsValue(node, getOppositeDirection(direction));
+  const alignItemsValue = getAlignItemsValue(
+    node,
+    getOppositeDirection(direction)
+  );
 
   attributes["justify-content"] = justifyContentValue;
   attributes["align-items"] = alignItemsValue;
 
-
-  const paddings = getPaddingInPixels(node, direction, justifyContentValue, alignItemsValue);
+  const paddings = getPaddingInPixels(
+    node,
+    direction,
+    justifyContentValue,
+    alignItemsValue
+  );
   const [paddingTop, paddingRight, paddingBot, paddingLeft] = paddings;
 
   attributes["padding-top"] = `${paddingTop}px`;
@@ -294,13 +366,22 @@ export const getPositionalCSSAttributes = (node: Node, direction: Direction): At
   attributes["padding-right"] = `${paddingRight}px`;
   attributes["padding-left"] = `${paddingLeft}px`;
 
-  setMarginsForChildren(node, direction, justifyContentValue, alignItemsValue, paddings);
+  setMarginsForChildren(
+    node,
+    direction,
+    justifyContentValue,
+    alignItemsValue,
+    paddings
+  );
 
   return filterAttributes(attributes);
-}
+};
 
 // getJustifyContentValue determines the value of justify-content css property given a node and flex-direction.
-const getJustifyContentValue = (parentNode: Node, direction: Direction): JustifyContent => {
+const getJustifyContentValue = (
+  parentNode: Node,
+  direction: Direction
+): JustifyContent => {
   const children = parentNode.getChildren();
   const targetLines = getLinesFromNodes(children, direction);
   const [parentLine] = getLinesFromNodes([parentNode], direction);
@@ -317,7 +398,7 @@ const getJustifyContentValue = (parentNode: Node, direction: Direction): Justify
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
           return JustifyContent.CENTER;
-        };
+        }
 
         if (diff > 0) {
           return JustifyContent.FLEX_END;
@@ -331,7 +412,10 @@ const getJustifyContentValue = (parentNode: Node, direction: Direction): Justify
 };
 
 // getAlignItemsValue determines the value of align-items css property given a node and flex-direction.
-const getAlignItemsValue = (parentNode: Node, direction: Direction): AlignItems => {
+const getAlignItemsValue = (
+  parentNode: Node,
+  direction: Direction
+): AlignItems => {
   const children = parentNode.getChildren();
   const targetLines = getLinesFromNodes(children, direction);
   const [parentLine] = getLinesFromNodes([parentNode], direction);
@@ -348,7 +432,7 @@ const getAlignItemsValue = (parentNode: Node, direction: Direction): AlignItems 
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
           return AlignItems.CENTER;
-        };
+        }
 
         if (diff > 0) {
           return AlignItems.FLEX_END;
@@ -380,11 +464,13 @@ const getAlignItemsValue = (parentNode: Node, direction: Direction): AlignItems 
           threshold = 0.2;
         }
 
-        if (leftGap / parentLine.getLength() <= 0.05 && rightGap / parentLine.getLength() <= 0.05) {
+        if (
+          leftGap / parentLine.getLength() <= 0.05 &&
+          rightGap / parentLine.getLength() <= 0.05
+        ) {
           noGapItems++;
           break;
         }
-
 
         if (leftGap / parentLine.getLength() <= 0.05) {
           numberOfItemsTippingLeft++;
@@ -396,12 +482,18 @@ const getAlignItemsValue = (parentNode: Node, direction: Direction): AlignItems 
           break;
         }
 
-        if (leftGap > rightGap && (leftGap - rightGap) / parentLine.getLength() > threshold) {
+        if (
+          leftGap > rightGap &&
+          (leftGap - rightGap) / parentLine.getLength() > threshold
+        ) {
           numberOfItemsTippingRight++;
           break;
         }
 
-        if (rightGap > leftGap && (rightGap - leftGap) / parentLine.getLength() > threshold) {
+        if (
+          rightGap > leftGap &&
+          (rightGap - leftGap) / parentLine.getLength() > threshold
+        ) {
           numberOfItemsTippingLeft++;
           break;
         }
@@ -409,7 +501,6 @@ const getAlignItemsValue = (parentNode: Node, direction: Direction): AlignItems 
         numberOfItemsInTheMiddle++;
     }
   }
-
 
   if (noGapItems !== 0 && numberOfItemsInTheMiddle !== 0) {
     return AlignItems.CENTER;

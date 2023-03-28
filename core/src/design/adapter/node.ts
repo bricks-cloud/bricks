@@ -1,12 +1,11 @@
 export type Coordinate = {
-  x: number,
-  y: number,
-}
+  x: number;
+  y: number;
+};
 
 export type Attributes = {
-  [type: string]: string,
-}
-
+  [type: string]: string;
+};
 
 export type BoxCoordinates = {
   leftTop: Coordinate;
@@ -16,15 +15,14 @@ export type BoxCoordinates = {
 };
 
 export interface Node {
-  getRenderingBoundsCoordinates(): BoxCoordinates
-  getAbsoluteBoundingBoxCoordinates(): BoxCoordinates
-  getOriginalId(): string
-  getCSSAttributes(): Attributes
+  getRenderingBoundsCoordinates(): BoxCoordinates;
+  getAbsoluteBoundingBoxCoordinates(): BoxCoordinates;
+  getOriginalId(): string;
+  getCSSAttributes(): Attributes;
 }
 
-
 export interface TextNode extends Node {
-  getText(): string
-  isItalic(): boolean
-  getFamilyName(): string
+  getText(): string;
+  isItalic(): boolean;
+  getFamilyName(): string;
 }

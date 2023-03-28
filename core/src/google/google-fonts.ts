@@ -8,7 +8,7 @@ const regularFontSize = "400";
 interface GoogleFontMetadata {
   family: string;
   category: string;
-  variants: string[],
+  variants: string[];
 }
 
 export class GoogleFonts {
@@ -82,9 +82,12 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
       fontVariants.push("italic");
     }
 
-    const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(fontVariants, family);
+    const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(
+      fontVariants,
+      family
+    );
 
-    fontDetails += (familyName + ":" + googleFontsVariants.join(","));
+    fontDetails += familyName + ":" + googleFontsVariants.join(",");
 
     if (index !== fontsMetadata.length - 1) {
       fontDetails += "|";
@@ -94,7 +97,7 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
   });
 
   return baseURL + googleFontFamily;
-}
+};
 
 export const computeURL = (fonts: TextNode[]) => {
   let googleFontFamily = "";

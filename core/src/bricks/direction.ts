@@ -1,6 +1,4 @@
-import {
-  Node,
-} from "./node";
+import { Node } from "./node";
 import { getLineBasedOnDirection } from "./line";
 
 // Direction represents the way how elements are positioned within a Bricks node.
@@ -8,8 +6,8 @@ import { getLineBasedOnDirection } from "./line";
 // HORIZONTAL direction means that elements are organized in column. It corresponds to the CSS property flex-direction: column.
 export enum Direction {
   VERTICAL = "VERTICAL",
-  HORIZONTAL = "HORIZONTAL"
-};
+  HORIZONTAL = "HORIZONTAL",
+}
 
 // getDirection figures out whether nodes are positioned using row vs column.
 export const getDirection = (nodes: Node[]): Direction => {
@@ -24,7 +22,10 @@ export const getDirection = (nodes: Node[]): Direction => {
       if (i === j) {
         continue;
       }
-      const targetLine = getLineBasedOnDirection(nodes[j], Direction.HORIZONTAL);
+      const targetLine = getLineBasedOnDirection(
+        nodes[j],
+        Direction.HORIZONTAL
+      );
       noVerticalOverlap = noVerticalOverlap && !currentLine.overlap(targetLine);
     }
   }
@@ -37,7 +38,10 @@ export const getDirection = (nodes: Node[]): Direction => {
 };
 
 // reorderNodesBasedOnDirection reorders input nodes based on direction in ascending order.
-export const reorderNodesBasedOnDirection = (nodes: Node[], direction: Direction) => {
+export const reorderNodesBasedOnDirection = (
+  nodes: Node[],
+  direction: Direction
+) => {
   if (direction === Direction.VERTICAL) {
     nodes.sort((a: Node, b: Node): number => {
       const xa = a.getAbsRenderingBox().leftTop.x;

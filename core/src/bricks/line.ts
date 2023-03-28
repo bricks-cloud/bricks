@@ -1,13 +1,11 @@
-import {
-  Node,
-} from "./node";
+import { Node } from "./node";
 import { Direction } from "./direction";
 
 // RelativePosition represents a point's position relative to a line.
 enum RelativePoisition {
   LEFT = "LEFT",
   RIGHT = "RIGHT",
-  CONTAIN = "CONTAIN"
+  CONTAIN = "CONTAIN",
 }
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
@@ -36,15 +34,15 @@ export class Line {
 
     this.upper = pointB;
     this.lower = pointA;
-  };
+  }
 
   getLength(): number {
     return Math.abs(this.upper - this.lower);
-  };
+  }
 
   getMid(): number {
     return (this.upper + this.lower) / 2;
-  };
+  }
 
   contain(point: number): boolean {
     return point >= this.lower && point <= this.upper;
@@ -60,7 +58,7 @@ export class Line {
     }
 
     return RelativePoisition.CONTAIN;
-  };
+  }
 
   getSymetricDifference = (point: number): number => {
     const distanceFromUpper = Math.abs(this.upper - point);
@@ -78,11 +76,14 @@ export class Line {
     }
 
     return true;
-  };
-};
+  }
+}
 
 // getLinesFromNodes gets boundaries from nodes based on direction.
-export const getLinesFromNodes = (nodes: Node[], direction: Direction): Line[] => {
+export const getLinesFromNodes = (
+  nodes: Node[],
+  direction: Direction
+): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
     const renderingBox = node.getAbsRenderingBox();
@@ -99,11 +100,14 @@ export const getLinesFromNodes = (nodes: Node[], direction: Direction): Line[] =
 };
 
 // getContainerLineFromNodes gets an all encompassing Line from input nodes.
-// the start of this line is the lowest directional x / y value from the nodes, 
+// the start of this line is the lowest directional x / y value from the nodes,
 // and the end of this line is the highest directional x / y value from the nodes
-export const getContainerLineFromNodes = (nodes: Node[], direction: Direction): Line => {
+export const getContainerLineFromNodes = (
+  nodes: Node[],
+  direction: Direction
+): Line => {
   let lower: number = Infinity;
-  let upper: number = -Infinity
+  let upper: number = -Infinity;
   if (direction === Direction.HORIZONTAL) {
     for (let i = 0; i < nodes.length; i++) {
       const renderingBox = nodes[i].getAbsRenderingBox();
@@ -121,4 +125,4 @@ export const getContainerLineFromNodes = (nodes: Node[], direction: Direction): 
   }
 
   return new Line(lower, upper);
-}
+};
