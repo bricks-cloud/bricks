@@ -1,6 +1,11 @@
 import uuid from "react-native-uuid";
-import { Node as AdaptedNode, BoundingBoxCoordinates } from "../adapter/node";
-import { doOverlap } from "./util";
+import {
+  Node as AdaptedNode,
+  TextNode as AdaptedTextNode,
+  BoxCoordinates,
+  Attributes,
+  Coordinate,
+} from "../design/adapter/node";
 
 export enum PostionalRelationship {
   INCLUDE = "INCLUDE",
@@ -9,19 +14,25 @@ export enum PostionalRelationship {
   OUTSIDE = "OUTSIDE",
 }
 
-export type Node = GroupNode | VisibleNode;
+export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
 
 export enum NodeType {
   BASE = "BASE",
   GROUP = "GROUP",
   VISIBLE = "VISIBLE",
   TEXT = "TEXT",
-  VECTOR = "VECTOR"
+  VECTOR = "VECTOR",
 }
 
-class BaseNode {
+export type Annotations = {
+  [key: string]: any;
+};
+
+export class BaseNode {
   readonly id: string;
   children: Node[] = [];
+  positionalCSSAttributes: Attributes = {};
+  annotations: Annotations = {};
 
   constructor() {
     this.id = uuid.v1() as string;
@@ -31,16 +42,39 @@ class BaseNode {
     this.children = this.children.concat(children);
   }
 
+  setPositionalCssAttributes(attributes: Attributes) {
+    this.positionalCSSAttributes = attributes;
+  }
+
+  getPositionalCssAttributes(): Attributes {
+    return this.positionalCSSAttributes;
+  }
+
+  addPositionalCssAttributes(attributes: Attributes) {
+    this.positionalCSSAttributes = {
+      ...attributes,
+      ...this.positionalCSSAttributes,
+    };
+  }
+
   setChildren(children: Node[]) {
     this.children = children;
   }
 
-  getChildren() {
+  getChildren(): Node[] {
     return this.children;
   }
 
   getType() {
-    return NodeType.BASE;;
+    return NodeType.BASE;
+  }
+
+  addAnnotations(key: string, value: any) {
+    this.annotations[key] = value;
+  }
+
+  getAnnotation(key: string): any {
+    return this.annotations[key];
   }
 
   getId() {
@@ -48,18 +82,60 @@ class BaseNode {
   }
 }
 
-const computePositionalRelationship = (currentCoordinates: BoundingBoxCoordinates, targetCoordinates: BoundingBoxCoordinates): PostionalRelationship => {
-  if (targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y
-    && targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x
-    && targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x
-    && targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y) {
+// doOverlap determines whether two boxes overlap with one another.
+export const doOverlap = (
+  currentCoordinate: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
+) => {
+  if (
+    currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
+    currentCoordinate.leftTop.y === currentCoordinate.rightBot.y
+  ) {
+    return false;
+  }
+
+  if (
+    targetCoordinates.leftTop.x === targetCoordinates.rightBot.x ||
+    targetCoordinates.leftTop.y === targetCoordinates.rightBot.y
+  ) {
+    return false;
+  }
+
+  if (
+    currentCoordinate.leftTop.x > targetCoordinates.rightBot.x ||
+    targetCoordinates.leftTop.x > currentCoordinate.rightBot.x
+  ) {
+    return false;
+  }
+
+  if (
+    currentCoordinate.rightBot.y < targetCoordinates.leftTop.y ||
+    targetCoordinates.rightBot.y < currentCoordinate.leftTop.y
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+const computePositionalRelationship = (
+  currentCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
+): PostionalRelationship => {
+  if (
+    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
+    targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y
+  ) {
     return PostionalRelationship.INCLUDE;
   }
 
-  if (targetCoordinates.leftTop.y === currentCoordinates.leftTop.y
-    && targetCoordinates.leftTop.x === currentCoordinates.leftTop.x
-    && targetCoordinates.rightBot.x === currentCoordinates.rightBot.x
-    && targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
+  if (
+    targetCoordinates.leftTop.y === currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x === currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x === currentCoordinates.rightBot.x &&
+    targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
   ) {
     return PostionalRelationship.COMPLETE_OVERLAP;
   }
@@ -69,11 +145,12 @@ const computePositionalRelationship = (currentCoordinates: BoundingBoxCoordinate
   }
 
   return PostionalRelationship.OUTSIDE;
-}
+};
 
 export class GroupNode extends BaseNode {
   readonly id: string;
-  absRenderingBox: BoundingBoxCoordinates;
+  absRenderingBox: BoxCoordinates;
+  cssAttributes: Attributes = {};
 
   constructor(children: Node[]) {
     super();
@@ -81,6 +158,9 @@ export class GroupNode extends BaseNode {
     this.absRenderingBox = this.computeAbsRenderingBox();
   }
 
+  getCSSAttributes(): Attributes {
+    return this.cssAttributes;
+  }
 
   getType(): NodeType {
     return NodeType.GROUP;
@@ -89,24 +169,28 @@ export class GroupNode extends BaseNode {
   setChildren(children: Node[]) {
     this.children = children;
     this.absRenderingBox = this.computeAbsRenderingBox();
-  };
+  }
 
   getAbsRenderingBox() {
     return this.absRenderingBox;
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
-    return computePositionalRelationship(this.absRenderingBox, targetNode.getAbsRenderingBox());
+    return computePositionalRelationship(
+      this.absRenderingBox,
+      targetNode.getAbsRenderingBox()
+    );
   }
 
-  private computeAbsRenderingBox(): BoundingBoxCoordinates {
+  private computeAbsRenderingBox(): BoxCoordinates {
     let xl = Infinity;
     let xr = -Infinity;
     let yt = Infinity;
     let yb = -Infinity;
 
     for (const child of this.getChildren()) {
-      const coordinates = child.getAbsRenderingBox();
+      let coordinates = child.getAbsRenderingBox();
+
       if (coordinates.leftTop.x < xl) {
         xl = coordinates.leftTop.x;
       }
@@ -120,9 +204,12 @@ export class GroupNode extends BaseNode {
       }
 
       if (coordinates.rightBot.y > yb) {
-        yb = coordinates.leftBot.y;
+        yb = coordinates.rightBot.y;
       }
     }
+
+    this.cssAttributes["width"] = `${Math.abs(xr - xl)}px`;
+    this.cssAttributes["height"] = `${Math.abs(yb - yt)}px`;
 
     return {
       leftTop: {
@@ -147,26 +234,31 @@ export class GroupNode extends BaseNode {
 
 export class VisibleNode extends BaseNode {
   readonly node: AdaptedNode;
+  type: NodeType;
 
   constructor(node: AdaptedNode) {
     super();
+
     this.node = node;
+  }
+
+  getCSSAttributes(): Attributes {
+    return this.node.getCSSAttributes();
   }
 
   getType(): NodeType {
     return NodeType.VISIBLE;
   }
 
-  getAbsRenderingBox(): BoundingBoxCoordinates {
-    return this.node.getBoundingBoxCoordinates();
+  getAbsRenderingBox(): BoxCoordinates {
+    return this.node.getRenderingBoundsCoordinates();
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
-    return computePositionalRelationship(this.getAbsRenderingBox(), targetNode.getAbsRenderingBox());
-  }
-
-  debug() {
-    console.log(this.node.getOriginalId());
+    return computePositionalRelationship(
+      this.getAbsRenderingBox(),
+      targetNode.getAbsRenderingBox()
+    );
   }
 
   getOriginalId(): string {
@@ -174,10 +266,36 @@ export class VisibleNode extends BaseNode {
   }
 }
 
-
 export class TextNode extends VisibleNode {
-  constructor(node: AdaptedNode) {
+  fontSource: string;
+  node: AdaptedTextNode;
+  constructor(node: AdaptedTextNode) {
     super(node);
+    this.node = node;
+  }
+
+  isItalic(): boolean {
+    return this.node.isItalic();
+  }
+
+  getFamilyName(): string {
+    return this.node.getFamilyName();
+  }
+
+  getAbsBoundingBox(): BoxCoordinates {
+    return this.node.getAbsoluteBoundingBoxCoordinates();
+  }
+
+  getFontSource() {
+    return this.fontSource;
+  }
+
+  setFontSource(source: string) {
+    this.fontSource = source;
+  }
+
+  getText(): string {
+    return this.node.getText();
   }
 
   getType(): NodeType {

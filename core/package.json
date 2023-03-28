@@ -12,7 +12,6 @@
   "bugs": {
     "url": "https://github.com/bricks-cloud/bricks/issues"
   },
-  "main": "code.js",
   "scripts": {
     "dev": "NODE_ENV=development webpack --mode=development --watch",
     "get-metadata": "node ./src/google/get-google-fonts-metadata.js",
@@ -20,12 +19,12 @@
   },
   "dependencies": {
     "base64-js": "^1.5.1",
+    "prettier": "^2.8.4",
     "react-native-uuid": "^2.0.1"
   },
   "devDependencies": {
     "@figma/plugin-typings": "*",
     "copy-webpack-plugin": "^11.0.0",
-    "prettier": "2.8.4",
     "ts-loader": "^9.4.2",
     "typescript": "*",
     "webpack": "^5.75.0",

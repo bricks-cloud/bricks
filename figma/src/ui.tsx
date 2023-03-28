@@ -72,6 +72,16 @@ const UI = () => {
       setCurrentPage(PAGES.HOME);
     }
 
+
+    if (pluginMessage.type === "new-styled-bricks-nodes") {
+      socket.emit("code-generation", { files: pluginMessage.files }, (response) => {
+        if (response.status === "ok") {
+          setIsGeneratingCode(false);
+        }
+      });
+
+    }
+
     if (pluginMessage.type === "styled-bricks-nodes") {
       const styledBricksNodes: StyledBricksNode[] =
         pluginMessage.styledBricksNodes;
@@ -115,6 +125,9 @@ const UI = () => {
           <Home
             connectedToVSCode={connectedToVSCode}
             isComponentSelected={isComponentSelected}
+            selectedUiFramework={selectedUiFramework}
+            selectedCssFramework={selectedCssFramework}
+            selectedLanguage={selectedLanguage}
             setIsGeneratingCode={setIsGeneratingCode}
           />
         )}
