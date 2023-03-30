@@ -18,7 +18,7 @@ export interface Node {
   getRenderingBoundsCoordinates(): BoxCoordinates;
   getAbsoluteBoundingBoxCoordinates(): BoxCoordinates;
   getOriginalId(): string;
-  getCSSAttributes(): Attributes;
+  getCssAttributes(): Attributes;
 }
 
 export interface TextNode extends Node {

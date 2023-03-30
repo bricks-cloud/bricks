@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
 import * as logo from "../assets/visual-studio-code.png";
 import PageContext, { PAGES } from "../context/page-context";
 

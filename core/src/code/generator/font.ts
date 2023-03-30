@@ -44,7 +44,7 @@ type FontMap = {
 const findAllFonts = (node: Node, fonts: FontMap) => {
   if (node.getType() === NodeType.TEXT) {
     const textNode = node as TextNode;
-    const attributes = textNode.getCSSAttributes();
+    const attributes = textNode.getCssAttributes();
     const fontFamily = textNode.getFamilyName();
     const fontFamilyCss = attributes["font-family"];
     const fontSize = attributes["font-size"];

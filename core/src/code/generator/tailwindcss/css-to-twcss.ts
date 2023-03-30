@@ -13,9 +13,55 @@ import {
   twUnitMap,
   twWidthMap,
   tailwindTextDecorationMap,
+  MAX_BORDER_RADIUS_IN_PIXELS,
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
+
+// convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
+export const convertCssClassesToTwcssClasses = (
+  attributes: Attributes
+): string => {
+  let content = "";
+
+  Object.entries(attributes).forEach(([property, value]) => {
+    content = content + " " + getTwcssClass(property, value, attributes);
+  });
+
+  return content.trim();
+};
+
+// buildTwcssConfigFileContent builds file content for tailwind.config.js.
+export const buildTwcssConfigFileContent = (
+  mainComponentFileExtension: string
+) => {
+  let fontFamilies = "";
+  const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();
+
+  if (!isEmpty(entries)) {
+    fontFamilies = entries
+      .map((metadata) => `"${metadata.alias}": "${metadata.familyCss}",`)
+      .join("");
+  }
+
+  const fontFamilyConfig = !isEmpty(fontFamilies)
+    ? `fontFamily: {
+      ${fontFamilies}
+    },`
+    : "";
+
+  const file = `module.exports = {
+    content: ["./*.${mainComponentFileExtension}"],
+    theme: {
+      ${fontFamilyConfig}
+        extend: {},
+      },
+      plugins: [],
+    };
+    `;
+
+  return file;
+};
 
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
@@ -391,6 +437,12 @@ export const getTwcssClass = (
       if (borderRadiusTwSize === "0") {
         return "";
       }
+
+      const borderRadiusSize = extractPixelNumberFromString(cssValue);
+      if (borderRadiusSize > MAX_BORDER_RADIUS_IN_PIXELS) {
+        return `rounded-[${borderRadiusSize}px]`;
+      }
+
       return borderRadiusTwSize === ""
         ? "rounded"
         : "rounded-" + borderRadiusTwSize;
@@ -630,8 +682,20 @@ export const getTwcssClass = (
     }
 
     case "overflow-wrap": {
-      if (cssValue === "break-word") {
-        return "break-words";
+      switch (cssValue) {
+        case "break-word":
+          return "break-words";
+        default:
+          return "";
+      }
+    }
+
+    case "white-space": {
+      switch (cssValue) {
+        case "nowrap":
+          return "whitespace-nowrap";
+        default:
+          return "";
       }
     }
 

@@ -1,6 +1,6 @@
 import { isEmpty } from "lodash";
 import * as rawData from "./google-fonts-metadata.json";
-import { FontMetadata } from "../code/adapter/font";
+import { FontMetadata } from "../code/generator/font";
 
 const baseURL = "https://fonts.googleapis.com/css?family=";
 const regularFontSize = "400";
