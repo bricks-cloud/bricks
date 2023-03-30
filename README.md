@@ -2,6 +2,10 @@
 
 Bricks is an open source tool for converting Figma designs into high-quality frontend code.
 
+![bricks](https://user-images.githubusercontent.com/19992630/228874952-a36a8385-5455-423e-babb-fc29464abe40.png)
+
+Check out our [demo video](https://www.loom.com/share/677ef1bc5f2144f6be4d27f4bba3cef3)!
+
 ## Try Bricks
 
 1. Install both the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
