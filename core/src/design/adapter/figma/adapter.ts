@@ -24,8 +24,8 @@ enum NodeType {
   RECTANGLE = "RECTANGLE",
 }
 
-// getCSSAttributes extracts styling information from figmaNode to css attributes
-const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
+// getCssAttributes extracts styling information from figmaNode to css attributes
+const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
 
   if (figmaNode.type === NodeType.GROUP) {
@@ -175,6 +175,10 @@ const getCSSAttributes = (figmaNode: SceneNode): Attributes => {
     let moreThanOneRow: boolean = false;
     if (figmaNode.fontSize !== figma.mixed) {
       moreThanOneRow = renderBoundsHeight > figmaNode.fontSize;
+    }
+
+    if (!moreThanOneRow) {
+      attributes["white-space"] = "nowrap";
     }
 
     let width = absoluteRenderBounds.width + 2;
@@ -339,10 +343,10 @@ export class FigmaNodeAdapter {
   private cssAttributes: Attributes;
   constructor(node: SceneNode) {
     this.node = node;
-    this.cssAttributes = getCSSAttributes(node);
+    this.cssAttributes = getCssAttributes(node);
   }
 
-  getCSSAttributes(): Attributes {
+  getCssAttributes(): Attributes {
     return this.cssAttributes;
   }
 
@@ -461,6 +465,7 @@ export const convertFigmaNodesToBricksNodes = (
     if (figmaNode.visible) {
       const adaptedNode = new FigmaNodeAdapter(figmaNode);
       let newNode: Node = new VisibleNode(adaptedNode);
+
       switch (figmaNode.type) {
         case NodeType.GROUP:
           newNode = new GroupNode([]);

@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, PropsWithChildren } from "react";
+import { useEffect, useContext, PropsWithChildren } from "react";
 import PageContext, { PAGES } from "../context/page-context";
 
 export interface Props {

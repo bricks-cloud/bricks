@@ -139,19 +139,6 @@ export const getPaddingInPixels = (
   return [paddingTop, paddingRight, paddingBot, paddingLeft];
 };
 
-// filterAttributes removes attributes with "0px" values
-const filterAttributes = (attributes: Attributes): Attributes => {
-  const filteredAttributes: Attributes = {};
-
-  Object.entries(attributes).forEach(([key, value]) => {
-    if (value !== "0px") {
-      filteredAttributes[key] = value;
-    }
-  });
-
-  return filteredAttributes;
-};
-
 // setMarginsForChildren sets margins for a node's children.
 const setMarginsForChildren = (
   parentNode: Node,
@@ -225,8 +212,8 @@ const setMarginsForChildren = (
 
           if (i === children.length - 1) {
             marginBot = botGap;
-            break;
           }
+          break;
         case JustifyContent.FLEX_START:
           marginTop = topGap;
           break;
@@ -253,14 +240,12 @@ const setMarginsForChildren = (
           break;
       }
 
-      targetNode.addPositionalCssAttributes(
-        filterAttributes({
-          "margin-top": `${marginTop}px`,
-          "margin-bottom": `${marginBot}px`,
-          "margin-right": `${marginRight}px`,
-          "margin-left": `${marginLeft}px`,
-        })
-      );
+      targetNode.addPositionalCssAttributes({
+        "margin-top": `${marginTop}px`,
+        "margin-bottom": `${marginBot}px`,
+        "margin-right": `${marginRight}px`,
+        "margin-left": `${marginLeft}px`,
+      });
       continue;
     }
 
@@ -317,14 +302,12 @@ const setMarginsForChildren = (
         break;
     }
 
-    targetNode.addPositionalCssAttributes(
-      filterAttributes({
-        "margin-top": `${marginTop}px`,
-        "margin-bottom": `${marginBot}px`,
-        "margin-right": `${marginRight}px`,
-        "margin-left": `${marginLeft}px`,
-      })
-    );
+    targetNode.addPositionalCssAttributes({
+      "margin-top": `${marginTop}px`,
+      "margin-bottom": `${marginBot}px`,
+      "margin-right": `${marginRight}px`,
+      "margin-left": `${marginLeft}px`,
+    });
   }
 };
 
@@ -374,7 +357,7 @@ export const getPositionalCSSAttributes = (
     paddings
   );
 
-  return filterAttributes(attributes);
+  return attributes;
 };
 
 // getJustifyContentValue determines the value of justify-content css property given a node and flex-direction.

@@ -122,6 +122,8 @@ export const twWidthMap = {
   "w-fit": "fit-content",
 };
 
+export const MAX_BORDER_RADIUS_IN_PIXELS = 24;
+
 export const twBorderRadiusMap = {
   none: "0px",
   sm: "2px",

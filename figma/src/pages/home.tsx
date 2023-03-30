@@ -1,4 +1,4 @@
-import React, { useContext, PropsWithChildren } from "react";
+import { useContext, PropsWithChildren } from "react";
 import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
@@ -22,9 +22,11 @@ const Home = (props: PropsWithChildren<Props>) => {
     parent.postMessage(
       {
         pluginMessage: {
-          type: selectedUiFramework === UiFramework.react && selectedCssFramework === CssFramework.tailwindcss ? "new-styled-bricks-nodes" : "styled-bricks-nodes",
+          type: "styled-bricks-nodes",
           options: {
             language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
           },
         },
       },

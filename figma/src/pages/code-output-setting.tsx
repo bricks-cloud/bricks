@@ -2,7 +2,6 @@ import React, { useContext } from "react";
 import { RadioGroup as BaseRadioGroup } from "@headlessui/react";
 import PageContext, { PAGES } from "../context/page-context";
 import { CssFramework, Language, Settings, UiFramework } from "../constants";
-
 import * as logo from "../assets/arrow.png";
 import htmlLogo from "../assets/html-logo.svg";
 import reactLogo from "../assets/react-logo.svg";
@@ -131,7 +130,6 @@ const CodeOutputSetting: React.FC<Props> = ({
   setSelectedLanguage,
 }) => {
   const { previousPage, setCurrentPage } = useContext(PageContext);
-  // const [open, setOpen] = useState(true)
 
   const handleBackClick = () => {
     setCurrentPage(previousPage);

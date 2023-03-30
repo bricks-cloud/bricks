@@ -4,8 +4,8 @@ import {
   TextNode as AdaptedTextNode,
   BoxCoordinates,
   Attributes,
-  Coordinate,
 } from "../design/adapter/node";
+import { filterAttributes } from "./util";
 
 export enum PostionalRelationship {
   INCLUDE = "INCLUDE",
@@ -13,6 +13,11 @@ export enum PostionalRelationship {
   COMPLETE_OVERLAP = "COMPLETE_OVERLAP",
   OUTSIDE = "OUTSIDE",
 }
+
+export type Option = {
+  truncateNumbers: boolean;
+  zeroValueAllowed: boolean;
+};
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
 
@@ -31,7 +36,7 @@ export type Annotations = {
 export class BaseNode {
   readonly id: string;
   children: Node[] = [];
-  positionalCSSAttributes: Attributes = {};
+  positionalCssAttributes: Attributes = {};
   annotations: Annotations = {};
 
   constructor() {
@@ -43,17 +48,19 @@ export class BaseNode {
   }
 
   setPositionalCssAttributes(attributes: Attributes) {
-    this.positionalCSSAttributes = attributes;
+    this.positionalCssAttributes = attributes;
   }
 
-  getPositionalCssAttributes(): Attributes {
-    return this.positionalCSSAttributes;
+  getPositionalCssAttributes(
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+  ): Attributes {
+    return filterAttributes(this.positionalCssAttributes, option);
   }
 
   addPositionalCssAttributes(attributes: Attributes) {
-    this.positionalCSSAttributes = {
+    this.positionalCssAttributes = {
       ...attributes,
-      ...this.positionalCSSAttributes,
+      ...this.positionalCssAttributes,
     };
   }
 
@@ -158,8 +165,10 @@ export class GroupNode extends BaseNode {
     this.absRenderingBox = this.computeAbsRenderingBox();
   }
 
-  getCSSAttributes(): Attributes {
-    return this.cssAttributes;
+  getCssAttributes(
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+  ): Attributes {
+    return filterAttributes(this.cssAttributes, option);
   }
 
   getType(): NodeType {
@@ -242,8 +251,10 @@ export class VisibleNode extends BaseNode {
     this.node = node;
   }
 
-  getCSSAttributes(): Attributes {
-    return this.node.getCSSAttributes();
+  getCssAttributes(
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+  ): Attributes {
+    return filterAttributes(this.node.getCssAttributes(), option);
   }
 
   getType(): NodeType {
