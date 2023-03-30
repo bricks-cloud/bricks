@@ -60,6 +60,7 @@ export class Generator {
   }
 }
 
+// getProps converts a single node to formated tailwindcss classes
 const getProps = (node: Node, option: Option): string => {
   const classPropName =
     option.uiFramework === UiFramework.react ? "className" : "class";
@@ -89,6 +90,7 @@ const getProps = (node: Node, option: Option): string => {
   }
 };
 
+// constructClassProp creates a compelete class property that can be used in html elements or React components
 const constructClassProp = (classPropName: string, value: string) => {
   if (isEmpty(value)) {
     return "";

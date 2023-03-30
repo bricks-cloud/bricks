@@ -66,6 +66,7 @@ export const buildCssFileContent = (fontUrl: string) => {
   return file;
 };
 
+// getProps retrieves formated css classes such as style="justify-content: center;" from a single node
 const getProps = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
@@ -110,6 +111,7 @@ const constructStyleProp = (value: string, option: Option) => {
   return `style="${value}"`;
 };
 
+// styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}
 const snakeCaseToCamelCase = (prop: string) => {
   const parts = prop.split("-");
 
@@ -127,6 +129,7 @@ const snakeCaseToCamelCase = (prop: string) => {
   return camel.join("");
 };
 
+// convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
   option: Option
