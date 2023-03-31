@@ -7,6 +7,11 @@ export type Attributes = {
   [type: string]: string;
 };
 
+
+export enum ExportFormat {
+  SVG = "SVG",
+}
+
 export type BoxCoordinates = {
   leftTop: Coordinate;
   leftBot: Coordinate;
@@ -25,4 +30,12 @@ export interface TextNode extends Node {
   getText(): string;
   isItalic(): boolean;
   getFamilyName(): string;
+}
+
+export interface VectorNode extends Node {
+  exportAsSvg(exportFormat: ExportFormat): Promise<string>;
+}
+
+export interface VectorGroupNode extends Node {
+  exportAsSvg(exportFormat: ExportFormat): Promise<string>;
 }

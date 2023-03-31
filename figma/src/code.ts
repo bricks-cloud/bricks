@@ -6,7 +6,7 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === "styled-bricks-nodes") {
     figma.ui.postMessage({
       type: "styled-bricks-nodes",
-      files: convertToCode(figma.currentPage.selection, {
+      files: await convertToCode(figma.currentPage.selection, {
         language: msg.options.language,
         cssFramework: msg.options.cssFramework,
         uiFramework: msg.options.uiFramework,

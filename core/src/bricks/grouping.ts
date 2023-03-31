@@ -1,5 +1,5 @@
 import { isEmpty } from "lodash";
-import { Node } from "./node";
+import { Node, NodeType } from "./node";
 import { Direction } from "./direction";
 import {
   decideBetweenDirectionalOverlappingNodes,
@@ -8,7 +8,11 @@ import {
 import { groupNodesByOverlap } from "./overlap";
 import { groupNodesByInclusion } from "./inclusion";
 
-export const groupNodes = (parentNode: Node): Node => {
+export const groupNodes = (parentNode: Node) => {
+  if (parentNode.getType() === NodeType.VECTOR_GROUP) {
+    return;
+  }
+
   const children = parentNode.getChildren();
   if (isEmpty(children)) {
     return;

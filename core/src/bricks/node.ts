@@ -4,6 +4,9 @@ import {
   TextNode as AdaptedTextNode,
   BoxCoordinates,
   Attributes,
+  ExportFormat,
+  VectorNode as AdaptedVectorNode,
+  VectorGroupNode as AdaptedVectorGroupNode,
 } from "../design/adapter/node";
 import { filterAttributes } from "./util";
 
@@ -27,6 +30,7 @@ export enum NodeType {
   VISIBLE = "VISIBLE",
   TEXT = "TEXT",
   VECTOR = "VECTOR",
+  VECTOR_GROUP = "VECTOR_GROUP",
 }
 
 export type Annotations = {
@@ -314,12 +318,35 @@ export class TextNode extends VisibleNode {
   }
 }
 
+export class VectorGroupNode extends GroupNode {
+  readonly node: AdaptedVectorGroupNode;
+  constructor(node: AdaptedVectorGroupNode, children: Node[] = []) {
+    super(children);
+    this.node = node;
+  }
+
+  getType(): NodeType {
+    return NodeType.VECTOR_GROUP;
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    return await this.node.exportAsSvg(exportFormat);
+  }
+}
+
+
 export class VectorNode extends VisibleNode {
-  constructor(node: AdaptedNode) {
+  readonly vectorNode: AdaptedVectorNode;
+  constructor(node: AdaptedVectorNode) {
     super(node);
+    this.vectorNode = node;
   }
 
   getType(): NodeType {
     return NodeType.VECTOR;
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    return await this.vectorNode.exportAsSvg(exportFormat);
   }
 }

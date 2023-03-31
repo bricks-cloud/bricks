@@ -6,7 +6,7 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node } from "./node";
+import { Node, NodeType } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
@@ -37,6 +37,10 @@ enum RelativePoisition {
 export const addPositionalCSSAttributesToNodes = (node: Node) => {
   const children = node.getChildren();
   if (isEmpty(children)) {
+    return;
+  }
+
+  if (node.getType() === NodeType.VECTOR_GROUP) {
     return;
   }
 

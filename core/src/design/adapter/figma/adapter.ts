@@ -2,16 +2,18 @@ import {
   GroupNode,
   Node,
   TextNode as BricksTextNode,
-  VectorNode,
+  VectorGroupNode,
+  VectorNode as BricksVector,
   VisibleNode,
 } from "../../../bricks/node";
 import { isEmpty } from "lodash";
-import { BoxCoordinates, Attributes } from "../node";
+import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
   rgbaToString,
   isFrameNodeTransparent,
+  doesRectangleNodeContainsAnImage,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 
@@ -22,6 +24,7 @@ enum NodeType {
   ELLIPSE = "ELLIPSE",
   FRAME = "FRAME",
   RECTANGLE = "RECTANGLE",
+  INSTANCE = "INSTANCE"
 }
 
 // getCssAttributes extracts styling information from figmaNode to css attributes
@@ -98,9 +101,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       .map((effect: DropShadowEffect | InnerShadowEffect) => {
         const { offset, radius, spread, color } = effect;
 
-        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-          spread ?? 0
-        }px ${rgbaToString(color)}`;
+        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+          }px ${rgbaToString(color)}`;
 
         if (effect.type === "INNER_SHADOW") {
           return "inset " + dropShadowString;
@@ -186,7 +188,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
-        figmaNode.absoluteBoundingBox.width >
+      figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -411,6 +413,48 @@ export class FigmaNodeAdapter {
   }
 }
 
+export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
+  node: VectorNode | EllipseNode;
+  constructor(node: VectorNode | EllipseNode) {
+    super(node);
+    this.node = node;
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    let svg: string = "";
+    if (exportFormat === ExportFormat.SVG) {
+      try {
+        const buf = await this.node.exportAsync({ format: ExportFormat.SVG });
+        svg = String.fromCharCode.apply(null, new Uint16Array(buf));
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    return svg;
+  }
+}
+
+export class FigmaVectorGroupNodeAdapter extends FigmaNodeAdapter {
+  constructor(node: SceneNode) {
+    super(node);
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    let svg: string = "";
+    if (exportFormat === ExportFormat.SVG) {
+      try {
+        const buf = await this.node.exportAsync({ format: ExportFormat.SVG });
+        svg = String.fromCharCode.apply(null, new Uint16Array(buf));
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    return svg;
+  }
+}
+
 export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   node: TextNode;
   constructor(node: TextNode) {
@@ -444,10 +488,18 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   }
 }
 
-// convertFigmaNodesToBricksNodes converts Figma nodes to Bricks nodes.s
+const EXPORTABLE_NODE_TYPES: string[] = [NodeType.ELLIPSE, NodeType.VECTOR, NodeType.FRAME, NodeType.RECTANGLE]
+const GROUP_NODE_TYPES: string[] = [NodeType.GROUP, NodeType.INSTANCE];
+
+type Feedbacks = {
+  nodes: Node[],
+  areAllNodesExportable: boolean;
+}
+
+// convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[]
-): Node[] => {
+): Feedbacks => {
   let reordered = [...figmaNodes];
   if (reordered.length > 1) {
     reordered.sort((a, b) => {
@@ -459,9 +511,22 @@ export const convertFigmaNodesToBricksNodes = (
     });
   }
 
-  let result: Node[] = [];
+  let result: Feedbacks = {
+    nodes: [],
+    areAllNodesExportable: true,
+  };
+
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
+    if (!EXPORTABLE_NODE_TYPES.includes(figmaNode.type) && !GROUP_NODE_TYPES.includes(figmaNode.type)) {
+      result.areAllNodesExportable = false;
+    }
+
+
+    if (figmaNode.type === NodeType.RECTANGLE && doesRectangleNodeContainsAnImage(figmaNode)) {
+      result.areAllNodesExportable = false;
+    }
+
     if (figmaNode.visible) {
       const adaptedNode = new FigmaNodeAdapter(figmaNode);
       let newNode: Node = new VisibleNode(adaptedNode);
@@ -480,23 +545,30 @@ export const convertFigmaNodesToBricksNodes = (
           break;
         case NodeType.VECTOR:
         case NodeType.ELLIPSE:
-          newNode = new VectorNode(adaptedNode);
+          newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
       }
 
       //@ts-ignore
       if (!isEmpty(figmaNode?.children)) {
         //@ts-ignore
-        const childrenNode = convertFigmaNodesToBricksNodes(figmaNode.children);
-
-        if (childrenNode.length === 1 && figmaNode.type === NodeType.GROUP) {
-          result = result.concat(childrenNode);
+        const feedbacks = convertFigmaNodesToBricksNodes(figmaNode.children);
+        if (feedbacks.nodes.length === 1 && figmaNode.type === NodeType.GROUP) {
+          result.nodes = result.nodes.concat(feedbacks.nodes);
           continue;
         }
 
-        newNode.setChildren(childrenNode);
+        if (feedbacks.areAllNodesExportable) {
+          newNode = new VectorGroupNode(new FigmaVectorGroupNodeAdapter(figmaNode), feedbacks.nodes);
+        }
+
+        newNode.setChildren(feedbacks.nodes);
+
+        result.areAllNodesExportable = feedbacks.areAllNodesExportable && result.areAllNodesExportable;
+
       }
 
-      result.push(newNode);
+
+      result.nodes.push(newNode);
     }
   }
 
