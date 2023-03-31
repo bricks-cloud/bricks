@@ -84,7 +84,7 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
 
     const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(
       fontVariants,
-      family
+      family,
     );
 
     fontDetails += familyName + ":" + googleFontsVariants.join(",");

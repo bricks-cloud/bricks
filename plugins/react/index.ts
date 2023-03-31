@@ -40,7 +40,7 @@ const plugin: IPlugin<Options> = {
             // convert attirbutes to tailwindcss classes
             const classes = Object.entries(node.attributes)
               .map(([key, value]) =>
-                getTailwindCssClass(key, value, node.attributes, fonts)
+                getTailwindCssClass(key, value, node.attributes, fonts),
               )
               .filter((c) => !!c)
               .join(" ");
@@ -69,7 +69,7 @@ const plugin: IPlugin<Options> = {
               const imageFilePath = `/assets/${imageName}.png`; // TODO: File might not be png, need code to detect file type
 
               importStatements.push(
-                `import ${imageName} from ".${imageFilePath}"`
+                `import ${imageName} from ".${imageFilePath}"`,
               );
 
               const byteCharacters = Buffer.from(node.base64image, "base64");
@@ -87,7 +87,7 @@ const plugin: IPlugin<Options> = {
 
             if (children.length > 0) {
               return `<${tagName}${styleString}>${generateReact(
-                children
+                children,
               )}</${tagName}>`;
             }
 

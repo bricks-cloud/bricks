@@ -2,8 +2,11 @@ import { isEmpty } from "lodash";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import { getFileExtensionFromLanguage } from "../util";
-import { Generator as HtmlGenerator } from "../html/generator";
+import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
+import {
+  Generator as HtmlGenerator,
+  ImportedComponentMeta,
+} from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { getSortedFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
@@ -17,40 +20,62 @@ export class Generator {
     this.reactGenerator = new ReactGenerator();
   }
 
-  generateMainFileContent(
+  async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string
-  ): string {
-    if (option.uiFramework === UiFramework.html) {
-      return this.htmlGenerator.generateHtml(node, option);
+    mainComponentName: string,
+  ): Promise<[string, ImportedComponentMeta[]]> {
+    const [mainFileContent, importComponents] =
+      await this.htmlGenerator.generateHtml(node, option);
+    const importStatements: string[] = [`import "./style.css"`];
+
+    for (const importComponent of importComponents) {
+      importStatements.push(
+        `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+      );
     }
 
-    const content = this.htmlGenerator.generateHtml(node, option);
+    if (option.uiFramework === UiFramework.react) {
+      return [
+        this.reactGenerator.generateReactFileContent(
+          mainFileContent,
+          mainComponentName,
+          importStatements,
+        ),
+        importComponents,
+      ];
+    }
 
-    return this.reactGenerator.generateReactFileContent(
-      content,
-      mainComponentName,
-      [`import "./style.css"`]
-    );
+    return [mainFileContent, importComponents];
   }
 
-  generateFiles(node: Node, option: Option): File[] {
+  async generateFiles(node: Node, option: Option): Promise<File[]> {
     const sortedFontdata = getSortedFontsMetadata(node);
     const googleFontUrl = computeGoogleFontURL(sortedFontdata);
-
     const mainComponentName = "GeneratedComponent";
+    const [mainFileContent, importComponents] =
+      await this.generateMainFileContent(node, option, mainComponentName);
+
     const mainFile: File = {
-      content: this.generateMainFileContent(node, option, mainComponentName),
+      content: mainFileContent,
       path: `/${mainComponentName}.${getFileExtensionFromLanguage(option)}`,
     };
 
-    const cssFile: File = {
-      content: buildCssFileContent(googleFontUrl),
-      path: `/style.css`,
-    };
+    let extraFiles: File[] = [];
+    if (!isEmpty(importComponents)) {
+      extraFiles = await constructExtraSvgFiles(importComponents);
+    }
 
-    return [mainFile, cssFile];
+    if (isEmpty(googleFontUrl)) {
+      const cssFile: File = {
+        content: buildCssFileContent(googleFontUrl),
+        path: `/style.css`,
+      };
+
+      return [mainFile, cssFile, ...extraFiles];
+    }
+
+    return [mainFile, ...extraFiles];
   }
 }
 
@@ -72,7 +97,7 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructStyleProp(
         convertCssClassesToInlineStyle(node.getCssAttributes(), option),
-        option
+        option,
       );
     case NodeType.GROUP:
       return constructStyleProp(
@@ -81,9 +106,9 @@ const getProps = (node: Node, option: Option): string => {
             ...node.getPositionalCssAttributes(),
             ...node.getCssAttributes(),
           },
-          option
+          option,
         ),
-        option
+        option,
       );
     case NodeType.VISIBLE:
       return constructStyleProp(
@@ -92,9 +117,9 @@ const getProps = (node: Node, option: Option): string => {
             ...node.getCssAttributes(),
             ...node.getPositionalCssAttributes(),
           },
-          option
+          option,
         ),
-        option
+        option,
       );
   }
 };
@@ -132,7 +157,7 @@ const snakeCaseToCamelCase = (prop: string) => {
 // convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
-  option: Option
+  option: Option,
 ) => {
   if (option.uiFramework === UiFramework.react) {
     const lines: string[] = [];

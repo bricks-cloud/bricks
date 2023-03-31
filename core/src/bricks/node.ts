@@ -4,6 +4,9 @@ import {
   TextNode as AdaptedTextNode,
   BoxCoordinates,
   Attributes,
+  ExportFormat,
+  VectorNode as AdaptedVectorNode,
+  VectorGroupNode as AdaptedVectorGroupNode,
 } from "../design/adapter/node";
 import { filterAttributes } from "./util";
 
@@ -27,6 +30,7 @@ export enum NodeType {
   VISIBLE = "VISIBLE",
   TEXT = "TEXT",
   VECTOR = "VECTOR",
+  VECTOR_GROUP = "VECTOR_GROUP",
 }
 
 export type Annotations = {
@@ -52,7 +56,7 @@ export class BaseNode {
   }
 
   getPositionalCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
   }
@@ -92,7 +96,7 @@ export class BaseNode {
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
-  targetCoordinates: BoxCoordinates
+  targetCoordinates: BoxCoordinates,
 ) => {
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
@@ -127,7 +131,7 @@ export const doOverlap = (
 
 const computePositionalRelationship = (
   currentCoordinates: BoxCoordinates,
-  targetCoordinates: BoxCoordinates
+  targetCoordinates: BoxCoordinates,
 ): PostionalRelationship => {
   if (
     targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
@@ -166,7 +170,7 @@ export class GroupNode extends BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
   }
@@ -187,7 +191,7 @@ export class GroupNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.absRenderingBox,
-      targetNode.getAbsRenderingBox()
+      targetNode.getAbsRenderingBox(),
     );
   }
 
@@ -252,7 +256,7 @@ export class VisibleNode extends BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.node.getCssAttributes(), option);
   }
@@ -268,7 +272,7 @@ export class VisibleNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.getAbsRenderingBox(),
-      targetNode.getAbsRenderingBox()
+      targetNode.getAbsRenderingBox(),
     );
   }
 
@@ -314,12 +318,34 @@ export class TextNode extends VisibleNode {
   }
 }
 
+export class VectorGroupNode extends GroupNode {
+  readonly node: AdaptedVectorGroupNode;
+  constructor(node: AdaptedVectorGroupNode, children: Node[] = []) {
+    super(children);
+    this.node = node;
+  }
+
+  getType(): NodeType {
+    return NodeType.VECTOR_GROUP;
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    return await this.node.exportAsSvg(exportFormat);
+  }
+}
+
 export class VectorNode extends VisibleNode {
-  constructor(node: AdaptedNode) {
+  readonly vectorNode: AdaptedVectorNode;
+  constructor(node: AdaptedVectorNode) {
     super(node);
+    this.vectorNode = node;
   }
 
   getType(): NodeType {
     return NodeType.VECTOR;
+  }
+
+  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+    return await this.vectorNode.exportAsSvg(exportFormat);
   }
 }

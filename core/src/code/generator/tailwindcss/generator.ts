@@ -1,13 +1,16 @@
 import { isEmpty } from "lodash";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
-import { getFileExtensionFromLanguage } from "../util";
+import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
 import { convertCssClassesToTwcssClasses } from "./css-to-twcss";
 import {
   instantiateFontsRegistryGlobalInstance,
   FontsRegistryGlobalInstance,
 } from "./fonts-registry";
-import { Generator as HtmlGenerator } from "../html/generator";
+import {
+  Generator as HtmlGenerator,
+  ImportedComponentMeta,
+} from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 
 export class Generator {
@@ -19,32 +22,53 @@ export class Generator {
     this.reactGenerator = new ReactGenerator();
   }
 
-  generateMainFileContent(
+  async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string
-  ): string {
-    if (option.uiFramework === UiFramework.react) {
-      const content = this.htmlGenerator.generateHtml(node, option);
-      return this.reactGenerator.generateReactFileContent(
-        content,
-        mainComponentName,
-        [`import "./style.css"`]
+    mainComponentName: string,
+  ): Promise<[string, ImportedComponentMeta[]]> {
+    const [mainFileContent, importComponents] =
+      await this.htmlGenerator.generateHtml(node, option);
+    const importStatements: string[] = [`import "./style.css"`];
+
+    for (const importComponent of importComponents) {
+      importStatements.push(
+        `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
       );
     }
 
-    return this.htmlGenerator.generateHtml(node, option);
+    if (option.uiFramework === UiFramework.react) {
+      return [
+        this.reactGenerator.generateReactFileContent(
+          mainFileContent,
+          mainComponentName,
+          importStatements,
+        ),
+        importComponents,
+      ];
+    }
+
+    return [mainFileContent, importComponents];
   }
 
-  generateFiles(node: Node, option: Option): File[] {
+  async generateFiles(node: Node, option: Option): Promise<File[]> {
     instantiateFontsRegistryGlobalInstance(node);
 
     const mainComponentName = "GeneratedComponent";
     const mainFileExtension = getFileExtensionFromLanguage(option);
+
+    const [mainFileContent, importComponents] =
+      await this.generateMainFileContent(node, option, mainComponentName);
+
     const mainFile: File = {
-      content: this.generateMainFileContent(node, option, mainComponentName),
+      content: mainFileContent,
       path: `/${mainComponentName}.${mainFileExtension}`,
     };
+
+    let extraFiles: File[] = [];
+    if (!isEmpty(importComponents)) {
+      extraFiles = await constructExtraSvgFiles(importComponents);
+    }
 
     const twcssConfigFile: File = {
       content: buildTwcssConfigFileContent(mainFileExtension),
@@ -56,7 +80,7 @@ export class Generator {
       path: `/style.css`,
     };
 
-    return [mainFile, twcssConfigFile, twcssFile];
+    return [mainFile, twcssConfigFile, twcssFile, ...extraFiles];
   }
 }
 
@@ -69,7 +93,7 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses(node.getCssAttributes())
+        convertCssClassesToTwcssClasses(node.getCssAttributes()),
       );
     case NodeType.GROUP:
       return constructClassProp(
@@ -77,7 +101,7 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        })
+        }),
       );
     case NodeType.VISIBLE:
       return constructClassProp(
@@ -85,8 +109,10 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        })
+        }),
       );
+    default:
+      return "";
   }
 };
 
@@ -101,7 +127,7 @@ const constructClassProp = (classPropName: string, value: string) => {
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
-  mainComponentFileExtension: string
+  mainComponentFileExtension: string,
 ) => {
   let fontFamilies = "";
   const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();
