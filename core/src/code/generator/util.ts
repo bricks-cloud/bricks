@@ -3,6 +3,7 @@ import { ImportedComponentMeta } from "./html/generator";
 import { ExportFormat } from "../../design/adapter/node";
 import { Option, File, UiFramework, Language } from "../code";
 
+// getFileExtensionFromLanguage determines file extension for the main file depending on the input option
 export const getFileExtensionFromLanguage = (option: Option): string => {
   if (option.uiFramework === UiFramework.html) {
     return "html";
@@ -15,11 +16,13 @@ export const getFileExtensionFromLanguage = (option: Option): string => {
   return "jsx";
 };
 
+// getFileExtension gets file extension given a file object
 export const getFileExtension = (file: File) => {
   const parts = file.path.split(".");
   return parts[parts.length - 1];
 };
 
+// constructExtraSvgFiles creates svg files if they are imported in the main file
 export const constructExtraSvgFiles = async (
   importedComponents: ImportedComponentMeta[],
 ): Promise<File[]> => {
