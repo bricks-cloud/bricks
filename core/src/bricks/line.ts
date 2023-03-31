@@ -82,7 +82,7 @@ export class Line {
 // getLinesFromNodes gets boundaries from nodes based on direction.
 export const getLinesFromNodes = (
   nodes: Node[],
-  direction: Direction
+  direction: Direction,
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
@@ -104,7 +104,7 @@ export const getLinesFromNodes = (
 // and the end of this line is the highest directional x / y value from the nodes
 export const getContainerLineFromNodes = (
   nodes: Node[],
-  direction: Direction
+  direction: Direction,
 ): Line => {
   let lower: number = Infinity;
   let upper: number = -Infinity;

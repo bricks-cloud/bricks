@@ -20,8 +20,9 @@ export const getFileExtension = (file: File) => {
   return parts[parts.length - 1];
 };
 
-
-export const constructExtraSvgFiles = async (importedComponents: ImportedComponentMeta[]): Promise<File[]> => {
+export const constructExtraSvgFiles = async (
+  importedComponents: ImportedComponentMeta[],
+): Promise<File[]> => {
   let files: File[] = [];
   if (isEmpty(importedComponents)) {
     return files;
@@ -35,8 +36,4 @@ export const constructExtraSvgFiles = async (importedComponents: ImportedCompone
   }
 
   return files;
-
-}
-
-
-
+};

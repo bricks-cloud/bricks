@@ -24,7 +24,7 @@ enum NodeType {
   ELLIPSE = "ELLIPSE",
   FRAME = "FRAME",
   RECTANGLE = "RECTANGLE",
-  INSTANCE = "INSTANCE"
+  INSTANCE = "INSTANCE",
 }
 
 // getCssAttributes extracts styling information from figmaNode to css attributes
@@ -96,13 +96,14 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       .filter(
         (effect) =>
           effect.visible &&
-          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW")
+          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"),
       )
       .map((effect: DropShadowEffect | InnerShadowEffect) => {
         const { offset, radius, spread, color } = effect;
 
-        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-          }px ${rgbaToString(color)}`;
+        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+          spread ?? 0
+        }px ${rgbaToString(color)}`;
 
         if (effect.type === "INNER_SHADOW") {
           return "inset " + dropShadowString;
@@ -117,7 +118,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // filter: blur
     const layerBlur = figmaNode.effects.find(
-      (effect) => effect.type === "LAYER_BLUR" && effect.visible
+      (effect) => effect.type === "LAYER_BLUR" && effect.visible,
     );
 
     if (layerBlur) {
@@ -126,7 +127,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // backdrop-filter: blur
     const backgroundBlur = figmaNode.effects.find(
-      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible
+      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible,
     );
 
     if (backgroundBlur) {
@@ -137,12 +138,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     if (fills !== figma.mixed && fills.length > 0) {
       // background color
       const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID"
+        (fill) => fill.type === "SOLID",
       ) as SolidPaint;
       if (solidPaint) {
         attributes["background-color"] = colorToStringWithOpacity(
           solidPaint.color,
-          solidPaint.opacity
+          solidPaint.opacity,
         );
       }
     }
@@ -158,7 +159,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes[
         "font-family"
       ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
-        fontFamily
+        fontFamily,
       )}`;
     }
 
@@ -186,9 +187,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     let width = absoluteRenderBounds.width + 2;
     if (
       Math.abs(
-        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
+        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width,
       ) /
-      figmaNode.absoluteBoundingBox.width >
+        figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -237,7 +238,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     ) {
       attributes["color"] = colorToStringWithOpacity(
         colors[0].color,
-        colors[0].opacity
+        colors[0].opacity,
       );
     }
 
@@ -488,17 +489,22 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   }
 }
 
-const EXPORTABLE_NODE_TYPES: string[] = [NodeType.ELLIPSE, NodeType.VECTOR, NodeType.FRAME, NodeType.RECTANGLE]
+const EXPORTABLE_NODE_TYPES: string[] = [
+  NodeType.ELLIPSE,
+  NodeType.VECTOR,
+  NodeType.FRAME,
+  NodeType.RECTANGLE,
+];
 const GROUP_NODE_TYPES: string[] = [NodeType.GROUP, NodeType.INSTANCE];
 
 type Feedbacks = {
-  nodes: Node[],
+  nodes: Node[];
   areAllNodesExportable: boolean;
-}
+};
 
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
-  figmaNodes: readonly SceneNode[]
+  figmaNodes: readonly SceneNode[],
 ): Feedbacks => {
   let reordered = [...figmaNodes];
   if (reordered.length > 1) {
@@ -518,12 +524,17 @@ export const convertFigmaNodesToBricksNodes = (
 
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
-    if (!EXPORTABLE_NODE_TYPES.includes(figmaNode.type) && !GROUP_NODE_TYPES.includes(figmaNode.type)) {
+    if (
+      !EXPORTABLE_NODE_TYPES.includes(figmaNode.type) &&
+      !GROUP_NODE_TYPES.includes(figmaNode.type)
+    ) {
       result.areAllNodesExportable = false;
     }
 
-
-    if (figmaNode.type === NodeType.RECTANGLE && doesRectangleNodeContainsAnImage(figmaNode)) {
+    if (
+      figmaNode.type === NodeType.RECTANGLE &&
+      doesRectangleNodeContainsAnImage(figmaNode)
+    ) {
       result.areAllNodesExportable = false;
     }
 
@@ -558,15 +569,17 @@ export const convertFigmaNodesToBricksNodes = (
         }
 
         if (feedbacks.areAllNodesExportable) {
-          newNode = new VectorGroupNode(new FigmaVectorGroupNodeAdapter(figmaNode), feedbacks.nodes);
+          newNode = new VectorGroupNode(
+            new FigmaVectorGroupNodeAdapter(figmaNode),
+            feedbacks.nodes,
+          );
         }
 
         newNode.setChildren(feedbacks.nodes);
 
-        result.areAllNodesExportable = feedbacks.areAllNodesExportable && result.areAllNodesExportable;
-
+        result.areAllNodesExportable =
+          feedbacks.areAllNodesExportable && result.areAllNodesExportable;
       }
-
 
       result.nodes.push(newNode);
     }

@@ -1,15 +1,21 @@
 import { isEmpty } from "lodash";
 import { CssFramework, Option, UiFramework } from "../../code";
-import { Node, NodeType, TextNode, VectorGroupNode, VectorNode } from "../../../bricks/node";
+import {
+  Node,
+  NodeType,
+  TextNode,
+  VectorGroupNode,
+  VectorNode,
+} from "../../../bricks/node";
 import { ExportFormat } from "../../../design/adapter/node";
 
 export type GetProps = (node: Node, option: Option) => string;
 
 export type ImportedComponentMeta = {
-  node: VectorGroupNode | VectorNode,
-  importPath: string,
-  componentName: string,
-}
+  node: VectorGroupNode | VectorNode;
+  importPath: string;
+  componentName: string;
+};
 
 export class Generator {
   getProps: GetProps;
@@ -19,7 +25,10 @@ export class Generator {
     this.getProps = getProps;
   }
 
-  async generateHtml(node: Node, option: Option): Promise<[string, ImportedComponentMeta[]]> {
+  async generateHtml(
+    node: Node,
+    option: Option,
+  ): Promise<[string, ImportedComponentMeta[]]> {
     const importComponents: ImportedComponentMeta[] = [];
 
     switch (node.getType()) {
@@ -29,7 +38,10 @@ export class Generator {
         const tag =
           option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
 
-        return [`<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`, importComponents];
+        return [
+          `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`,
+          importComponents,
+        ];
 
       case NodeType.GROUP:
         // this edge case should never happen
@@ -38,12 +50,15 @@ export class Generator {
         }
 
         const groupNodeClassProps = this.getProps(node, option);
-        return [await this.generateHtmlFromNodes(
-          node.getChildren(),
-          [`<div ${groupNodeClassProps}>`, "</div>",],
-          option,
+        return [
+          await this.generateHtmlFromNodes(
+            node.getChildren(),
+            [`<div ${groupNodeClassProps}>`, "</div>"],
+            option,
+            importComponents,
+          ),
           importComponents,
-        ), importComponents];
+        ];
 
       case NodeType.VISIBLE:
         const visibleNodeClassProps = this.getProps(node, option);
@@ -52,21 +67,37 @@ export class Generator {
           return [`<div ${visibleNodeClassProps} />`, importComponents];
         }
 
-        return [await this.generateHtmlFromNodes(
-          node.getChildren(),
-          [`<div ${visibleNodeClassProps}>`, "</div>",],
-          option,
+        return [
+          await this.generateHtmlFromNodes(
+            node.getChildren(),
+            [`<div ${visibleNodeClassProps}>`, "</div>"],
+            option,
+            importComponents,
+          ),
           importComponents,
-        ), importComponents];
+        ];
 
       case NodeType.VECTOR_GROUP:
         const vectorGroupNode = node as VectorGroupNode;
-        return [await this.generateHtmlElementForVectorNodes(vectorGroupNode, option, importComponents), importComponents]
-
+        return [
+          await this.generateHtmlElementForVectorNodes(
+            vectorGroupNode,
+            option,
+            importComponents,
+          ),
+          importComponents,
+        ];
 
       case NodeType.VECTOR:
         const vectorNode = node as VectorGroupNode;
-        return [await this.generateHtmlElementForVectorNodes(vectorNode, option, importComponents), importComponents]
+        return [
+          await this.generateHtmlElementForVectorNodes(
+            vectorNode,
+            option,
+            importComponents,
+          ),
+          importComponents,
+        ];
     }
 
     return [`<div></div>`, importComponents];
@@ -76,7 +107,7 @@ export class Generator {
     nodes: Node[],
     [openingTag, closingTag]: string[],
     option: Option,
-    importComponents: ImportedComponentMeta[]
+    importComponents: ImportedComponentMeta[],
   ): Promise<string> {
     let childrenCodeStrings: string[] = [];
 
@@ -89,7 +120,7 @@ export class Generator {
             option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
 
           childrenCodeStrings.push(
-            `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`
+            `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`,
           );
           continue;
 
@@ -132,13 +163,22 @@ export class Generator {
 
         case NodeType.VECTOR_GROUP:
           const vectorGroupNode = child as VectorGroupNode;
-          const vectorGroupCodeString = await this.generateHtmlElementForVectorNodes(vectorGroupNode, option, importComponents);
+          const vectorGroupCodeString =
+            await this.generateHtmlElementForVectorNodes(
+              vectorGroupNode,
+              option,
+              importComponents,
+            );
           childrenCodeStrings.push(vectorGroupCodeString);
           continue;
 
         case NodeType.VECTOR:
           const vectorNode = child as VectorGroupNode;
-          const vectorCodeString = await this.generateHtmlElementForVectorNodes(vectorNode, option, importComponents);
+          const vectorCodeString = await this.generateHtmlElementForVectorNodes(
+            vectorNode,
+            option,
+            importComponents,
+          );
           childrenCodeStrings.push(vectorCodeString);
           continue;
       }
@@ -147,7 +187,11 @@ export class Generator {
     return openingTag + childrenCodeStrings.join("") + closingTag;
   }
 
-  private async generateHtmlElementForVectorNodes(node: VectorNode | VectorGroupNode, option: Option, importComponents: ImportedComponentMeta[]) {
+  private async generateHtmlElementForVectorNodes(
+    node: VectorNode | VectorGroupNode,
+    option: Option,
+    importComponents: ImportedComponentMeta[],
+  ) {
     const vectorComponentName = "SvgAsset" + this.numberOfVectors;
     this.numberOfVectors++;
 
@@ -160,7 +204,6 @@ export class Generator {
 
       return `<img src={${vectorComponentName}} alt=${`"Svg Asset ${this.numberOfVectors}"`} />`;
     }
-
 
     return await node.exportAsSvg(ExportFormat.SVG);
   }

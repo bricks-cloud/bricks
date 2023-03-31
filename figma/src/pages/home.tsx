@@ -6,15 +6,22 @@ import { CssFramework, UiFramework, Language } from "../constants";
 
 export interface Props {
   connectedToVSCode: boolean;
-  selectedUiFramework: UiFramework,
-  selectedCssFramework: CssFramework,
-  selectedLanguage: Language,
+  selectedUiFramework: UiFramework;
+  selectedCssFramework: CssFramework;
+  selectedLanguage: Language;
   isComponentSelected: boolean;
   setIsGeneratingCode: (value: boolean) => void;
 }
 
 const Home = (props: PropsWithChildren<Props>) => {
-  const { connectedToVSCode, isComponentSelected, setIsGeneratingCode, selectedUiFramework, selectedCssFramework, selectedLanguage } = props;
+  const {
+    connectedToVSCode,
+    isComponentSelected,
+    setIsGeneratingCode,
+    selectedUiFramework,
+    selectedCssFramework,
+    selectedLanguage,
+  } = props;
 
   const { setCurrentPage } = useContext(PageContext);
 
@@ -30,7 +37,7 @@ const Home = (props: PropsWithChildren<Props>) => {
           },
         },
       },
-      "*"
+      "*",
     );
     setIsGeneratingCode(true);
     setCurrentPage(PAGES.CODE_GENERATION);

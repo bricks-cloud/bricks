@@ -18,7 +18,6 @@ export const truncateNumbers = (value: string): string => {
   return value;
 };
 
-
 // zeroValueFilter prevents values like 0px 0% 0.05px from showing up in generated code
 export const zeroValueFilter = (value: string): boolean => {
   if (value.endsWith("px")) {
@@ -48,7 +47,7 @@ type ModifierFunction = (value: string) => string;
 // filterAttributes filters and modfies attribtues
 export const filterAttributes = (
   attributes: Attributes,
-  option: Option
+  option: Option,
 ): Attributes => {
   const copy: Attributes = {};
   const filters: FitlerFunction[] = [];

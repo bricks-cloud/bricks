@@ -38,7 +38,7 @@ function classNames(...classes) {
 function updateSettings(
   uiFramework: string,
   cssFramework: string,
-  language: string
+  language: string,
 ) {
   parent.postMessage(
     {
@@ -51,7 +51,7 @@ function updateSettings(
         } as Settings,
       },
     },
-    "*" //TODO: can use different origin??
+    "*", //TODO: can use different origin??
   );
 }
 
@@ -61,7 +61,7 @@ const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
   if (disabled) {
     return classNames(
       "bg-gray-300 border-gray-300 text-gray-500",
-      baseClassName
+      baseClassName,
     );
   }
 
@@ -70,7 +70,7 @@ const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
       "bg-blue-50 border-blue-700 border-2 text-gray-900 hover:bg-blue-50",
       "shadow-md",
       "text-gray-900",
-      baseClassName
+      baseClassName,
     );
   }
 

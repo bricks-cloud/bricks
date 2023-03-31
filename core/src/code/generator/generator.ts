@@ -3,7 +3,10 @@ import { Node } from "../../bricks/node";
 import { Generator as CssGenerator } from "./css/generator";
 import { Generator as TwcssGenerator } from "./tailwindcss/generator";
 
-export const generateCodingFiles = async (node: Node, option: Option): Promise<File[]> => {
+export const generateCodingFiles = async (
+  node: Node,
+  option: Option,
+): Promise<File[]> => {
   switch (option.cssFramework) {
     case CssFramework.css:
       const cssGenerator = new CssGenerator();

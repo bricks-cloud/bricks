@@ -7,7 +7,6 @@ export type Attributes = {
   [type: string]: string;
 };
 
-
 export enum ExportFormat {
   SVG = "SVG",
 }

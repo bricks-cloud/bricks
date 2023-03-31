@@ -24,7 +24,7 @@ export const getDirection = (nodes: Node[]): Direction => {
       }
       const targetLine = getLineBasedOnDirection(
         nodes[j],
-        Direction.HORIZONTAL
+        Direction.HORIZONTAL,
       );
       noVerticalOverlap = noVerticalOverlap && !currentLine.overlap(targetLine);
     }
@@ -40,7 +40,7 @@ export const getDirection = (nodes: Node[]): Direction => {
 // reorderNodesBasedOnDirection reorders input nodes based on direction in ascending order.
 export const reorderNodesBasedOnDirection = (
   nodes: Node[],
-  direction: Direction
+  direction: Direction,
 ) => {
   if (direction === Direction.VERTICAL) {
     nodes.sort((a: Node, b: Node): number => {

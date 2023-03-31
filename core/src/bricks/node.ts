@@ -56,7 +56,7 @@ export class BaseNode {
   }
 
   getPositionalCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
   }
@@ -96,7 +96,7 @@ export class BaseNode {
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
-  targetCoordinates: BoxCoordinates
+  targetCoordinates: BoxCoordinates,
 ) => {
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
@@ -131,7 +131,7 @@ export const doOverlap = (
 
 const computePositionalRelationship = (
   currentCoordinates: BoxCoordinates,
-  targetCoordinates: BoxCoordinates
+  targetCoordinates: BoxCoordinates,
 ): PostionalRelationship => {
   if (
     targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
@@ -170,7 +170,7 @@ export class GroupNode extends BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
   }
@@ -191,7 +191,7 @@ export class GroupNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.absRenderingBox,
-      targetNode.getAbsRenderingBox()
+      targetNode.getAbsRenderingBox(),
     );
   }
 
@@ -256,7 +256,7 @@ export class VisibleNode extends BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true }
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
   ): Attributes {
     return filterAttributes(this.node.getCssAttributes(), option);
   }
@@ -272,7 +272,7 @@ export class VisibleNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.getAbsRenderingBox(),
-      targetNode.getAbsRenderingBox()
+      targetNode.getAbsRenderingBox(),
     );
   }
 
@@ -333,7 +333,6 @@ export class VectorGroupNode extends GroupNode {
     return await this.node.exportAsSvg(exportFormat);
   }
 }
-
 
 export class VectorNode extends VisibleNode {
   readonly vectorNode: AdaptedVectorNode;

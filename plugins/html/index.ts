@@ -36,7 +36,7 @@ const plugin: IPlugin<Options> = {
             // convert attirbutes to tailwindcss classes
             const classes = Object.entries(node.attributes)
               .map(([key, value]) =>
-                getTailwindCssClass(key, value, node.attributes, fonts)
+                getTailwindCssClass(key, value, node.attributes, fonts),
               )
               .filter((c) => !!c)
               .join(" ");
@@ -78,7 +78,7 @@ const plugin: IPlugin<Options> = {
 
             if (children.length > 0) {
               return `<${tagName}${styleString}>${generateHtml(
-                children
+                children,
               )}</${tagName}>`;
             }
 

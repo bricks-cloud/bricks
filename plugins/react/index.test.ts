@@ -137,7 +137,7 @@ describe("generates React code in TypeScript", () => {
     expect(
       plugin
         .transform([node], { typescript: true })
-        .find((file) => file.path.endsWith(".tsx"))
+        .find((file) => file.path.endsWith(".tsx")),
     ).toBeTruthy();
   });
 });

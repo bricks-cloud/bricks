@@ -37,7 +37,7 @@ module.exports = (env, argv) => ({
         test: /\.css$/,
         include: path.resolve(
           __dirname,
-          "node_modules/prismjs/themes/prism-solarizedlight.css"
+          "node_modules/prismjs/themes/prism-solarizedlight.css",
         ),
         use: ["style-loader", "css-loader", "postcss-loader"],
       },

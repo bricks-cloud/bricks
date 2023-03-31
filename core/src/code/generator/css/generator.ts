@@ -3,7 +3,10 @@ import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
 import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
-import { Generator as HtmlGenerator, ImportedComponentMeta } from "../html/generator";
+import {
+  Generator as HtmlGenerator,
+  ImportedComponentMeta,
+} from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { getSortedFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
@@ -20,21 +23,27 @@ export class Generator {
   async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string
+    mainComponentName: string,
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const [mainFileContent, importComponents] = await this.htmlGenerator.generateHtml(node, option);
+    const [mainFileContent, importComponents] =
+      await this.htmlGenerator.generateHtml(node, option);
     const importStatements: string[] = [`import "./style.css"`];
 
     for (const importComponent of importComponents) {
-      importStatements.push(`import ${importComponent.componentName} from ".${importComponent.importPath}"`);
+      importStatements.push(
+        `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+      );
     }
 
     if (option.uiFramework === UiFramework.react) {
-      return [this.reactGenerator.generateReactFileContent(
-        mainFileContent,
-        mainComponentName,
-        importStatements
-      ), importComponents];
+      return [
+        this.reactGenerator.generateReactFileContent(
+          mainFileContent,
+          mainComponentName,
+          importStatements,
+        ),
+        importComponents,
+      ];
     }
 
     return [mainFileContent, importComponents];
@@ -44,7 +53,8 @@ export class Generator {
     const sortedFontdata = getSortedFontsMetadata(node);
     const googleFontUrl = computeGoogleFontURL(sortedFontdata);
     const mainComponentName = "GeneratedComponent";
-    const [mainFileContent, importComponents] = await this.generateMainFileContent(node, option, mainComponentName);
+    const [mainFileContent, importComponents] =
+      await this.generateMainFileContent(node, option, mainComponentName);
 
     const mainFile: File = {
       content: mainFileContent,
@@ -55,7 +65,6 @@ export class Generator {
     if (!isEmpty(importComponents)) {
       extraFiles = await constructExtraSvgFiles(importComponents);
     }
-
 
     if (isEmpty(googleFontUrl)) {
       const cssFile: File = {
@@ -88,7 +97,7 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructStyleProp(
         convertCssClassesToInlineStyle(node.getCssAttributes(), option),
-        option
+        option,
       );
     case NodeType.GROUP:
       return constructStyleProp(
@@ -97,9 +106,9 @@ const getProps = (node: Node, option: Option): string => {
             ...node.getPositionalCssAttributes(),
             ...node.getCssAttributes(),
           },
-          option
+          option,
         ),
-        option
+        option,
       );
     case NodeType.VISIBLE:
       return constructStyleProp(
@@ -108,9 +117,9 @@ const getProps = (node: Node, option: Option): string => {
             ...node.getCssAttributes(),
             ...node.getPositionalCssAttributes(),
           },
-          option
+          option,
         ),
-        option
+        option,
       );
   }
 };
@@ -148,7 +157,7 @@ const snakeCaseToCamelCase = (prop: string) => {
 // convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
-  option: Option
+  option: Option,
 ) => {
   if (option.uiFramework === UiFramework.react) {
     const lines: string[] = [];

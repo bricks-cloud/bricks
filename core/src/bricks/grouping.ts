@@ -28,15 +28,15 @@ export const groupNodes = (parentNode: Node) => {
 
   const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
-    Direction.HORIZONTAL
+    Direction.HORIZONTAL,
   );
   const verticalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
-    Direction.VERTICAL
+    Direction.VERTICAL,
   );
   const decided = decideBetweenDirectionalOverlappingNodes(
     horizontalSegmentedNodes,
-    verticalSegmentedNodes
+    verticalSegmentedNodes,
   );
 
   if (!isEmpty(decided)) {

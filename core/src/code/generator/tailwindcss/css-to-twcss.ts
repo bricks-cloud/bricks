@@ -20,7 +20,7 @@ import { FontsRegistryGlobalInstance } from "./fonts-registry";
 
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
 export const convertCssClassesToTwcssClasses = (
-  attributes: Attributes
+  attributes: Attributes,
 ): string => {
   let content = "";
 
@@ -33,7 +33,7 @@ export const convertCssClassesToTwcssClasses = (
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
-  mainComponentFileExtension: string
+  mainComponentFileExtension: string,
 ) => {
   let fontFamilies = "";
   const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();
@@ -164,7 +164,7 @@ const extractPixelNumberFromString = (pixelStr: string) =>
 const findClosestTwcssClassUsingPixel = (
   targetPixelStr: string,
   twClassToPixelMap: Record<string, string>,
-  defaultClass: string
+  defaultClass: string,
 ) => {
   let closestTwClass = defaultClass;
   const targetPixelNum = extractPixelNumberFromString(targetPixelStr);
@@ -204,13 +204,13 @@ const findClosestTwcssLineHeight = (lineHeight: string): string => {
 
       if (unit === "px" && cssValue.endsWith("px")) {
         diff = Math.abs(
-          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2))
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2)),
         );
       }
 
       if (unit === "%" && cssValue.endsWith("%")) {
         diff = Math.abs(
-          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1))
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1)),
         );
       }
 
@@ -227,7 +227,7 @@ const findClosestTwcssLineHeight = (lineHeight: string): string => {
 // findClosestTwcssLetterSpacing finds the closest tailwindcss letter spacing given the fontsize and css letter spacing
 const findClosestTwcssLetterSpacing = (
   letterSpacing: string,
-  fontSize: number
+  fontSize: number,
 ): string => {
   let twClassToUse = "tracking-normal";
 
@@ -245,7 +245,7 @@ const findClosestTwcssLetterSpacing = (
 
     Object.entries(twLetterSpacingMap).forEach(([twClass, cssValue]) => {
       const diff = Math.abs(
-        givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2))
+        givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2)),
       );
       if (diff < minDiff) {
         minDiff = diff;
@@ -336,7 +336,7 @@ const renderTwcssProperty = (prefix: string, value: string) => {
 export const getTwcssClass = (
   cssProperty: string,
   cssValue: string,
-  cssAttributes: Attributes
+  cssAttributes: Attributes,
 ): string => {
   switch (cssProperty) {
     case "height":
@@ -362,7 +362,7 @@ export const getTwcssClass = (
       const borderWidthTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderWidthTwSize === "0") return "";
@@ -376,7 +376,7 @@ export const getTwcssClass = (
       const borderTopWidthTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderTopWidthTwSize === "0") return "";
@@ -390,7 +390,7 @@ export const getTwcssClass = (
       const borderBottomWidthTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderBottomWidthTwSize === "0") return "";
@@ -404,7 +404,7 @@ export const getTwcssClass = (
       const borderLeftWidthTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderLeftWidthTwSize === "0") return "";
@@ -418,7 +418,7 @@ export const getTwcssClass = (
       const borderRightWidthTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderRightWidthTwSize === "0") return "";
@@ -432,7 +432,7 @@ export const getTwcssClass = (
       const borderRadiusTwSize = findClosestTwcssClassUsingPixel(
         cssValue,
         twBorderRadiusMap,
-        "none"
+        "none",
       );
       if (borderRadiusTwSize === "0") {
         return "";
@@ -662,7 +662,7 @@ export const getTwcssClass = (
 
     case "color":
       return `text-${findClosestTwcssColor(cssValue)} ${findClosestTwcssOpacity(
-        cssValue
+        cssValue,
       )}`;
 
     case "text-transform":

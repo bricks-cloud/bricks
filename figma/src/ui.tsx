@@ -21,10 +21,10 @@ const UI = () => {
   // User settings
   const [selectedLanguage, setSelectedLanguage] = useState(Language.javascript);
   const [selectedUiFramework, setSelectedUiFramework] = useState(
-    UiFramework.react
+    UiFramework.react,
   );
   const [selectedCssFramework, setSelectedCssFramework] = useState(
-    CssFramework.tailwindcss
+    CssFramework.tailwindcss,
   );
 
   useEffect(() => {
@@ -68,13 +68,16 @@ const UI = () => {
       setCurrentPage(PAGES.HOME);
     }
 
-
     if (pluginMessage.type === "styled-bricks-nodes") {
-      socket.emit("code-generation", { files: pluginMessage.files }, (response) => {
-        if (response.status === "ok") {
-          setIsGeneratingCode(false);
-        }
-      });
+      socket.emit(
+        "code-generation",
+        { files: pluginMessage.files },
+        (response) => {
+          if (response.status === "ok") {
+            setIsGeneratingCode(false);
+          }
+        },
+      );
     }
   };
 

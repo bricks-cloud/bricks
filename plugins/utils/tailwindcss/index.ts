@@ -111,7 +111,7 @@ const extractPixelNumberFromString = (pixelStr: string) =>
 const findClosestTwClassUsingPixel = (
   targetPixelStr: string,
   twClassToPixelMap: Record<string, string>,
-  defaultClass: string
+  defaultClass: string,
 ) => {
   let closestTwClass = defaultClass;
   const targetPixelNum = extractPixelNumberFromString(targetPixelStr);
@@ -156,13 +156,13 @@ const findClosestTailwindCSSLineHeight = (lineHeight: string): string => {
 
       if (unit === "px" && cssValue.endsWith("px")) {
         diff = Math.abs(
-          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2))
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -2)),
         );
       }
 
       if (unit === "%" && cssValue.endsWith("%")) {
         diff = Math.abs(
-          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1))
+          parseInt(givenLineHeight) - parseInt(cssValue.slice(0, -1)),
         );
       }
 
@@ -178,7 +178,7 @@ const findClosestTailwindCSSLineHeight = (lineHeight: string): string => {
 
 const findClosestTailwindCSSLetterSpacing = (
   letterSpacing: string,
-  fontSize: number
+  fontSize: number,
 ): string => {
   let twClassToUse = "tracking-normal";
 
@@ -196,7 +196,7 @@ const findClosestTailwindCSSLetterSpacing = (
 
     Object.entries(twLetterSpacingMap).forEach(([twClass, cssValue]) => {
       const diff = Math.abs(
-        givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2))
+        givenLetterSpacingInEm - parseFloat(cssValue.slice(0, -2)),
       );
       if (diff < minDiff) {
         minDiff = diff;
@@ -290,7 +290,7 @@ export const getTailwindCssClass = (
   cssProperty: string,
   cssValue: string,
   cssAttributes: Attributes,
-  fonts: Record<string, FontMetadata>
+  fonts: Record<string, FontMetadata>,
 ): string => {
   switch (cssProperty) {
     case "height":
@@ -316,7 +316,7 @@ export const getTailwindCssClass = (
       const borderWidthTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderWidthTwSize === "0") return "";
@@ -330,7 +330,7 @@ export const getTailwindCssClass = (
       const borderTopWidthTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderTopWidthTwSize === "0") return "";
@@ -344,7 +344,7 @@ export const getTailwindCssClass = (
       const borderBottomWidthTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderBottomWidthTwSize === "0") return "";
@@ -358,7 +358,7 @@ export const getTailwindCssClass = (
       const borderLeftWidthTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderLeftWidthTwSize === "0") return "";
@@ -372,7 +372,7 @@ export const getTailwindCssClass = (
       const borderRightWidthTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBroderWidthMap,
-        "0"
+        "0",
       );
 
       if (borderRightWidthTwSize === "0") return "";
@@ -386,7 +386,7 @@ export const getTailwindCssClass = (
       const borderRadiusTwSize = findClosestTwClassUsingPixel(
         cssValue,
         twBorderRadiusMap,
-        "none"
+        "none",
       );
       if (borderRadiusTwSize === "0") {
         return "";
@@ -590,7 +590,7 @@ export const getTailwindCssClass = (
 
     case "color":
       return `text-${findClosestTailwindCSSColor(
-        cssValue
+        cssValue,
       )} ${findClosestTailwindCSSOpacity(cssValue)}`;
 
     case "text-transform":
@@ -793,12 +793,12 @@ const getAverageFontSize = (fontsizes: string[]) => {
 
 export const buildTwcConfigFileContent = (
   fonts: Record<string, FontMetadata>,
-  mainComponentFileExtension: string
+  mainComponentFileExtension: string,
 ) => {
   const fontFamilies = Object.entries(fonts)
     .map(
       ([fontFamily, metadata]) =>
-        `"${metadata.tailwindAlias}": "${fontFamily}",`
+        `"${metadata.tailwindAlias}": "${fontFamily}",`,
     )
     .join("\n");
 
