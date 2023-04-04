@@ -345,7 +345,14 @@ export const getTwcssClass = (
         return `h-[${heightNum}px]`;
       }
 
-      return findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
+      const approximatedTwcssHeightClass = findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
+      const approximatedHeightNum = extractPixelNumberFromString(twHeightMap[approximatedTwcssHeightClass]);
+
+      if (Math.abs(approximatedHeightNum - heightNum) > 2) {
+        return `h-[${heightNum}px]`;
+      }
+
+      return approximatedTwcssHeightClass;
 
     case "width":
       const widthNum = extractPixelNumberFromString(cssValue);
@@ -353,7 +360,14 @@ export const getTwcssClass = (
         return `w-[${widthNum}px]`;
       }
 
-      return findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
+      const approximatedTwcssWidthClass = findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
+      const approximatedWidthNum = extractPixelNumberFromString(twWidthMap[approximatedTwcssWidthClass]);
+
+      if (Math.abs(approximatedWidthNum - widthNum) > 2) {
+        return `w-[${widthNum}px]`;
+      }
+
+      return approximatedTwcssWidthClass;
 
     case "border-color":
       return "border-" + findClosestTwcssColor(cssValue);
