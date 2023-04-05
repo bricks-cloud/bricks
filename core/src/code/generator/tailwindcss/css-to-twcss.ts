@@ -66,6 +66,20 @@ export const buildTwcssConfigFileContent = (
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
 
+
+// url("./assets/image-1.png") -> "image-1"
+export const getImageFileNameFromUrl = (path: string) => {
+  const parts = path.split("/");
+  const len = parts.length;
+
+  if (parts.length >= 0) {
+    const result = parts[len - 1].split(".");
+    return result[0];
+  }
+
+  return "unknown";
+};
+
 // findClosestTwcssColor finds the closest tailwindcss color to css color.
 const findClosestTwcssColor = (cssColor: string) => {
   if (cssColor === "inherit") {
@@ -465,6 +479,10 @@ export const getTwcssClass = (
     case "background-color":
       return `bg-${findClosestTwcssColor(cssValue)}`;
 
+
+    case "background-image":
+      return `bg-${getImageFileNameFromUrl(cssValue)}`;
+
     case "box-shadow": {
       // A very naive conversion for now, because parsing box-shadow string is too complicated
       if (cssValue.includes("inset")) {
@@ -472,7 +490,7 @@ export const getTwcssClass = (
         return "shadow-inner";
       } else {
         // drop shadow
-        return "shadow";
+        return "shadow-2xl";
       }
     }
 
@@ -617,6 +635,9 @@ export const getTwcssClass = (
     }
 
     case "padding-top": {
+
+      console.log("padding-top cssValue: ", cssValue);
+      console.log(`renderTwcssProperty("pt-", findClosestTwcssSize(cssValue)): `, renderTwcssProperty("pt-", findClosestTwcssSize(cssValue)));
       return renderTwcssProperty("pt-", findClosestTwcssSize(cssValue));
     }
 

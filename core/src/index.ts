@@ -17,9 +17,10 @@ export const convertToCode = async (
   let startingNode: Node =
     converted.length > 1 ? new GroupNode(converted) : converted[0];
 
-  console.log("converted: ", converted);
-
   groupNodes(startingNode);
+
+  console.log("post groupNodes: ", startingNode);
+
   addPositionalCSSAttributesToNodes(startingNode);
 
   return generateCodingFiles(startingNode, option);

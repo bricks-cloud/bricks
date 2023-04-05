@@ -1,8 +1,8 @@
 import { isEmpty } from "lodash";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
-import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
-import { convertCssClassesToTwcssClasses } from "./css-to-twcss";
+import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
+import { convertCssClassesToTwcssClasses, getImageFileNameFromUrl } from "./css-to-twcss";
 import {
   instantiateFontsRegistryGlobalInstance,
   FontsRegistryGlobalInstance,
@@ -31,13 +31,18 @@ export class Generator {
       await this.htmlGenerator.generateHtml(node, option);
     const importStatements: string[] = [`import "./style.css"`];
 
-    for (const importComponent of importComponents) {
-      importStatements.push(
-        `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
-      );
-    }
-
     if (option.uiFramework === UiFramework.react) {
+      for (const importComponent of importComponents) {
+        const extension = getExtensionFromFilePath(importComponent.importPath);
+        if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+          continue;
+        }
+
+        importStatements.push(
+          `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+        );
+      }
+
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
@@ -67,11 +72,11 @@ export class Generator {
 
     let extraFiles: File[] = [];
     if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraSvgFiles(importComponents);
+      extraFiles = await constructExtraFiles(importComponents);
     }
 
     const twcssConfigFile: File = {
-      content: buildTwcssConfigFileContent(mainFileExtension),
+      content: buildTwcssConfigFileContent(mainFileExtension, importComponents),
       path: `/tailwind.config.js`,
     };
 
@@ -111,6 +116,16 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         }),
       );
+
+    case NodeType.IMAGE:
+      return constructClassProp(
+        classPropName,
+        convertCssClassesToTwcssClasses({
+          ...node.getPositionalCssAttributes(),
+          ...node.getCssAttributes(),
+        }),
+      );
+
     default:
       return "";
   }
@@ -128,15 +143,32 @@ const constructClassProp = (classPropName: string, value: string) => {
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
   mainComponentFileExtension: string,
+  importComponents: ImportedComponentMeta[]
 ) => {
   let fontFamilies = "";
-  const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();
+  let backgroundImages = "";
+  const fontEntries = FontsRegistryGlobalInstance.getFontMetadataInArray();
 
-  if (!isEmpty(entries)) {
-    fontFamilies = entries
+  if (!isEmpty(fontEntries)) {
+    fontFamilies = fontEntries
       .map((metadata) => `"${metadata.alias}": "${metadata.familyCss}",`)
       .join("");
   }
+
+
+  if (!isEmpty(importComponents)) {
+    importComponents.forEach((importComponent: ImportedComponentMeta) => {
+      const extension = getExtensionFromFilePath(importComponent.importPath);
+      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        backgroundImages += `"${getImageFileNameFromUrl(importComponent.importPath)}": "url(.${importComponent.importPath})",`;
+      }
+    });
+  }
+
+  const backgroundImagesConfig = !isEmpty(backgroundImages) ?
+    `backgroundImage: {
+    ${backgroundImages}
+  },` : "";
 
   const fontFamilyConfig = !isEmpty(fontFamilies)
     ? `fontFamily: {
@@ -148,6 +180,7 @@ export const buildTwcssConfigFileContent = (
     content: ["./*.${mainComponentFileExtension}"],
     theme: {
       ${fontFamilyConfig}
+      ${backgroundImagesConfig}
         extend: {},
       },
       plugins: [],

@@ -7,7 +7,9 @@ import {
   ExportFormat,
   VectorNode as AdaptedVectorNode,
   VectorGroupNode as AdaptedVectorGroupNode,
+  ImageNode as AdaptedImageNode,
 } from "../design/adapter/node";
+import { selectBox } from "./positional-css";
 import { filterAttributes } from "./util";
 
 export enum PostionalRelationship {
@@ -22,7 +24,7 @@ export type Option = {
   zeroValueAllowed: boolean;
 };
 
-export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
+export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
 
 export enum NodeType {
   BASE = "BASE",
@@ -31,6 +33,7 @@ export enum NodeType {
   TEXT = "TEXT",
   VECTOR = "VECTOR",
   VECTOR_GROUP = "VECTOR_GROUP",
+  IMAGE = "IMAGE",
 }
 
 export type Annotations = {
@@ -41,6 +44,7 @@ export class BaseNode {
   readonly id: string;
   children: Node[] = [];
   positionalCssAttributes: Attributes = {};
+  cssAttributes: Attributes = {};
   annotations: Annotations = {};
 
   constructor() {
@@ -65,6 +69,23 @@ export class BaseNode {
     this.positionalCssAttributes = {
       ...attributes,
       ...this.positionalCssAttributes,
+    };
+  }
+
+  setCssAttributes(attributes: Attributes) {
+    this.cssAttributes = attributes;
+  }
+
+  getCssAttributes(
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
+  ): Attributes {
+    return filterAttributes(this.cssAttributes, option);
+  }
+
+  addCssAttributes(attributes: Attributes) {
+    this.cssAttributes = {
+      ...attributes,
+      ...this.cssAttributes,
     };
   }
 
@@ -160,19 +181,18 @@ const computePositionalRelationship = (
 
 export class GroupNode extends BaseNode {
   readonly id: string;
+  node?: AdaptedNode;
   absRenderingBox: BoxCoordinates;
-  cssAttributes: Attributes = {};
 
-  constructor(children: Node[]) {
+  constructor(children: Node[], node: AdaptedNode = null) {
     super();
     this.setChildren(children);
     this.absRenderingBox = this.computeAbsRenderingBox();
-  }
 
-  getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
-  ): Attributes {
-    return filterAttributes(this.cssAttributes, option);
+    if (node !== null) {
+      this.node = node;
+      this.setCssAttributes(this.node.getCssAttributes());
+    }
   }
 
   getType(): NodeType {
@@ -185,6 +205,14 @@ export class GroupNode extends BaseNode {
   }
 
   getAbsRenderingBox() {
+    return this.absRenderingBox;
+  }
+
+  getAbsBoundingBox() {
+    if (this.node !== null) {
+      return this.node.getAbsoluteBoundingBoxCoordinates();
+    }
+
     return this.absRenderingBox;
   }
 
@@ -202,7 +230,7 @@ export class GroupNode extends BaseNode {
     let yb = -Infinity;
 
     for (const child of this.getChildren()) {
-      let coordinates = child.getAbsRenderingBox();
+      let coordinates = selectBox(child);
 
       if (coordinates.leftTop.x < xl) {
         xl = coordinates.leftTop.x;
@@ -251,14 +279,12 @@ export class VisibleNode extends BaseNode {
 
   constructor(node: AdaptedNode) {
     super();
-
     this.node = node;
+    this.setCssAttributes(this.node.getCssAttributes());
   }
 
-  getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
-  ): Attributes {
-    return filterAttributes(this.node.getCssAttributes(), option);
+  getAbsBoundingBox(): BoxCoordinates {
+    return this.node.getAbsoluteBoundingBoxCoordinates();
   }
 
   getType(): NodeType {
@@ -329,8 +355,8 @@ export class VectorGroupNode extends GroupNode {
     return NodeType.VECTOR_GROUP;
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
-    return await this.node.exportAsSvg(exportFormat);
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.node.export(exportFormat);
   }
 }
 
@@ -345,7 +371,24 @@ export class VectorNode extends VisibleNode {
     return NodeType.VECTOR;
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
-    return await this.vectorNode.exportAsSvg(exportFormat);
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.vectorNode.export(exportFormat);
   }
 }
+
+export class ImageNode extends VisibleNode {
+  readonly imageNode: AdaptedImageNode;
+  constructor(node: AdaptedImageNode) {
+    super(node);
+    this.imageNode = node;
+  }
+
+  getType(): NodeType {
+    return NodeType.IMAGE;
+  }
+
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.imageNode.export(exportFormat);
+  }
+}
+

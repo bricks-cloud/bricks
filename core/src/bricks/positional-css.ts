@@ -1,17 +1,31 @@
 import { isEmpty } from "lodash";
-import { Attributes } from "../design/adapter/node";
+import { Attributes, BoxCoordinates } from "../design/adapter/node";
 import {
   Direction,
   getOppositeDirection,
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node, NodeType } from "./node";
+import { ImageNode, Node, NodeType, VisibleNode } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
   getLineBasedOnDirection,
 } from "./line";
+
+export const selectBox = (node: Node): BoxCoordinates => {
+  if (node.getType() === NodeType.VISIBLE) {
+    const visibleNode = node as VisibleNode;
+    return visibleNode.getAbsBoundingBox();
+  }
+
+  if (node.getType() === NodeType.IMAGE) {
+    const imageNode = node as ImageNode;
+    return imageNode.getAbsBoundingBox();
+  }
+
+  return node.getAbsRenderingBox();
+};
 
 enum JustifyContent {
   FLEX_START = "flex-start",

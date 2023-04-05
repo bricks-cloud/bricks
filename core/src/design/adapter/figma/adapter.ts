@@ -1,12 +1,14 @@
+import base64js from "base64-js";
+import { isEmpty } from "lodash";
 import {
-  GroupNode,
+  GroupNode as BricksGroupNode,
+  ImageNode,
   Node,
   TextNode as BricksTextNode,
   VectorGroupNode,
   VectorNode as BricksVector,
   VisibleNode,
 } from "../../../bricks/node";
-import { isEmpty } from "lodash";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
@@ -27,9 +29,37 @@ enum NodeType {
   INSTANCE = "INSTANCE",
 }
 
+const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNode, attributes: Attributes) => {
+  const dropShadowStrings: string[] = figmaNode.effects
+    .filter(
+      (effect) =>
+        effect.visible &&
+        (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"),
+    )
+    .map((effect: DropShadowEffect | InnerShadowEffect) => {
+      const { offset, radius, spread, color } = effect;
+
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
+
+      if (effect.type === "INNER_SHADOW") {
+        return "inset " + dropShadowString;
+      } else {
+        return dropShadowString;
+      }
+    });
+
+  console.log("dropShadowStrings: ", dropShadowStrings);
+
+  if (dropShadowStrings.length > 0) {
+    attributes["box-shadow"] = dropShadowStrings.join(",");
+  }
+};
+
 // getCssAttributes extracts styling information from figmaNode to css attributes
 const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
+
 
   if (figmaNode.type === NodeType.GROUP) {
     // width
@@ -37,6 +67,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // height
     attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+    addDropShadowCssProperty(figmaNode, attributes);
   }
 
   if (
@@ -92,29 +123,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
 
     // box shadow
-    const dropShadowStrings: string[] = figmaNode.effects
-      .filter(
-        (effect) =>
-          effect.visible &&
-          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"),
-      )
-      .map((effect: DropShadowEffect | InnerShadowEffect) => {
-        const { offset, radius, spread, color } = effect;
-
-        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-          spread ?? 0
-        }px ${rgbaToString(color)}`;
-
-        if (effect.type === "INNER_SHADOW") {
-          return "inset " + dropShadowString;
-        } else {
-          return dropShadowString;
-        }
-      });
-
-    if (dropShadowStrings.length > 0) {
-      attributes["box-shadow"] = dropShadowStrings.join(",");
-    }
+    addDropShadowCssProperty(figmaNode, attributes);
 
     // filter: blur
     const layerBlur = figmaNode.effects.find(
@@ -189,7 +198,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width,
       ) /
-        figmaNode.absoluteBoundingBox.width >
+      figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -421,7 +430,7 @@ export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
     this.node = node;
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+  async export(exportFormat: ExportFormat): Promise<string> {
     let svg: string = "";
     if (exportFormat === ExportFormat.SVG) {
       try {
@@ -441,7 +450,7 @@ export class FigmaVectorGroupNodeAdapter extends FigmaNodeAdapter {
     super(node);
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
+  async export(exportFormat: ExportFormat): Promise<string> {
     let svg: string = "";
     if (exportFormat === ExportFormat.SVG) {
       try {
@@ -455,6 +464,28 @@ export class FigmaVectorGroupNodeAdapter extends FigmaNodeAdapter {
     return svg;
   }
 }
+
+
+export class FigmaImageNodeAdapter extends FigmaNodeAdapter {
+  constructor(node: SceneNode) {
+    super(node);
+  }
+
+  async export(exportFormat: ExportFormat): Promise<string> {
+    let img: string = "";
+    if (exportFormat === ExportFormat.PNG) {
+      try {
+        const buf = await this.node.exportAsync({ format: ExportFormat.PNG, useAbsoluteBounds: true });
+        img = base64js.fromByteArray(buf);
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    return img;
+  }
+}
+
 
 export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   node: TextNode;
@@ -502,6 +533,31 @@ type Feedbacks = {
   areAllNodesExportable: boolean;
 };
 
+
+const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
+  let boxA: BoxCoordinates = nodeA.getAbsBoundingBox();
+  let boxB: BoxCoordinates = nodeB.getAbsBoundingBox();
+
+
+  if (boxA.leftBot.x !== boxB.leftBot.x || boxA.leftBot.y !== boxB.leftBot.y) {
+    return false;
+  }
+
+  if (boxA.rightBot.x !== boxB.rightBot.x || boxA.rightBot.y !== boxB.rightBot.y) {
+    return false;
+  }
+
+  if (boxA.leftTop.x !== boxB.leftTop.x || boxA.leftTop.y !== boxB.leftTop.y) {
+    return false;
+  }
+
+  if (boxA.rightTop.x !== boxB.rightTop.x || boxA.rightTop.y !== boxB.rightTop.y) {
+    return false;
+  }
+
+  return true;
+};
+
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[],
@@ -524,31 +580,31 @@ export const convertFigmaNodesToBricksNodes = (
 
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
-    if (
-      !EXPORTABLE_NODE_TYPES.includes(figmaNode.type) &&
-      !GROUP_NODE_TYPES.includes(figmaNode.type)
-    ) {
-      result.areAllNodesExportable = false;
-    }
-
-    if (
-      figmaNode.type === NodeType.RECTANGLE &&
-      doesRectangleNodeContainsAnImage(figmaNode)
-    ) {
-      result.areAllNodesExportable = false;
-    }
 
     if (figmaNode.visible) {
-      const adaptedNode = new FigmaNodeAdapter(figmaNode);
-      let newNode: Node = new VisibleNode(adaptedNode);
+      if (
+        !EXPORTABLE_NODE_TYPES.includes(figmaNode.type) &&
+        !GROUP_NODE_TYPES.includes(figmaNode.type)
+      ) {
+        result.areAllNodesExportable = false;
+      }
+
+      let newNode: Node = new VisibleNode(new FigmaNodeAdapter(figmaNode));
 
       switch (figmaNode.type) {
+        case NodeType.RECTANGLE:
+          if (doesRectangleNodeContainsAnImage(figmaNode)) {
+            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            result.areAllNodesExportable = false;
+          }
+          break;
+
         case NodeType.GROUP:
-          newNode = new GroupNode([]);
+          newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
           break;
         case NodeType.FRAME:
           if (isFrameNodeTransparent(figmaNode)) {
-            newNode = new GroupNode([]);
+            newNode = new BricksGroupNode([]);
           }
           break;
         case NodeType.TEXT:
@@ -563,10 +619,6 @@ export const convertFigmaNodesToBricksNodes = (
       if (!isEmpty(figmaNode?.children)) {
         //@ts-ignore
         const feedbacks = convertFigmaNodesToBricksNodes(figmaNode.children);
-        if (feedbacks.nodes.length === 1 && figmaNode.type === NodeType.GROUP) {
-          result.nodes = result.nodes.concat(feedbacks.nodes);
-          continue;
-        }
 
         if (feedbacks.areAllNodesExportable) {
           newNode = new VectorGroupNode(
@@ -575,10 +627,16 @@ export const convertFigmaNodesToBricksNodes = (
           );
         }
 
-        newNode.setChildren(feedbacks.nodes);
-
         result.areAllNodesExportable =
           feedbacks.areAllNodesExportable && result.areAllNodesExportable;
+
+        // merge parent and child if they have the same boundingbox
+        if (feedbacks.nodes.length === 1 && doTwoNodesHaveTheSameBoundingBox(feedbacks.nodes[0], newNode)) {
+          feedbacks.nodes[0].addCssAttributes(newNode.getCssAttributes());
+          result.nodes = result.nodes.concat(feedbacks.nodes);
+          continue;
+        }
+        newNode.setChildren(feedbacks.nodes);
       }
 
       result.nodes.push(newNode);
