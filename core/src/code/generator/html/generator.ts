@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../../utils";
 import { CssFramework, Option, UiFramework } from "../../code";
 import {
   Node,
@@ -27,7 +27,7 @@ export class Generator {
 
   async generateHtml(
     node: Node,
-    option: Option,
+    option: Option
   ): Promise<[string, ImportedComponentMeta[]]> {
     const importComponents: ImportedComponentMeta[] = [];
 
@@ -55,7 +55,7 @@ export class Generator {
             node.getChildren(),
             [`<div ${groupNodeClassProps}>`, "</div>"],
             option,
-            importComponents,
+            importComponents
           ),
           importComponents,
         ];
@@ -72,7 +72,7 @@ export class Generator {
             node.getChildren(),
             [`<div ${visibleNodeClassProps}>`, "</div>"],
             option,
-            importComponents,
+            importComponents
           ),
           importComponents,
         ];
@@ -83,7 +83,7 @@ export class Generator {
           await this.generateHtmlElementForVectorNodes(
             vectorGroupNode,
             option,
-            importComponents,
+            importComponents
           ),
           importComponents,
         ];
@@ -94,7 +94,7 @@ export class Generator {
           await this.generateHtmlElementForVectorNodes(
             vectorNode,
             option,
-            importComponents,
+            importComponents
           ),
           importComponents,
         ];
@@ -107,7 +107,7 @@ export class Generator {
     nodes: Node[],
     [openingTag, closingTag]: string[],
     option: Option,
-    importComponents: ImportedComponentMeta[],
+    importComponents: ImportedComponentMeta[]
   ): Promise<string> {
     let childrenCodeStrings: string[] = [];
 
@@ -120,7 +120,7 @@ export class Generator {
             option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
 
           childrenCodeStrings.push(
-            `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`,
+            `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`
           );
           continue;
 
@@ -136,7 +136,7 @@ export class Generator {
             child.getChildren(),
             [`<div ${groupNodeClassProps}>`, "</div>"],
             option,
-            importComponents,
+            importComponents
           );
           childrenCodeStrings.push(groupNodeCodeString);
           continue;
@@ -156,7 +156,7 @@ export class Generator {
             child.getChildren(),
             [`<div ${visibleNodeClassProps}>`, "</div>"],
             option,
-            importComponents,
+            importComponents
           );
           childrenCodeStrings.push(visibleNodeCodeString);
           continue;
@@ -167,7 +167,7 @@ export class Generator {
             await this.generateHtmlElementForVectorNodes(
               vectorGroupNode,
               option,
-              importComponents,
+              importComponents
             );
           childrenCodeStrings.push(vectorGroupCodeString);
           continue;
@@ -177,7 +177,7 @@ export class Generator {
           const vectorCodeString = await this.generateHtmlElementForVectorNodes(
             vectorNode,
             option,
-            importComponents,
+            importComponents
           );
           childrenCodeStrings.push(vectorCodeString);
           continue;
@@ -190,7 +190,7 @@ export class Generator {
   private async generateHtmlElementForVectorNodes(
     node: VectorNode | VectorGroupNode,
     option: Option,
-    importComponents: ImportedComponentMeta[],
+    importComponents: ImportedComponentMeta[]
   ) {
     const vectorComponentName = "SvgAsset" + this.numberOfVectors;
     this.numberOfVectors++;

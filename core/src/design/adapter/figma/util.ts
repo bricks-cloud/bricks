@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../../utils";
 
 const round = Math.round;
 const roundToTwoDps = (num: number) => {
@@ -14,7 +14,7 @@ export function colorToStringWithOpacity(color: RGB, opacity: number): string {
   const { r, g, b } = color;
 
   return `rgba(${round(r * 255)},${round(g * 255)},${round(
-    b * 255,
+    b * 255
   )},${roundToTwoDps(opacity)})`;
 }
 
@@ -22,14 +22,14 @@ export function rgbaToString(color: RGBA): string {
   const { r, g, b, a } = color;
 
   return `rgba(${round(r * 255)},${round(g * 255)},${round(
-    b * 255,
+    b * 255
   )},${roundToTwoDps(a)})`;
 }
 
 // isFrameNodeTransparent determines whether the Figma frame node is transparent.
 export const isFrameNodeTransparent = (node: FrameNode): boolean => {
   let allColorInvis: boolean = true;
-  if (!isEmpty(node.fills) && node.fills !== figma.mixed) {
+  if (node.fills !== figma.mixed && !isEmpty(node.fills)) {
     for (const fill of node.fills) {
       if (fill.visible) {
         allColorInvis = false;
@@ -47,7 +47,7 @@ export const isFrameNodeTransparent = (node: FrameNode): boolean => {
 
 // doesRectangleNodeContainAnImage tests whether rectangle node contain an image
 export const doesRectangleNodeContainsAnImage = (
-  node: RectangleNode,
+  node: RectangleNode
 ): boolean => {
   if (node.fills != figma.mixed) {
     if (!isEmpty(node.fills) && node.fills[0].type === "IMAGE") {

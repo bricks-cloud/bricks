@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
@@ -25,7 +25,7 @@ export class Generator {
   async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string,
+    mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
     const [mainFileContent, importComponents] =
       await this.htmlGenerator.generateHtml(node, option);
@@ -33,7 +33,7 @@ export class Generator {
 
     for (const importComponent of importComponents) {
       importStatements.push(
-        `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+        `import ${importComponent.componentName} from ".${importComponent.importPath}"`
       );
     }
 
@@ -42,7 +42,7 @@ export class Generator {
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
           mainComponentName,
-          importStatements,
+          importStatements
         ),
         importComponents,
       ];
@@ -93,7 +93,7 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses(node.getCssAttributes()),
+        convertCssClassesToTwcssClasses(node.getCssAttributes())
       );
     case NodeType.GROUP:
       return constructClassProp(
@@ -101,7 +101,7 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        }),
+        })
       );
     case NodeType.VISIBLE:
       return constructClassProp(
@@ -109,7 +109,7 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        }),
+        })
       );
     default:
       return "";
@@ -127,7 +127,7 @@ const constructClassProp = (classPropName: string, value: string) => {
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
-  mainComponentFileExtension: string,
+  mainComponentFileExtension: string
 ) => {
   let fontFamilies = "";
   const entries = FontsRegistryGlobalInstance.getFontMetadataInArray();

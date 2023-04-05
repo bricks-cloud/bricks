@@ -6,7 +6,7 @@ import {
   VectorNode as BricksVector,
   VisibleNode,
 } from "../../../bricks/node";
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
@@ -96,7 +96,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       .filter(
         (effect) =>
           effect.visible &&
-          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"),
+          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW")
       )
       .map((effect: DropShadowEffect | InnerShadowEffect) => {
         const { offset, radius, spread, color } = effect;
@@ -118,7 +118,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // filter: blur
     const layerBlur = figmaNode.effects.find(
-      (effect) => effect.type === "LAYER_BLUR" && effect.visible,
+      (effect) => effect.type === "LAYER_BLUR" && effect.visible
     );
 
     if (layerBlur) {
@@ -127,7 +127,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // backdrop-filter: blur
     const backgroundBlur = figmaNode.effects.find(
-      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible,
+      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible
     );
 
     if (backgroundBlur) {
@@ -138,12 +138,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     if (fills !== figma.mixed && fills.length > 0) {
       // background color
       const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID",
+        (fill) => fill.type === "SOLID"
       ) as SolidPaint;
       if (solidPaint) {
         attributes["background-color"] = colorToStringWithOpacity(
           solidPaint.color,
-          solidPaint.opacity,
+          solidPaint.opacity
         );
       }
     }
@@ -159,7 +159,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes[
         "font-family"
       ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
-        fontFamily,
+        fontFamily
       )}`;
     }
 
@@ -187,7 +187,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     let width = absoluteRenderBounds.width + 2;
     if (
       Math.abs(
-        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width,
+        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
         figmaNode.absoluteBoundingBox.width >
       0.2
@@ -238,7 +238,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     ) {
       attributes["color"] = colorToStringWithOpacity(
         colors[0].color,
-        colors[0].opacity,
+        colors[0].opacity
       );
     }
 
@@ -504,7 +504,7 @@ type Feedbacks = {
 
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
-  figmaNodes: readonly SceneNode[],
+  figmaNodes: readonly SceneNode[]
 ): Feedbacks => {
   let reordered = [...figmaNodes];
   if (reordered.length > 1) {
@@ -571,7 +571,7 @@ export const convertFigmaNodesToBricksNodes = (
         if (feedbacks.areAllNodesExportable) {
           newNode = new VectorGroupNode(
             new FigmaVectorGroupNodeAdapter(figmaNode),
-            feedbacks.nodes,
+            feedbacks.nodes
           );
         }
 

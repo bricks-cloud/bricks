@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../utils";
 import * as rawData from "./google-fonts-metadata.json";
 import { FontMetadata } from "../code/generator/font";
 
@@ -84,7 +84,7 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
 
     const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(
       fontVariants,
-      family,
+      family
     );
 
     fontDetails += familyName + ":" + googleFontsVariants.join(",");

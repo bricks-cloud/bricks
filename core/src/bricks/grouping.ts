@@ -1,4 +1,3 @@
-import { isEmpty } from "lodash";
 import { Node, NodeType } from "./node";
 import { Direction } from "./direction";
 import {
@@ -7,6 +6,7 @@ import {
 } from "./directional-overlap";
 import { groupNodesByOverlap } from "./overlap";
 import { groupNodesByInclusion } from "./inclusion";
+import { isEmpty } from "../utils";
 
 export const groupNodes = (parentNode: Node) => {
   if (parentNode.getType() === NodeType.VECTOR_GROUP) {
@@ -28,15 +28,15 @@ export const groupNodes = (parentNode: Node) => {
 
   const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
-    Direction.HORIZONTAL,
+    Direction.HORIZONTAL
   );
   const verticalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
-    Direction.VERTICAL,
+    Direction.VERTICAL
   );
   const decided = decideBetweenDirectionalOverlappingNodes(
     horizontalSegmentedNodes,
-    verticalSegmentedNodes,
+    verticalSegmentedNodes
   );
 
   if (!isEmpty(decided)) {

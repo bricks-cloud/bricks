@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../utils";
 import { ImportedComponentMeta } from "./html/generator";
 import { ExportFormat } from "../../design/adapter/node";
 import { Option, File, UiFramework, Language } from "../code";
@@ -24,7 +24,7 @@ export const getFileExtension = (file: File) => {
 
 // constructExtraSvgFiles creates svg files if they are imported in the main file
 export const constructExtraSvgFiles = async (
-  importedComponents: ImportedComponentMeta[],
+  importedComponents: ImportedComponentMeta[]
 ): Promise<File[]> => {
   let files: File[] = [];
   if (isEmpty(importedComponents)) {
