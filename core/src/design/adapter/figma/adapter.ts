@@ -1,5 +1,4 @@
 import base64js from "base64-js";
-import { isEmpty } from "lodash";
 import {
   GroupNode as BricksGroupNode,
   ImageNode,
@@ -9,6 +8,7 @@ import {
   VectorNode as BricksVector,
   VisibleNode,
 } from "../../../bricks/node";
+import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
@@ -27,9 +27,10 @@ enum NodeType {
   FRAME = "FRAME",
   RECTANGLE = "RECTANGLE",
   INSTANCE = "INSTANCE",
+  COMPONENT = "COMPONENT",
 }
 
-const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNode, attributes: Attributes) => {
+const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNode | InstanceNode | ComponentNode, attributes: Attributes) => {
   const dropShadowStrings: string[] = figmaNode.effects
     .filter(
       (effect) =>
@@ -48,8 +49,6 @@ const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNo
         return dropShadowString;
       }
     });
-
-  console.log("dropShadowStrings: ", dropShadowStrings);
 
   if (dropShadowStrings.length > 0) {
     attributes["box-shadow"] = dropShadowStrings.join(",");
@@ -72,7 +71,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   if (
     figmaNode.type === NodeType.FRAME ||
-    figmaNode.type === NodeType.RECTANGLE
+    figmaNode.type === NodeType.RECTANGLE ||
+    figmaNode.type === NodeType.INSTANCE ||
+    figmaNode.type === NodeType.COMPONENT
   ) {
     // corner radius
     if (figmaNode.cornerRadius !== figma.mixed) {
@@ -127,7 +128,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // filter: blur
     const layerBlur = figmaNode.effects.find(
-      (effect) => effect.type === "LAYER_BLUR" && effect.visible,
+      (effect) => effect.type === "LAYER_BLUR" && effect.visible
     );
 
     if (layerBlur) {
@@ -136,7 +137,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // backdrop-filter: blur
     const backgroundBlur = figmaNode.effects.find(
-      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible,
+      (effect) => effect.type === "BACKGROUND_BLUR" && effect.visible
     );
 
     if (backgroundBlur) {
@@ -147,12 +148,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     if (fills !== figma.mixed && fills.length > 0) {
       // background color
       const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID",
+        (fill) => fill.type === "SOLID"
       ) as SolidPaint;
       if (solidPaint) {
         attributes["background-color"] = colorToStringWithOpacity(
           solidPaint.color,
-          solidPaint.opacity,
+          solidPaint.opacity
         );
       }
     }
@@ -168,7 +169,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes[
         "font-family"
       ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
-        fontFamily,
+        fontFamily
       )}`;
     }
 
@@ -196,7 +197,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     let width = absoluteRenderBounds.width + 2;
     if (
       Math.abs(
-        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width,
+        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
       figmaNode.absoluteBoundingBox.width >
       0.2
@@ -247,7 +248,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     ) {
       attributes["color"] = colorToStringWithOpacity(
         colors[0].color,
-        colors[0].opacity,
+        colors[0].opacity
       );
     }
 
@@ -560,7 +561,7 @@ const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
 
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
-  figmaNodes: readonly SceneNode[],
+  figmaNodes: readonly SceneNode[]
 ): Feedbacks => {
   let reordered = [...figmaNodes];
   if (reordered.length > 1) {
@@ -603,6 +604,8 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
           break;
         case NodeType.FRAME:
+        case NodeType.INSTANCE:
+        case NodeType.COMPONENT:
           if (isFrameNodeTransparent(figmaNode)) {
             newNode = new BricksGroupNode([]);
           }
@@ -623,7 +626,7 @@ export const convertFigmaNodesToBricksNodes = (
         if (feedbacks.areAllNodesExportable) {
           newNode = new VectorGroupNode(
             new FigmaVectorGroupNodeAdapter(figmaNode),
-            feedbacks.nodes,
+            feedbacks.nodes
           );
         }
 

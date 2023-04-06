@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
@@ -25,7 +25,7 @@ export class Generator {
   async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string,
+    mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
     const [mainFileContent, importComponents] =
       await this.htmlGenerator.generateHtml(node, option);
@@ -47,7 +47,7 @@ export class Generator {
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
           mainComponentName,
-          importStatements,
+          importStatements
         ),
         importComponents,
       ];
@@ -98,7 +98,7 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses(node.getCssAttributes()),
+        convertCssClassesToTwcssClasses(node.getCssAttributes())
       );
     case NodeType.GROUP:
       return constructClassProp(
@@ -106,7 +106,7 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        }),
+        })
       );
     case NodeType.VISIBLE:
       return constructClassProp(
@@ -114,7 +114,7 @@ const getProps = (node: Node, option: Option): string => {
         convertCssClassesToTwcssClasses({
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        }),
+        })
       );
 
     case NodeType.IMAGE:

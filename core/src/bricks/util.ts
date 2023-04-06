@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
 import { Option } from "./node";
 
@@ -47,7 +47,7 @@ type ModifierFunction = (value: string) => string;
 // filterAttributes filters and modfies attribtues
 export const filterAttributes = (
   attributes: Attributes,
-  option: Option,
+  option: Option
 ): Attributes => {
   const copy: Attributes = {};
   const filters: FitlerFunction[] = [];

@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../utils";
 import { Node, PostionalRelationship, GroupNode } from "./node";
 
 const overlapAnnotation: string = "checkedForOverlap";
@@ -26,7 +26,7 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
     const overlappingNodes = findOverlappingNodes(
       currentNode,
       nodes,
-      new Set(),
+      new Set()
     );
 
     if (isEmpty(overlappingNodes)) {
@@ -50,7 +50,7 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
 export const findOverlappingNodes = (
   startingNode: Node,
   targetNodes: Node[],
-  currentPath: Set<string>,
+  currentPath: Set<string>
 ): Node[] => {
   for (let i = 0; i < targetNodes.length; i++) {
     let targetNode = targetNodes[i];
@@ -80,7 +80,7 @@ export const findOverlappingNodes = (
       const result = findOverlappingNodes(
         overlappingNode,
         targetNodes,
-        currentPath,
+        currentPath
       );
       completePath = completePath.concat(...result);
     }

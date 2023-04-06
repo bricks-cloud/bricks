@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../utils";
 import { Attributes, BoxCoordinates } from "../design/adapter/node";
 import {
   Direction,
@@ -72,7 +72,7 @@ export const getPaddingInPixels = (
   node: Node,
   direction: Direction,
   justifyContentValue: JustifyContent,
-  alignItemsValue: AlignItems,
+  alignItemsValue: AlignItems
 ): number[] => {
   let paddingTop: number = 0;
   let paddingBot: number = 0;
@@ -83,11 +83,11 @@ export const getPaddingInPixels = (
   const parentLine = getContainerLineFromNodes([node], direction);
   const perpendicularTargetLine = getContainerLineFromNodes(
     node.getChildren(),
-    getOppositeDirection(direction),
+    getOppositeDirection(direction)
   );
   const perpendicularParentLine = getContainerLineFromNodes(
     [node],
-    getOppositeDirection(direction),
+    getOppositeDirection(direction)
   );
 
   if (direction === Direction.VERTICAL) {
@@ -163,7 +163,7 @@ const setMarginsForChildren = (
   direction: Direction,
   justifyContentValue: JustifyContent,
   alignItemsValue: AlignItems,
-  paddings: number[],
+  paddings: number[]
 ) => {
   const children = parentNode.getChildren();
 
@@ -186,11 +186,11 @@ const setMarginsForChildren = (
     const parentLine = getLineBasedOnDirection(parentNode, direction);
     const perpendicularTargetLine = getLineBasedOnDirection(
       targetNode,
-      getOppositeDirection(direction),
+      getOppositeDirection(direction)
     );
     const perpendicularParentLine = getLineBasedOnDirection(
       parentNode,
-      getOppositeDirection(direction),
+      getOppositeDirection(direction)
     );
 
     let prevTarget = children[i];
@@ -332,7 +332,7 @@ const setMarginsForChildren = (
 // getPositionalCSSAttributes gets positional css information of a node in relation to its children.
 export const getPositionalCSSAttributes = (
   node: Node,
-  direction: Direction,
+  direction: Direction
 ): Attributes => {
   const attributes: Attributes = {};
 
@@ -348,7 +348,7 @@ export const getPositionalCSSAttributes = (
   const justifyContentValue = getJustifyContentValue(node, direction);
   const alignItemsValue = getAlignItemsValue(
     node,
-    getOppositeDirection(direction),
+    getOppositeDirection(direction)
   );
 
   attributes["justify-content"] = justifyContentValue;
@@ -358,7 +358,7 @@ export const getPositionalCSSAttributes = (
     node,
     direction,
     justifyContentValue,
-    alignItemsValue,
+    alignItemsValue
   );
   const [paddingTop, paddingRight, paddingBot, paddingLeft] = paddings;
 
@@ -372,7 +372,7 @@ export const getPositionalCSSAttributes = (
     direction,
     justifyContentValue,
     alignItemsValue,
-    paddings,
+    paddings
   );
 
   return attributes;
@@ -381,7 +381,7 @@ export const getPositionalCSSAttributes = (
 // getJustifyContentValue determines the value of justify-content css property given a node and flex-direction.
 const getJustifyContentValue = (
   parentNode: Node,
-  direction: Direction,
+  direction: Direction
 ): JustifyContent => {
   const children = parentNode.getChildren();
   const targetLines = getLinesFromNodes(children, direction);
@@ -415,7 +415,7 @@ const getJustifyContentValue = (
 // getAlignItemsValue determines the value of align-items css property given a node and flex-direction.
 const getAlignItemsValue = (
   parentNode: Node,
-  direction: Direction,
+  direction: Direction
 ): AlignItems => {
   const children = parentNode.getChildren();
   const targetLines = getLinesFromNodes(children, direction);

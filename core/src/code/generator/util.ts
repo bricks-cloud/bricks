@@ -1,4 +1,4 @@
-import { isEmpty } from "lodash";
+import { isEmpty } from "../../utils";
 import { ImportedComponentMeta } from "./html/generator";
 import { ExportFormat } from "../../design/adapter/node";
 import { Option, File, UiFramework, Language } from "../code";

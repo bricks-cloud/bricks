@@ -9,6 +9,7 @@ import {
   VectorGroupNode as AdaptedVectorGroupNode,
   ImageNode as AdaptedImageNode,
 } from "../design/adapter/node";
+import { isEmpty } from "../utils";
 import { selectBox } from "./positional-css";
 import { filterAttributes } from "./util";
 
@@ -209,7 +210,7 @@ export class GroupNode extends BaseNode {
   }
 
   getAbsBoundingBox() {
-    if (this.node !== null) {
+    if (!isEmpty(this.node)) {
       return this.node.getAbsoluteBoundingBoxCoordinates();
     }
 
