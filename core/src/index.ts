@@ -2,7 +2,7 @@ import { convertFigmaNodesToBricksNodes } from "./design/adapter/figma/adapter";
 import { generateCodingFiles } from "./code/generator/generator";
 import { Option, File } from "./code/code";
 import { groupNodes } from "./bricks/grouping";
-import { addPositionalCSSAttributesToNodes } from "./bricks/positional-css";
+import { addAdditionalCssAttributesToNodes } from "./bricks/additional-css";
 import { Node, GroupNode } from "./bricks/node";
 
 export const convertToCode = async (
@@ -21,7 +21,7 @@ export const convertToCode = async (
 
   console.log("post groupNodes: ", startingNode);
 
-  addPositionalCSSAttributesToNodes(startingNode);
+  addAdditionalCssAttributesToNodes(startingNode);
 
   return generateCodingFiles(startingNode, option);
 };

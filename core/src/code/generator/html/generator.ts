@@ -248,7 +248,7 @@ export class Generator {
         node: node,
       });
 
-      return `<img src={${vectorComponentName}} alt=${alt} />`;
+      return `<img width="${node.getACssAttribute("width")}" src={${vectorComponentName}} alt=${alt} />`;
     }
 
     return await node.export(ExportFormat.SVG);

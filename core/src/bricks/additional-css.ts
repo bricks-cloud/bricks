@@ -47,8 +47,8 @@ enum RelativePoisition {
   CONTAIN = "CONTAIN",
 }
 
-// addPositionalCSSAttributesToNodes adds positional css information to a node and its children.
-export const addPositionalCSSAttributesToNodes = (node: Node) => {
+// addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
+export const addAdditionalCssAttributesToNodes = (node: Node) => {
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
@@ -60,10 +60,11 @@ export const addPositionalCSSAttributesToNodes = (node: Node) => {
 
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
-  node.addPositionalCssAttributes(getPositionalCSSAttributes(node, direction));
+  node.addCssAttributes(getAdditionalCssAttributes(node));
+  node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
 
   for (const child of children) {
-    addPositionalCSSAttributesToNodes(child);
+    addAdditionalCssAttributesToNodes(child);
   }
 };
 
@@ -329,11 +330,32 @@ const setMarginsForChildren = (
   }
 };
 
-// getPositionalCSSAttributes gets positional css information of a node in relation to its children.
-export const getPositionalCSSAttributes = (
+
+// getAdditionalCssAttributes gets additioanl css information of a node in relation to its children.
+export const getAdditionalCssAttributes = (node: Node): Attributes => {
+  const attributes: Attributes = {};
+
+  if ((node.getACssAttribute("border-radius") || node.getACssAttribute("border-width")) && node.areThereOverflowingChildren()) {
+    console.log("node here: ", node);
+    attributes["overflow"] = "hidden";
+  }
+
+  return attributes;
+};
+
+// getPositionalCssAttributes gets positional css information of a node in relation to its children.
+export const getPositionalCssAttributes = (
   node: Node,
   direction: Direction
 ): Attributes => {
+
+  const positionalCssAttributes = node.getPositionalCssAttributes();
+  console.log("positionalCssAttributes: ", positionalCssAttributes);
+
+  if (!isEmpty(positionalCssAttributes)) {
+    return positionalCssAttributes;
+  }
+
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {

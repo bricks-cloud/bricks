@@ -24,6 +24,7 @@ export interface Node {
   getAbsoluteBoundingBoxCoordinates(): BoxCoordinates;
   getOriginalId(): string;
   getCssAttributes(): Attributes;
+  getPositionalCssAttributes(): Attributes;
 }
 
 export interface TextNode extends Node {

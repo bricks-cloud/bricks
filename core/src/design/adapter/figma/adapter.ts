@@ -19,6 +19,30 @@ import {
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 
+const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
+  let boxA: BoxCoordinates = nodeA.getAbsBoundingBox();
+  let boxB: BoxCoordinates = nodeB.getAbsBoundingBox();
+
+
+  if (boxA.leftBot.x !== boxB.leftBot.x || boxA.leftBot.y !== boxB.leftBot.y) {
+    return false;
+  }
+
+  if (boxA.rightBot.x !== boxB.rightBot.x || boxA.rightBot.y !== boxB.rightBot.y) {
+    return false;
+  }
+
+  if (boxA.leftTop.x !== boxB.leftTop.x || boxA.leftTop.y !== boxB.leftTop.y) {
+    return false;
+  }
+
+  if (boxA.rightTop.x !== boxB.rightTop.x || boxA.rightTop.y !== boxB.rightTop.y) {
+    return false;
+  }
+
+  return true;
+};
+
 enum NodeType {
   GROUP = "GROUP",
   TEXT = "TEXT",
@@ -55,6 +79,98 @@ const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNo
   }
 };
 
+
+export const isAutoLayout = (node: SceneNode): boolean => {
+  return !!(
+    node.type === "FRAME" &&
+    node.layoutMode &&
+    node.layoutMode !== "NONE"
+  );
+};
+
+const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
+  const attributes: Attributes = {};
+
+  if (figmaNode.type === NodeType.FRAME && isAutoLayout(figmaNode)) {
+    attributes["display"] = "flex";
+
+    if (figmaNode.layoutMode === "HORIZONTAL") {
+      attributes["flex-direction"] = "row";
+
+      if (figmaNode.primaryAxisSizingMode === "AUTO") {
+        delete attributes["width"];
+      }
+
+      if (figmaNode.counterAxisSizingMode === "AUTO") {
+        delete attributes["height"];
+      }
+    }
+
+    if (figmaNode.layoutMode === "VERTICAL") {
+      attributes["flex-direction"] = "column";
+
+      if (figmaNode.primaryAxisSizingMode === "AUTO") {
+        delete attributes["height"];
+      }
+
+      if (figmaNode.counterAxisSizingMode === "AUTO") {
+        delete attributes["width"];
+      }
+    }
+
+    switch (figmaNode.primaryAxisAlignItems) {
+      case "MIN":
+        attributes["justify-content"] = "start";
+        break;
+      case "CENTER":
+        attributes["justify-content"] = "center";
+        break;
+      case "SPACE_BETWEEN":
+        attributes["justify-content"] = "space-between";
+        break;
+      case "MAX":
+        attributes["justify-content"] = "end";
+        break;
+    }
+
+    switch (figmaNode.counterAxisAlignItems) {
+      case "MIN":
+        attributes["align-items"] = "start";
+        break;
+      case "CENTER":
+        attributes["align-items"] = "center";
+        break;
+      case "MAX":
+        attributes["align-items"] = "end";
+        break;
+    }
+
+    if (figmaNode.children.length > 1) {
+      // gap has no effects when only there is only one child
+      console.log(figmaNode.itemSpacing);
+      attributes["gap"] = `${figmaNode.itemSpacing}px`;
+    }
+
+    if (figmaNode.paddingTop) {
+      attributes["padding-top"] = `${figmaNode.paddingTop}px`;
+    }
+
+    if (figmaNode.paddingRight) {
+      attributes["padding-right"] = `${figmaNode.paddingRight}px`;
+    }
+
+    if (figmaNode.paddingBottom) {
+      attributes["padding-bottom"] = `${figmaNode.paddingBottom}px`;
+    }
+
+    if (figmaNode.paddingLeft) {
+      attributes["padding-left"] = `${figmaNode.paddingLeft}px`;
+    }
+  }
+
+  return attributes;
+};
+
 // getCssAttributes extracts styling information from figmaNode to css attributes
 const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
@@ -67,6 +183,14 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // height
     attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
     addDropShadowCssProperty(figmaNode, attributes);
+  }
+
+  if (figmaNode.type === NodeType.VECTOR) {
+    // width
+    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+
+    // height
+    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
   }
 
   if (
@@ -82,7 +206,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // border
     const borderColors = figmaNode.strokes;
-    if (borderColors.length > 0 && borderColors[0].type === "SOLID") {
+    if (borderColors.length > 0 && borderColors[0].visible && borderColors[0].type === "SOLID") {
       attributes["border-color"] = colorToString(borderColors[0].color);
 
       const {
@@ -179,7 +303,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     // width and height
-    const { absoluteRenderBounds } = figmaNode;
+    const { absoluteRenderBounds, absoluteBoundingBox } = figmaNode;
 
     const boundingBoxWidth = figmaNode.absoluteBoundingBox.width;
     const renderBoundsWidth = figmaNode.absoluteRenderBounds.width;
@@ -195,6 +319,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     let width = absoluteRenderBounds.width + 2;
+
     if (
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
@@ -203,6 +328,11 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
+    }
+
+    // @ts-ignore
+    if (isAutoLayout(figmaNode.parent)) {
+      attributes["width"] = `${absoluteBoundingBox.width}px`;
     }
 
     if (moreThanOneRow) {
@@ -354,13 +484,20 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 export class FigmaNodeAdapter {
   node: SceneNode;
   private cssAttributes: Attributes;
+  private positionalCssAttribtues: Attributes;
+
   constructor(node: SceneNode) {
     this.node = node;
     this.cssAttributes = getCssAttributes(node);
+    this.positionalCssAttribtues = getPositionalCssAttributes(node);
   }
 
   getCssAttributes(): Attributes {
     return this.cssAttributes;
+  }
+
+  getPositionalCssAttributes(): Attributes {
+    return this.positionalCssAttribtues;
   }
 
   getType() {
@@ -534,31 +671,6 @@ type Feedbacks = {
   areAllNodesExportable: boolean;
 };
 
-
-const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
-  let boxA: BoxCoordinates = nodeA.getAbsBoundingBox();
-  let boxB: BoxCoordinates = nodeB.getAbsBoundingBox();
-
-
-  if (boxA.leftBot.x !== boxB.leftBot.x || boxA.leftBot.y !== boxB.leftBot.y) {
-    return false;
-  }
-
-  if (boxA.rightBot.x !== boxB.rightBot.x || boxA.rightBot.y !== boxB.rightBot.y) {
-    return false;
-  }
-
-  if (boxA.leftTop.x !== boxB.leftTop.x || boxA.leftTop.y !== boxB.leftTop.y) {
-    return false;
-  }
-
-  if (boxA.rightTop.x !== boxB.rightTop.x || boxA.rightTop.y !== boxB.rightTop.y) {
-    return false;
-  }
-
-  return true;
-};
-
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[]
@@ -607,7 +719,7 @@ export const convertFigmaNodesToBricksNodes = (
         case NodeType.INSTANCE:
         case NodeType.COMPONENT:
           if (isFrameNodeTransparent(figmaNode)) {
-            newNode = new BricksGroupNode([]);
+            newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
           }
           break;
         case NodeType.TEXT:
@@ -639,6 +751,7 @@ export const convertFigmaNodesToBricksNodes = (
           result.nodes = result.nodes.concat(feedbacks.nodes);
           continue;
         }
+
         newNode.setChildren(feedbacks.nodes);
       }
 

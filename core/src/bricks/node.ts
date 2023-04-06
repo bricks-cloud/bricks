@@ -1,4 +1,5 @@
 import uuid from "react-native-uuid";
+import { isEmpty } from "lodash";
 import {
   Node as AdaptedNode,
   TextNode as AdaptedTextNode,
@@ -9,8 +10,12 @@ import {
   VectorGroupNode as AdaptedVectorGroupNode,
   ImageNode as AdaptedImageNode,
 } from "../design/adapter/node";
+<<<<<<< Updated upstream
 import { isEmpty } from "../utils";
 import { selectBox } from "./positional-css";
+=======
+import { selectBox } from "./additional-css";
+>>>>>>> Stashed changes
 import { filterAttributes } from "./util";
 
 export enum PostionalRelationship {
@@ -90,6 +95,10 @@ export class BaseNode {
     };
   }
 
+  getACssAttribute(key: string): string {
+    return this.cssAttributes[key];
+  }
+
   setChildren(children: Node[]) {
     this.children = children;
   }
@@ -119,7 +128,7 @@ export class BaseNode {
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
   targetCoordinates: BoxCoordinates,
-) => {
+): boolean => {
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
     currentCoordinate.leftTop.y === currentCoordinate.rightBot.y
@@ -149,6 +158,75 @@ export const doOverlap = (
   }
 
   return true;
+};
+
+// doOutside determines whether any coorindate of the target box is outside of the current box.
+export const doOutside = (
+  currentCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates,
+): boolean => {
+  if (targetCoordinates.leftTop.x > currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x < currentCoordinates.rightBot.x &&
+    targetCoordinates.leftTop.y > currentCoordinates.leftTop.y &&
+    targetCoordinates.leftBot.y < currentCoordinates.leftBot.y) {
+    return false;
+  }
+
+  return true;
+};
+
+// getVisibleChildrenRenderingBox gets the children rendering  
+const getVisibleChildrenRenderingBox = (children: Node[]): BoxCoordinates => {
+  let xl = Infinity;
+  let xr = -Infinity;
+  let yt = Infinity;
+  let yb = -Infinity;
+
+  for (const child of children) {
+    const type = child.getType();
+    if (type !== NodeType.VISIBLE) {
+      continue;
+    }
+
+    let coordinates = child.getAbsRenderingBox();
+
+    if (coordinates.leftTop.x < xl) {
+      xl = coordinates.leftTop.x;
+    }
+
+    if (coordinates.rightBot.x > xr) {
+      xr = coordinates.rightBot.x;
+    }
+
+    if (coordinates.leftTop.y < yt) {
+      yt = coordinates.leftTop.y;
+    }
+
+    if (coordinates.rightBot.y > yb) {
+      yb = coordinates.rightBot.y;
+    }
+  }
+
+  const boxCoordinates = {
+    leftTop: {
+      x: xl,
+      y: yt,
+    },
+    leftBot: {
+      x: xl,
+      y: yb,
+    },
+    rightTop: {
+      x: xr,
+      y: yt,
+    },
+    rightBot: {
+      x: xr,
+      y: yb,
+    },
+  };
+
+  return boxCoordinates;
 };
 
 const computePositionalRelationship = (
@@ -190,9 +268,10 @@ export class GroupNode extends BaseNode {
     this.setChildren(children);
     this.absRenderingBox = this.computeAbsRenderingBox();
 
-    if (node !== null) {
+    if (!isEmpty(node)) {
       this.node = node;
       this.setCssAttributes(this.node.getCssAttributes());
+      this.setPositionalCssAttributes(this.node.getPositionalCssAttributes());
     }
   }
 
@@ -214,7 +293,7 @@ export class GroupNode extends BaseNode {
       return this.node.getAbsoluteBoundingBoxCoordinates();
     }
 
-    return this.absRenderingBox;
+    return this.getAbsRenderingBox();
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
@@ -222,6 +301,17 @@ export class GroupNode extends BaseNode {
       this.absRenderingBox,
       targetNode.getAbsRenderingBox(),
     );
+  }
+
+  areThereOverflowingChildren(): boolean {
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const bbox = this.getAbsBoundingBox();
+
+    if (childrenRenderingBox.leftTop.x === Infinity) {
+      return false;
+    }
+
+    return doOutside(bbox, childrenRenderingBox);
   }
 
   private computeAbsRenderingBox(): BoxCoordinates {
@@ -282,6 +372,7 @@ export class VisibleNode extends BaseNode {
     super();
     this.node = node;
     this.setCssAttributes(this.node.getCssAttributes());
+    this.setPositionalCssAttributes(this.node.getPositionalCssAttributes());
   }
 
   getAbsBoundingBox(): BoxCoordinates {
@@ -305,6 +396,17 @@ export class VisibleNode extends BaseNode {
 
   getOriginalId(): string {
     return this.node.getOriginalId();
+  }
+
+  areThereOverflowingChildren(): boolean {
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const bbox = this.getAbsBoundingBox();
+
+    if (childrenRenderingBox.leftTop.x === Infinity) {
+      return false;
+    }
+
+    return doOutside(bbox, childrenRenderingBox);
   }
 }
 

@@ -1,6 +1,6 @@
 import { Node } from "./node";
 import { Direction } from "./direction";
-import { selectBox } from "./positional-css";
+import { selectBox } from "./additional-css";
 
 // RelativePosition represents a point's position relative to a line.
 enum RelativePoisition {

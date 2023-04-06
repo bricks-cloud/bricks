@@ -1,7 +1,7 @@
 import { Node } from "./node";
 import { getLineBasedOnDirection } from "./line";
 import { BoxCoordinates } from "../design/adapter/node";
-import { selectBox } from "./positional-css";
+import { selectBox } from "./additional-css";
 
 // Direction represents the way how elements are positioned within a Bricks node.
 // VERTICAL direction means that elements are organized in row. It corresponds to the CSS property flex-direction: row.
