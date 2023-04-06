@@ -25,6 +25,7 @@ enum NodeType {
   FRAME = "FRAME",
   RECTANGLE = "RECTANGLE",
   INSTANCE = "INSTANCE",
+  COMPONENT = "COMPONENT",
 }
 
 // getCssAttributes extracts styling information from figmaNode to css attributes
@@ -41,7 +42,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   if (
     figmaNode.type === NodeType.FRAME ||
-    figmaNode.type === NodeType.RECTANGLE
+    figmaNode.type === NodeType.RECTANGLE ||
+    figmaNode.type === NodeType.INSTANCE ||
+    figmaNode.type === NodeType.COMPONENT
   ) {
     // corner radius
     if (figmaNode.cornerRadius !== figma.mixed) {
@@ -101,9 +104,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       .map((effect: DropShadowEffect | InnerShadowEffect) => {
         const { offset, radius, spread, color } = effect;
 
-        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-          spread ?? 0
-        }px ${rgbaToString(color)}`;
+        const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+          }px ${rgbaToString(color)}`;
 
         if (effect.type === "INNER_SHADOW") {
           return "inset " + dropShadowString;
@@ -189,7 +191,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
-        figmaNode.absoluteBoundingBox.width >
+      figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -547,6 +549,8 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new GroupNode([]);
           break;
         case NodeType.FRAME:
+        case NodeType.INSTANCE:
+        case NodeType.COMPONENT:
           if (isFrameNodeTransparent(figmaNode)) {
             newNode = new GroupNode([]);
           }
