@@ -17,7 +17,26 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
       return nodes;
     }
 
+    if (removedNodes.has(currentNode.getId())) {
+      continue;
+    }
+
     for (let j = i + 1; j < nodes.length; j++) {
+      let targetNode = nodes[j];
+
+      if (removedNodes.has(targetNode.getId())) {
+        continue;
+      }
+
+      switch (currentNode.getPositionalRelationship(targetNode)) {
+        case PostionalRelationship.COMPLETE_OVERLAP:
+        case PostionalRelationship.INCLUDE:
+          removedNodes.add(targetNode.getId());
+          currentNode.addChildren([targetNode]);
+      }
+    }
+
+    for (let j = 0; j < i; j++) {
       let targetNode = nodes[j];
 
       if (removedNodes.has(targetNode.getId())) {

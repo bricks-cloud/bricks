@@ -39,6 +39,7 @@ export const groupNodes = (parentNode: Node) => {
     verticalSegmentedNodes
   );
 
+
   if (!isEmpty(decided)) {
     groupedNodes = decided;
   }

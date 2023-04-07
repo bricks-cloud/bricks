@@ -1,5 +1,6 @@
 import { Node } from "./node";
 import { Direction } from "./direction";
+import { selectBox } from "./additional-css";
 
 // RelativePosition represents a point's position relative to a line.
 enum RelativePoisition {
@@ -10,7 +11,7 @@ enum RelativePoisition {
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
 export const getLineBasedOnDirection = (node: Node, direction: Direction) => {
-  const coordinates = node.getAbsRenderingBox();
+  const coordinates = selectBox(node);
 
   if (direction === Direction.HORIZONTAL) {
     return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
@@ -105,12 +106,13 @@ export const getLinesFromNodes = (
 export const getContainerLineFromNodes = (
   nodes: Node[],
   direction: Direction,
+  useBoundingBox: boolean = false,
 ): Line => {
   let lower: number = Infinity;
   let upper: number = -Infinity;
   if (direction === Direction.HORIZONTAL) {
     for (let i = 0; i < nodes.length; i++) {
-      const renderingBox = nodes[i].getAbsRenderingBox();
+      const renderingBox = selectBox(nodes[i], useBoundingBox);
       lower = renderingBox.leftTop.y < lower ? renderingBox.leftTop.y : lower;
       upper = renderingBox.rightBot.y > upper ? renderingBox.rightBot.y : upper;
     }
@@ -119,7 +121,7 @@ export const getContainerLineFromNodes = (
   }
 
   for (let i = 0; i < nodes.length; i++) {
-    const renderingBox = nodes[i].getAbsRenderingBox();
+    const renderingBox = selectBox(nodes[i], useBoundingBox);
     lower = renderingBox.leftTop.x < lower ? renderingBox.leftTop.x : lower;
     upper = renderingBox.rightBot.x > upper ? renderingBox.rightBot.x : upper;
   }

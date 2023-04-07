@@ -1,6 +1,7 @@
 import { isEmpty } from "../../../utils";
 import { CssFramework, Option, UiFramework } from "../../code";
 import {
+  ImageNode,
   Node,
   NodeType,
   TextNode,
@@ -8,11 +9,12 @@ import {
   VectorNode,
 } from "../../../bricks/node";
 import { ExportFormat } from "../../../design/adapter/node";
+import { filterCssValue } from "../../../bricks/util";
 
 export type GetProps = (node: Node, option: Option) => string;
 
 export type ImportedComponentMeta = {
-  node: VectorGroupNode | VectorNode;
+  node: VectorGroupNode | VectorNode | ImageNode;
   importPath: string;
   componentName: string;
 };
@@ -20,6 +22,7 @@ export type ImportedComponentMeta = {
 export class Generator {
   getProps: GetProps;
   private numberOfVectors: number = 1;
+  private numberOfImages: number = 1;
 
   constructor(getProps: GetProps) {
     this.getProps = getProps;
@@ -80,7 +83,7 @@ export class Generator {
       case NodeType.VECTOR_GROUP:
         const vectorGroupNode = node as VectorGroupNode;
         return [
-          await this.generateHtmlElementForVectorNodes(
+          await this.generateHtmlElementForVectorNode(
             vectorGroupNode,
             option,
             importComponents
@@ -91,10 +94,29 @@ export class Generator {
       case NodeType.VECTOR:
         const vectorNode = node as VectorGroupNode;
         return [
-          await this.generateHtmlElementForVectorNodes(
+          await this.generateHtmlElementForVectorNode(
             vectorNode,
             option,
             importComponents
+          ),
+          importComponents,
+        ];
+
+      case NodeType.IMAGE:
+        const imageNode = node as ImageNode;
+        if (isEmpty(imageNode.getChildren())) {
+          const [codeString] = await this.generateHtmlElementForImageNodes(imageNode, option, importComponents);
+          return [codeString, importComponents];
+        }
+
+        const imageNodeClassProps = this.getProps(imageNode, option);
+
+        return [
+          await this.generateHtmlFromNodes(
+            node.getChildren(),
+            [`<div ${imageNodeClassProps}>`, "</div>"],
+            option,
+            importComponents,
           ),
           importComponents,
         ];
@@ -127,7 +149,7 @@ export class Generator {
         case NodeType.GROUP:
           // this edge case should never happen
           if (isEmpty(child.getChildren())) {
-            childrenCodeStrings.push(`<div><div />`);
+            childrenCodeStrings.push(`<div></div>`);
             continue;
           }
 
@@ -164,7 +186,7 @@ export class Generator {
         case NodeType.VECTOR_GROUP:
           const vectorGroupNode = child as VectorGroupNode;
           const vectorGroupCodeString =
-            await this.generateHtmlElementForVectorNodes(
+            await this.generateHtmlElementForVectorNode(
               vectorGroupNode,
               option,
               importComponents
@@ -173,13 +195,37 @@ export class Generator {
           continue;
 
         case NodeType.VECTOR:
-          const vectorNode = child as VectorGroupNode;
-          const vectorCodeString = await this.generateHtmlElementForVectorNodes(
+          const vectorNode = child as VectorNode;
+          const vectorCodeString = await this.generateHtmlElementForVectorNode(
             vectorNode,
             option,
             importComponents
           );
           childrenCodeStrings.push(vectorCodeString);
+          continue;
+
+        case NodeType.IMAGE:
+          const imageNode = child as ImageNode;
+          const codeStrings = await this.generateHtmlElementForImageNodes(
+            imageNode,
+            option,
+            importComponents,
+          );
+
+
+          if (codeStrings.length === 1) {
+            childrenCodeStrings.push(codeStrings[0]);
+            continue;
+          }
+
+          const imageNodeCodeString = await this.generateHtmlFromNodes(
+            child.getChildren(),
+            codeStrings,
+            option,
+            importComponents,
+          );
+
+          childrenCodeStrings.push(imageNodeCodeString);
           continue;
       }
     }
@@ -187,12 +233,13 @@ export class Generator {
     return openingTag + childrenCodeStrings.join("") + closingTag;
   }
 
-  private async generateHtmlElementForVectorNodes(
+  private async generateHtmlElementForVectorNode(
     node: VectorNode | VectorGroupNode,
     option: Option,
-    importComponents: ImportedComponentMeta[]
-  ) {
+    importComponents: ImportedComponentMeta[],
+  ): Promise<string> {
     const vectorComponentName = "SvgAsset" + this.numberOfVectors;
+    const alt = `"Svg Asset ${this.numberOfVectors}"`;
     this.numberOfVectors++;
 
     if (option.uiFramework === UiFramework.react) {
@@ -202,9 +249,41 @@ export class Generator {
         node: node,
       });
 
-      return `<img src={${vectorComponentName}} alt=${`"Svg Asset ${this.numberOfVectors}"`} />`;
+      const width = node.getACssAttribute("width");
+
+      return `<img width="${filterCssValue(width, { truncateNumbers: true, zeroValueAllowed: true })}" src={${vectorComponentName}} alt=${alt} />`;
     }
 
-    return await node.exportAsSvg(ExportFormat.SVG);
+    return await node.export(ExportFormat.SVG);
+  }
+
+  private async generateHtmlElementForImageNodes(
+    node: ImageNode,
+    option: Option,
+    importComponents: ImportedComponentMeta[],
+  ): Promise<string[]> {
+    const imageComponentName = "ImageAsset" + this.numberOfImages;
+    const alt = `"Image Asset ${this.numberOfImages}"`;
+    this.numberOfImages++;
+
+    importComponents.push({
+      componentName: imageComponentName,
+      importPath: `/assets/${imageComponentName}.png`,
+      node: node,
+    });
+
+    if (isEmpty(node.getChildren())) {
+      if (option.uiFramework === UiFramework.react) {
+        return [`<img src={${imageComponentName}} alt=${alt} />`];
+      }
+
+      return [`<img src="./assets/${imageComponentName}.png" alt=${alt} />`];
+    }
+
+    node.addCssAttributes({
+      "background-image": `url('.${`/assets/${imageComponentName}.png`}')`,
+    });
+
+    return [`<div ${this.getProps(node, option)}>`, `</div>`];
   }
 }

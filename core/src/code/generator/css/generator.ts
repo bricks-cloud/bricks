@@ -2,7 +2,7 @@ import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import { getFileExtensionFromLanguage, constructExtraSvgFiles } from "../util";
+import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -23,19 +23,29 @@ export class Generator {
   async generateMainFileContent(
     node: Node,
     option: Option,
-    mainComponentName: string
+    mainComponentName: string,
+    isCssFileNeeded: boolean,
   ): Promise<[string, ImportedComponentMeta[]]> {
     const [mainFileContent, importComponents] =
       await this.htmlGenerator.generateHtml(node, option);
-    const importStatements: string[] = [`import "./style.css"`];
+    const importStatements: string[] = [];
 
-    for (const importComponent of importComponents) {
-      importStatements.push(
-        `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-      );
+    if (isCssFileNeeded) {
+      importStatements.push(`import "./style.css"`);
     }
 
     if (option.uiFramework === UiFramework.react) {
+      for (const importComponent of importComponents) {
+        const extension = getExtensionFromFilePath(importComponent.importPath);
+        if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+          continue;
+        }
+
+        importStatements.push(
+          `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+        );
+      }
+
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
@@ -53,8 +63,14 @@ export class Generator {
     const sortedFontdata = getSortedFontsMetadata(node);
     const googleFontUrl = computeGoogleFontURL(sortedFontdata);
     const mainComponentName = "GeneratedComponent";
+    let isCssFileNeeded: boolean = false;
+
+    if (!isEmpty(googleFontUrl)) {
+      isCssFileNeeded = true;
+    }
+
     const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(node, option, mainComponentName);
+      await this.generateMainFileContent(node, option, mainComponentName, isCssFileNeeded);
 
     const mainFile: File = {
       content: mainFileContent,
@@ -63,10 +79,10 @@ export class Generator {
 
     let extraFiles: File[] = [];
     if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraSvgFiles(importComponents);
+      extraFiles = await constructExtraFiles(importComponents);
     }
 
-    if (isEmpty(googleFontUrl)) {
+    if (isCssFileNeeded) {
       const cssFile: File = {
         content: buildCssFileContent(googleFontUrl),
         path: `/style.css`,
@@ -74,6 +90,7 @@ export class Generator {
 
       return [mainFile, cssFile, ...extraFiles];
     }
+
 
     return [mainFile, ...extraFiles];
   }
@@ -120,6 +137,18 @@ const getProps = (node: Node, option: Option): string => {
           option
         ),
         option
+      );
+
+    case NodeType.IMAGE:
+      return constructStyleProp(
+        convertCssClassesToInlineStyle(
+          {
+            ...node.getCssAttributes(),
+            ...node.getPositionalCssAttributes(),
+          },
+          option,
+        ),
+        option,
       );
   }
 };

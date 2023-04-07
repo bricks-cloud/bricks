@@ -2,7 +2,7 @@ import { convertFigmaNodesToBricksNodes } from "./design/adapter/figma/adapter";
 import { generateCodingFiles } from "./code/generator/generator";
 import { Option, File } from "./code/code";
 import { groupNodes } from "./bricks/grouping";
-import { addPositionalCSSAttributesToNodes } from "./bricks/positional-css";
+import { addAdditionalCssAttributesToNodes } from "./bricks/additional-css";
 import { Node, GroupNode } from "./bricks/node";
 
 export const convertToCode = async (
@@ -17,10 +17,20 @@ export const convertToCode = async (
   let startingNode: Node =
     converted.length > 1 ? new GroupNode(converted) : converted[0];
 
-  console.log("converted: ", converted);
-
   groupNodes(startingNode);
-  addPositionalCSSAttributesToNodes(startingNode);
+
+  // this is not a great fix
+  setStartingNodeWidth(startingNode);
+
+  addAdditionalCssAttributesToNodes(startingNode);
 
   return generateCodingFiles(startingNode, option);
+};
+
+const setStartingNodeWidth = (node: Node) => {
+  const boundingBox = node.getAbsBoundingBox();
+  node.addCssAttributes({
+    "width": `${boundingBox.rightBot.x - boundingBox.leftTop.x}px`,
+    "height": `${boundingBox.rightBot.y - boundingBox.leftTop.y}px`,
+  });
 };

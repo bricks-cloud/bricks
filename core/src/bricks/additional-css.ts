@@ -1,17 +1,36 @@
 import { isEmpty } from "../utils";
-import { Attributes } from "../design/adapter/node";
+import { Attributes, BoxCoordinates } from "../design/adapter/node";
 import {
   Direction,
   getOppositeDirection,
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node, NodeType } from "./node";
+import { ImageNode, Node, NodeType, VisibleNode } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
   getLineBasedOnDirection,
 } from "./line";
+import { filterCssValue } from "./util";
+
+export const selectBox = (node: Node, useBoundingBox: boolean = false): BoxCoordinates => {
+  if (node.getType() === NodeType.VISIBLE) {
+    const visibleNode = node as VisibleNode;
+    return visibleNode.getAbsBoundingBox();
+  }
+
+  if (node.getType() === NodeType.IMAGE) {
+    const imageNode = node as ImageNode;
+    return imageNode.getAbsBoundingBox();
+  }
+
+  if (useBoundingBox) {
+    return node.getAbsBoundingBox();
+  }
+
+  return node.getAbsRenderingBox();
+};
 
 enum JustifyContent {
   FLEX_START = "flex-start",
@@ -33,8 +52,8 @@ enum RelativePoisition {
   CONTAIN = "CONTAIN",
 }
 
-// addPositionalCSSAttributesToNodes adds positional css information to a node and its children.
-export const addPositionalCSSAttributesToNodes = (node: Node) => {
+// addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
+export const addAdditionalCssAttributesToNodes = (node: Node) => {
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
@@ -46,10 +65,13 @@ export const addPositionalCSSAttributesToNodes = (node: Node) => {
 
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
-  node.addPositionalCssAttributes(getPositionalCSSAttributes(node, direction));
+  node.addCssAttributes(getAdditionalCssAttributes(node));
+  node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
+  adjustChildrenHeightAndWidthCssValue(node);
+
 
   for (const child of children) {
-    addPositionalCSSAttributesToNodes(child);
+    addAdditionalCssAttributesToNodes(child);
   }
 };
 
@@ -65,12 +87,16 @@ export const getPaddingInPixels = (
   let paddingLeft: number = 0;
   let paddingRight: number = 0;
 
+
   const targetLine = getContainerLineFromNodes(node.getChildren(), direction);
   const parentLine = getContainerLineFromNodes([node], direction);
+
   const perpendicularTargetLine = getContainerLineFromNodes(
     node.getChildren(),
     getOppositeDirection(direction)
   );
+
+  // const boundingBoxPerpendicularTargetLine = getContainerLineFromNodes(node.getChildren(), direction, true);
   const perpendicularParentLine = getContainerLineFromNodes(
     [node],
     getOppositeDirection(direction)
@@ -315,11 +341,191 @@ const setMarginsForChildren = (
   }
 };
 
-// getPositionalCSSAttributes gets positional css information of a node in relation to its children.
-export const getPositionalCSSAttributes = (
+
+const isCssValueEmpty = (value: string): boolean => {
+  return isEmpty(filterCssValue(value, {
+    truncateNumbers: true,
+    zeroValueAllowed: false,
+  }));
+};
+
+
+// getAdditionalCssAttributes gets additioanl css information of a node in relation to its children.
+export const getAdditionalCssAttributes = (node: Node): Attributes => {
+  const attributes: Attributes = {};
+
+  if ((!isCssValueEmpty(node.getACssAttribute("border-radius")) || !isCssValueEmpty(node.getACssAttribute("border-width"))) && node.areThereOverflowingChildren()) {
+    attributes["overflow"] = "hidden";
+  }
+
+  return attributes;
+};
+
+const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
+  if (!isEmpty(node.getPositionalCssAttributes())) {
+    const [maxWidth, maxHeight] = getAllowedMaxWidthAndHeight(node);
+
+    const flexDir = node.getAPositionalAttribute("flex-direction");
+
+    let gap: number = 0;
+    let gapCssVal: string = node.getACssAttribute("gap");
+    if (!isCssValueEmpty(gapCssVal)) {
+      gap = parseInt(gapCssVal.slice(0, -2), 10);
+    }
+
+    let currentRenderingWidth: number = 0;
+    let currentRenderingHeight: number = 0;
+
+    const children: Node[] = node.getChildren();
+    for (const child of children) {
+      const renderingBox = child.getAbsRenderingBox();
+      const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
+      const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
+
+      currentRenderingWidth += renderingWidth;
+      currentRenderingHeight += renderingHeight;
+    }
+
+    currentRenderingWidth += (children.length - 1 * gap);
+    currentRenderingHeight += (children.length - 1 * gap);
+
+    if (flexDir === "column") {
+      for (const child of node.getChildren()) {
+        const attributes: Attributes = {};
+
+        let widthCssVal: string = child.getACssAttribute("width");
+        let heightCssVal: string = child.getACssAttribute("height");
+
+        const renderingBox = child.getAbsRenderingBox();
+        const boundingBox = child.getAbsBoundingBox();
+
+        const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
+        const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
+
+        const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
+
+        if (!isCssValueEmpty(widthCssVal)) {
+          const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
+
+          if (width > maxWidth) {
+            attributes["width"] = `${renderingWidth}px`;
+          }
+
+          if (width < maxWidth && boundingWidth <= maxWidth) {
+            attributes["width"] = `${boundingWidth}px`;
+          }
+        }
+
+        if (!isCssValueEmpty(heightCssVal)) {
+          const height = Math.trunc(parseInt(heightCssVal.slice(0, -2), 10));
+
+          if (currentRenderingHeight - height + boundingHeight <= maxHeight) {
+            attributes["height"] = `${boundingHeight}px`;
+          }
+        }
+
+
+        child.addCssAttributes(attributes);
+      }
+    }
+
+    if (flexDir === "row") {
+      for (const child of node.getChildren()) {
+        const attributes: Attributes = {};
+
+        let heightCssVal: string = child.getACssAttribute("height");
+        let widthCssVal: string = child.getACssAttribute("width");
+        const renderingBox = child.getAbsRenderingBox();
+        const boundingBox = child.getAbsBoundingBox();
+
+        const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
+        const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
+
+        const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
+
+        if (!isCssValueEmpty(heightCssVal)) {
+          const height = parseInt(heightCssVal.slice(0, -2), 10);
+          if (height > maxHeight) {
+            attributes["height"] = `${renderingHeight}px`;
+          }
+
+          if (height < maxHeight && boundingHeight <= maxHeight) {
+            attributes["height"] = `${boundingHeight}px`;
+          }
+        }
+
+        if (!isCssValueEmpty(widthCssVal)) {
+          const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
+
+          if (currentRenderingWidth - width + boundingWidth <= maxWidth) {
+            attributes["width"] = `${boundingWidth}px`;
+          }
+        }
+
+        child.addCssAttributes(attributes);
+      }
+    }
+  }
+};
+
+
+const cssValueToNumber = (cssValue: string): number => {
+  if (cssValue.endsWith("px")) {
+    return parseInt(cssValue.slice(0, -2), 10);
+  }
+
+  return -Infinity;
+};
+
+const getAllowedMaxWidthAndHeight = (node: Node): number[] => {
+  let pl: number = 0;
+  let pt: number = 0;
+  let pr: number = 0;
+  let pb: number = 0;
+
+  let width: number = 0;
+  let height: number = 0;
+
+  let widthCssValue: string = node.getACssAttribute("width");
+  let heightCssValue: string = node.getACssAttribute("height");
+
+  if (widthCssValue && heightCssValue) {
+    width = cssValueToNumber(widthCssValue);
+    height = cssValueToNumber(heightCssValue);
+  }
+
+  const plInPixels = node.getAPositionalAttribute("padding-left");
+  if (!isCssValueEmpty(plInPixels)) {
+    pl = parseInt(plInPixels.slice(0, -2), 10);
+  }
+  const prInPixels = node.getAPositionalAttribute("padding-right");
+  if (!isCssValueEmpty(prInPixels)) {
+    pr = parseInt(prInPixels.slice(0, -2), 10);
+  }
+  const ptInPixels = node.getAPositionalAttribute("padding-top");
+  if (!isCssValueEmpty(ptInPixels)) {
+    pt = parseInt(ptInPixels.slice(0, -2), 10);
+  }
+  const pbInPixels = node.getAPositionalAttribute("padding-bottom");
+  if (!isCssValueEmpty(pbInPixels)) {
+    pb = parseInt(pbInPixels.slice(0, -2), 10);
+  }
+
+  return [width - pl - pr, height - pt - pb];
+};
+
+// getPositionalCssAttributes gets positional css information of a node in relation to its children.
+export const getPositionalCssAttributes = (
   node: Node,
   direction: Direction
 ): Attributes => {
+
+  const positionalCssAttributes = node.getPositionalCssAttributes();
+
+  if (!isEmpty(positionalCssAttributes)) {
+    return positionalCssAttributes;
+  }
+
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {

@@ -18,13 +18,18 @@ export const getFileExtensionFromLanguage = (option: Option): string => {
 
 // getFileExtension gets file extension given a file object
 export const getFileExtension = (file: File) => {
-  const parts = file.path.split(".");
+  return getExtensionFromFilePath(file.path);
+};
+
+export const getExtensionFromFilePath = (path: string) => {
+  const parts = path.split(".");
   return parts[parts.length - 1];
 };
 
-// constructExtraSvgFiles creates svg files if they are imported in the main file
-export const constructExtraSvgFiles = async (
-  importedComponents: ImportedComponentMeta[]
+
+// constructExtraFiles creates extra files if they are imported in the main file
+export const constructExtraFiles = async (
+  importedComponents: ImportedComponentMeta[],
 ): Promise<File[]> => {
   let files: File[] = [];
   if (isEmpty(importedComponents)) {
@@ -32,8 +37,19 @@ export const constructExtraSvgFiles = async (
   }
 
   for (const importComponent of importedComponents) {
+    const extension = getExtensionFromFilePath(importComponent.importPath);
+
+    if (extension === "svg") {
+      files.push({
+        content: await importComponent.node.export(ExportFormat.SVG),
+        path: importComponent.importPath,
+      });
+
+      continue;
+    }
+
     files.push({
-      content: await importComponent.node.exportAsSvg(ExportFormat.SVG),
+      content: await importComponent.node.export(ExportFormat.PNG),
       path: importComponent.importPath,
     });
   }

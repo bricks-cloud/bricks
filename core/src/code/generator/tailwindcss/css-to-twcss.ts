@@ -66,6 +66,20 @@ export const buildTwcssConfigFileContent = (
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
 
+
+// url("./assets/image-1.png") -> "image-1"
+export const getImageFileNameFromUrl = (path: string) => {
+  const parts = path.split("/");
+  const len = parts.length;
+
+  if (parts.length >= 0) {
+    const result = parts[len - 1].split(".");
+    return result[0];
+  }
+
+  return "unknown";
+};
+
 // findClosestTwcssColor finds the closest tailwindcss color to css color.
 const findClosestTwcssColor = (cssColor: string) => {
   if (cssColor === "inherit") {
@@ -278,6 +292,9 @@ const findClosestTwcssFontWeight = (fontWeight: string): string => {
   return twClassToUse;
 };
 
+// const maxTwcssSizeInPixels = 384;
+// const maxTwcssSizeInRem = 24;
+
 // findClosestTwcssSize finds the closest size in tailwindcss given css value.
 const findClosestTwcssSize = (cssSize: string): string => {
   const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
@@ -294,12 +311,24 @@ const findClosestTwcssSize = (cssSize: string): string => {
       let diff: number = Infinity;
 
       if (givenUnit === "px" && cssValue.endsWith("px")) {
-        diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -2)));
+
+        const val = parseFloat(cssValue.slice(0, -2));
+        // if (val > maxTwcssSizeInPixels) {
+        //   return `${val}px`;
+        // }
+
+        diff = Math.abs(givenPadding - val);
       }
 
       if (givenUnit === "px" && cssValue.endsWith("rem")) {
         // assume root font size equals 16px, which is true in most cases
-        diff = Math.abs(givenPadding - parseFloat(cssValue.slice(0, -3)) * 16);
+
+        const val = parseFloat(cssValue.slice(0, -3)) * 16;
+        // if (val > maxTwcssSizeInPixels) {
+        //   return `${val}px`;
+        // }
+
+        diff = Math.abs(givenPadding - val);
       }
 
       if (givenUnit === "rem" && cssValue.endsWith("rem")) {
@@ -311,6 +340,10 @@ const findClosestTwcssSize = (cssSize: string): string => {
         twSize = twValue;
       }
     });
+
+    if (Math.abs(minDiff) > 3) {
+      return `[${givenPadding}${givenUnit}]`;
+    }
   }
 
   return twSize;
@@ -345,7 +378,14 @@ export const getTwcssClass = (
         return `h-[${heightNum}px]`;
       }
 
-      return findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
+      const approximatedTwcssHeightClass = findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
+      const approximatedHeightNum = extractPixelNumberFromString(twHeightMap[approximatedTwcssHeightClass]);
+
+      if (Math.abs(approximatedHeightNum - heightNum) > 2) {
+        return `h-[${heightNum}px]`;
+      }
+
+      return approximatedTwcssHeightClass;
 
     case "width":
       const widthNum = extractPixelNumberFromString(cssValue);
@@ -353,7 +393,14 @@ export const getTwcssClass = (
         return `w-[${widthNum}px]`;
       }
 
-      return findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
+      const approximatedTwcssWidthClass = findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
+      const approximatedWidthNum = extractPixelNumberFromString(twWidthMap[approximatedTwcssWidthClass]);
+
+      if (Math.abs(approximatedWidthNum - widthNum) > 2) {
+        return `w-[${widthNum}px]`;
+      }
+
+      return approximatedTwcssWidthClass;
 
     case "border-color":
       return "border-" + findClosestTwcssColor(cssValue);
@@ -451,6 +498,10 @@ export const getTwcssClass = (
     case "background-color":
       return `bg-${findClosestTwcssColor(cssValue)}`;
 
+
+    case "background-image":
+      return `bg-${getImageFileNameFromUrl(cssValue)}`;
+
     case "box-shadow": {
       // A very naive conversion for now, because parsing box-shadow string is too complicated
       if (cssValue.includes("inset")) {
@@ -458,7 +509,7 @@ export const getTwcssClass = (
         return "shadow-inner";
       } else {
         // drop shadow
-        return "shadow";
+        return "shadow-xl";
       }
     }
 
@@ -685,6 +736,15 @@ export const getTwcssClass = (
       switch (cssValue) {
         case "break-word":
           return "break-words";
+        default:
+          return "";
+      }
+    }
+
+    case "overflow": {
+      switch (cssValue) {
+        case "hidden":
+          return "overflow-hidden";
         default:
           return "";
       }

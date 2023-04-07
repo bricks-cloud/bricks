@@ -1,5 +1,7 @@
 import { Node } from "./node";
 import { getLineBasedOnDirection } from "./line";
+import { BoxCoordinates } from "../design/adapter/node";
+import { selectBox } from "./additional-css";
 
 // Direction represents the way how elements are positioned within a Bricks node.
 // VERTICAL direction means that elements are organized in row. It corresponds to the CSS property flex-direction: row.
@@ -44,8 +46,11 @@ export const reorderNodesBasedOnDirection = (
 ) => {
   if (direction === Direction.VERTICAL) {
     nodes.sort((a: Node, b: Node): number => {
-      const xa = a.getAbsRenderingBox().leftTop.x;
-      const xb = b.getAbsRenderingBox().leftTop.x;
+      const abox: BoxCoordinates = selectBox(a);
+      const bbox: BoxCoordinates = selectBox(b);
+
+      const xa = abox.leftTop.x;
+      const xb = bbox.leftTop.x;
 
       return xa - xb;
     });
@@ -53,8 +58,11 @@ export const reorderNodesBasedOnDirection = (
   }
 
   nodes.sort((a: Node, b: Node): number => {
-    const ya = a.getAbsRenderingBox().leftTop.y;
-    const yb = b.getAbsRenderingBox().leftTop.y;
+    const abox: BoxCoordinates = selectBox(a);
+    const bbox: BoxCoordinates = selectBox(b);
+
+    const ya = abox.leftTop.y;
+    const yb = bbox.leftTop.y;
 
     return ya - yb;
   });

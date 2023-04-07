@@ -7,7 +7,10 @@ import {
   ExportFormat,
   VectorNode as AdaptedVectorNode,
   VectorGroupNode as AdaptedVectorGroupNode,
+  ImageNode as AdaptedImageNode,
 } from "../design/adapter/node";
+import { isEmpty } from "../utils";
+import { selectBox } from "./additional-css";
 import { filterAttributes } from "./util";
 
 export enum PostionalRelationship {
@@ -18,11 +21,11 @@ export enum PostionalRelationship {
 }
 
 export type Option = {
-  truncateNumbers: boolean;
-  zeroValueAllowed: boolean;
+  truncateNumbers?: boolean;
+  zeroValueAllowed?: boolean;
 };
 
-export type Node = GroupNode | VisibleNode | TextNode | VectorNode;
+export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
 
 export enum NodeType {
   BASE = "BASE",
@@ -31,6 +34,7 @@ export enum NodeType {
   TEXT = "TEXT",
   VECTOR = "VECTOR",
   VECTOR_GROUP = "VECTOR_GROUP",
+  IMAGE = "IMAGE",
 }
 
 export type Annotations = {
@@ -41,6 +45,7 @@ export class BaseNode {
   readonly id: string;
   children: Node[] = [];
   positionalCssAttributes: Attributes = {};
+  cssAttributes: Attributes = {};
   annotations: Annotations = {};
 
   constructor() {
@@ -66,6 +71,31 @@ export class BaseNode {
       ...attributes,
       ...this.positionalCssAttributes,
     };
+  }
+
+  getAPositionalAttribute(key: string): string {
+    return this.positionalCssAttributes[key];
+  }
+
+  setCssAttributes(attributes: Attributes) {
+    this.cssAttributes = attributes;
+  }
+
+  getCssAttributes(
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
+  ): Attributes {
+    return filterAttributes(this.cssAttributes, option);
+  }
+
+  addCssAttributes(attributes: Attributes) {
+    this.cssAttributes = {
+      ...this.cssAttributes,
+      ...attributes,
+    };
+  }
+
+  getACssAttribute(key: string): string {
+    return this.cssAttributes[key];
   }
 
   setChildren(children: Node[]) {
@@ -97,7 +127,7 @@ export class BaseNode {
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
   targetCoordinates: BoxCoordinates,
-) => {
+): boolean => {
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
     currentCoordinate.leftTop.y === currentCoordinate.rightBot.y
@@ -127,6 +157,75 @@ export const doOverlap = (
   }
 
   return true;
+};
+
+// doOutside determines whether any coorindate of the target box is outside of the current box.
+export const doOutside = (
+  currentCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates,
+): boolean => {
+  if (targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
+    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftBot.y <= currentCoordinates.leftBot.y) {
+    return false;
+  }
+
+  return true;
+};
+
+// getVisibleChildrenRenderingBox gets the children rendering  
+const getVisibleChildrenRenderingBox = (children: Node[]): BoxCoordinates => {
+  let xl = Infinity;
+  let xr = -Infinity;
+  let yt = Infinity;
+  let yb = -Infinity;
+
+  for (const child of children) {
+    const type = child.getType();
+    if (type !== NodeType.VISIBLE) {
+      continue;
+    }
+
+    let coordinates = child.getAbsRenderingBox();
+
+    if (coordinates.leftTop.x < xl) {
+      xl = coordinates.leftTop.x;
+    }
+
+    if (coordinates.rightBot.x > xr) {
+      xr = coordinates.rightBot.x;
+    }
+
+    if (coordinates.leftTop.y < yt) {
+      yt = coordinates.leftTop.y;
+    }
+
+    if (coordinates.rightBot.y > yb) {
+      yb = coordinates.rightBot.y;
+    }
+  }
+
+  const boxCoordinates = {
+    leftTop: {
+      x: xl,
+      y: yt,
+    },
+    leftBot: {
+      x: xl,
+      y: yb,
+    },
+    rightTop: {
+      x: xr,
+      y: yt,
+    },
+    rightBot: {
+      x: xr,
+      y: yb,
+    },
+  };
+
+  return boxCoordinates;
 };
 
 const computePositionalRelationship = (
@@ -160,19 +259,19 @@ const computePositionalRelationship = (
 
 export class GroupNode extends BaseNode {
   readonly id: string;
+  node?: AdaptedNode;
   absRenderingBox: BoxCoordinates;
-  cssAttributes: Attributes = {};
 
-  constructor(children: Node[]) {
+  constructor(children: Node[], node: AdaptedNode = null) {
     super();
     this.setChildren(children);
     this.absRenderingBox = this.computeAbsRenderingBox();
-  }
 
-  getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
-  ): Attributes {
-    return filterAttributes(this.cssAttributes, option);
+    if (!isEmpty(node)) {
+      this.node = node;
+      this.setCssAttributes(this.node.getCssAttributes());
+      this.setPositionalCssAttributes(this.node.getPositionalCssAttributes());
+    }
   }
 
   getType(): NodeType {
@@ -188,11 +287,30 @@ export class GroupNode extends BaseNode {
     return this.absRenderingBox;
   }
 
+  getAbsBoundingBox() {
+    if (!isEmpty(this.node)) {
+      return this.node.getAbsoluteBoundingBoxCoordinates();
+    }
+
+    return this.getAbsRenderingBox();
+  }
+
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.absRenderingBox,
       targetNode.getAbsRenderingBox(),
     );
+  }
+
+  areThereOverflowingChildren(): boolean {
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const bbox = this.getAbsBoundingBox();
+
+    if (childrenRenderingBox.leftTop.x === Infinity) {
+      return false;
+    }
+
+    return doOutside(bbox, childrenRenderingBox);
   }
 
   private computeAbsRenderingBox(): BoxCoordinates {
@@ -202,7 +320,7 @@ export class GroupNode extends BaseNode {
     let yb = -Infinity;
 
     for (const child of this.getChildren()) {
-      let coordinates = child.getAbsRenderingBox();
+      let coordinates = selectBox(child);
 
       if (coordinates.leftTop.x < xl) {
         xl = coordinates.leftTop.x;
@@ -251,14 +369,13 @@ export class VisibleNode extends BaseNode {
 
   constructor(node: AdaptedNode) {
     super();
-
     this.node = node;
+    this.setCssAttributes(this.node.getCssAttributes());
+    this.setPositionalCssAttributes(this.node.getPositionalCssAttributes());
   }
 
-  getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
-  ): Attributes {
-    return filterAttributes(this.node.getCssAttributes(), option);
+  getAbsBoundingBox(): BoxCoordinates {
+    return this.node.getAbsoluteBoundingBoxCoordinates();
   }
 
   getType(): NodeType {
@@ -278,6 +395,24 @@ export class VisibleNode extends BaseNode {
 
   getOriginalId(): string {
     return this.node.getOriginalId();
+  }
+
+  areThereOverflowingChildren(): boolean {
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const bbox = this.getAbsBoundingBox();
+
+    if (childrenRenderingBox.leftTop.x === Infinity) {
+      return false;
+    }
+
+    if (childrenRenderingBox.leftTop.x > bbox.leftTop.x &&
+      childrenRenderingBox.rightBot.x < bbox.rightBot.x &&
+      childrenRenderingBox.leftTop.y > bbox.leftTop.y &&
+      childrenRenderingBox.leftBot.y < bbox.leftBot.y) {
+      return false;
+    }
+
+    return true;
   }
 }
 
@@ -329,8 +464,8 @@ export class VectorGroupNode extends GroupNode {
     return NodeType.VECTOR_GROUP;
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
-    return await this.node.exportAsSvg(exportFormat);
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.node.export(exportFormat);
   }
 }
 
@@ -345,7 +480,24 @@ export class VectorNode extends VisibleNode {
     return NodeType.VECTOR;
   }
 
-  async exportAsSvg(exportFormat: ExportFormat): Promise<string> {
-    return await this.vectorNode.exportAsSvg(exportFormat);
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.vectorNode.export(exportFormat);
   }
 }
+
+export class ImageNode extends VisibleNode {
+  readonly imageNode: AdaptedImageNode;
+  constructor(node: AdaptedImageNode) {
+    super(node);
+    this.imageNode = node;
+  }
+
+  getType(): NodeType {
+    return NodeType.IMAGE;
+  }
+
+  async export(exportFormat: ExportFormat): Promise<string> {
+    return await this.imageNode.export(exportFormat);
+  }
+}
+
