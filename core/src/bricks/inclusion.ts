@@ -8,8 +8,6 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
   let removedNodes = new Set<string>();
   let processed: Node[] = [];
 
-  console.log("nodes: ", nodes);
-
   // starting from the last index because we want to find inclusion relationship from its closest node
   // in terms of z-index
   for (let i = nodes.length - 1; i >= 0; i--) {
@@ -52,8 +50,6 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
           currentNode.addChildren([targetNode]);
       }
     }
-
-    console.log("currentNode: ", currentNode);
   }
 
   for (let i = 0; i < nodes.length; i++) {
@@ -67,6 +63,5 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
     processed.push(currentNode);
   }
 
-  console.log("processed: ", processed);
   return processed;
 };

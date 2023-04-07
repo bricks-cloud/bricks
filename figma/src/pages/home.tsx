@@ -73,6 +73,9 @@ const Home = (props: PropsWithChildren<Props>) => {
         <p className="font-vietnam text-black font-bold text-lg mb-4">
           Activate your Bricks Design to Code VSCode extension to get started
         </p>
+        <p className="font-vietnam text-black text-sm">
+          Install the VSCode plugin <a href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
+        </p>
       </div>
     );
   };
