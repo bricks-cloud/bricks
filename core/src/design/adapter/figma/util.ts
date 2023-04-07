@@ -45,9 +45,9 @@ export const isFrameNodeTransparent = (node: FrameNode | InstanceNode | Componen
   return allColorInvis && noBorders;
 };
 
-// doesRectangleNodeContainAnImage tests whether rectangle node contain an image
-export const doesRectangleNodeContainsAnImage = (
-  node: RectangleNode
+// doesNodeContainsAnImage tests whether rectangle node contain an image
+export const doesNodeContainsAnImage = (
+  node: RectangleNode | EllipseNode
 ): boolean => {
   if (node.fills != figma.mixed) {
     if (!isEmpty(node.fills) && node.fills[0].type === "IMAGE") {

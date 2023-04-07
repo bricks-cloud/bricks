@@ -9,6 +9,7 @@ import {
   VectorNode,
 } from "../../../bricks/node";
 import { ExportFormat } from "../../../design/adapter/node";
+import { filterCssValue } from "../../../bricks/util";
 
 export type GetProps = (node: Node, option: Option) => string;
 
@@ -248,7 +249,9 @@ export class Generator {
         node: node,
       });
 
-      return `<img width="${node.getACssAttribute("width")}" src={${vectorComponentName}} alt=${alt} />`;
+      const width = node.getACssAttribute("width");
+
+      return `<img width="${filterCssValue(width, { truncateNumbers: true, zeroValueAllowed: true })}" src={${vectorComponentName}} alt=${alt} />`;
     }
 
     return await node.export(ExportFormat.SVG);

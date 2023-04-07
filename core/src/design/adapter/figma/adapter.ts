@@ -15,7 +15,7 @@ import {
   colorToStringWithOpacity,
   rgbaToString,
   isFrameNodeTransparent,
-  doesRectangleNodeContainsAnImage,
+  doesNodeContainsAnImage,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 
@@ -147,7 +147,6 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     if (figmaNode.children.length > 1) {
       // gap has no effects when only there is only one child
-      console.log(figmaNode.itemSpacing);
       attributes["gap"] = `${figmaNode.itemSpacing}px`;
     }
 
@@ -185,12 +184,14 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     addDropShadowCssProperty(figmaNode, attributes);
   }
 
-  if (figmaNode.type === NodeType.VECTOR) {
-    // width
-    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+  if (figmaNode.type === NodeType.VECTOR || figmaNode.type === NodeType.ELLIPSE) {
+    if (!isEmpty(figmaNode.absoluteRenderBounds)) {
+      // width
+      attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
 
-    // height
-    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+      // height
+      attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+    }
   }
 
   if (
@@ -269,7 +270,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     const fills = figmaNode.fills;
-    if (fills !== figma.mixed && fills.length > 0) {
+    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
       // background color
       const solidPaint = fills.find(
         (fill) => fill.type === "SOLID"
@@ -613,7 +614,7 @@ export class FigmaImageNodeAdapter extends FigmaNodeAdapter {
     let img: string = "";
     if (exportFormat === ExportFormat.PNG) {
       try {
-        const buf = await this.node.exportAsync({ format: ExportFormat.PNG, useAbsoluteBounds: true });
+        const buf = await this.node.exportAsync({ format: ExportFormat.PNG });
         img = base64js.fromByteArray(buf);
       } catch (error) {
         console.log(error);
@@ -706,17 +707,16 @@ export const convertFigmaNodesToBricksNodes = (
 
       switch (figmaNode.type) {
         case NodeType.RECTANGLE:
-          if (doesRectangleNodeContainsAnImage(figmaNode)) {
+          if (doesNodeContainsAnImage(figmaNode)) {
             newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
             result.areAllNodesExportable = false;
           }
           break;
-
         case NodeType.GROUP:
           newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
           break;
-        case NodeType.FRAME:
         case NodeType.INSTANCE:
+        case NodeType.FRAME:
         case NodeType.COMPONENT:
           if (isFrameNodeTransparent(figmaNode)) {
             newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
@@ -726,7 +726,15 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new BricksTextNode(new FigmaTextNodeAdapter(figmaNode));
           break;
         case NodeType.VECTOR:
+          newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
+          break;
         case NodeType.ELLIPSE:
+          if (doesNodeContainsAnImage(figmaNode)) {
+            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            result.areAllNodesExportable = false;
+            break;
+          }
+
           newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
       }
 

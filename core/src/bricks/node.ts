@@ -1,5 +1,4 @@
 import uuid from "react-native-uuid";
-import { isEmpty } from "lodash";
 import {
   Node as AdaptedNode,
   TextNode as AdaptedTextNode,
@@ -10,12 +9,8 @@ import {
   VectorGroupNode as AdaptedVectorGroupNode,
   ImageNode as AdaptedImageNode,
 } from "../design/adapter/node";
-<<<<<<< Updated upstream
 import { isEmpty } from "../utils";
-import { selectBox } from "./positional-css";
-=======
 import { selectBox } from "./additional-css";
->>>>>>> Stashed changes
 import { filterAttributes } from "./util";
 
 export enum PostionalRelationship {
@@ -26,8 +21,8 @@ export enum PostionalRelationship {
 }
 
 export type Option = {
-  truncateNumbers: boolean;
-  zeroValueAllowed: boolean;
+  truncateNumbers?: boolean;
+  zeroValueAllowed?: boolean;
 };
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
@@ -78,6 +73,10 @@ export class BaseNode {
     };
   }
 
+  getAPositionalAttribute(key: string): string {
+    return this.positionalCssAttributes[key];
+  }
+
   setCssAttributes(attributes: Attributes) {
     this.cssAttributes = attributes;
   }
@@ -90,8 +89,8 @@ export class BaseNode {
 
   addCssAttributes(attributes: Attributes) {
     this.cssAttributes = {
-      ...attributes,
       ...this.cssAttributes,
+      ...attributes,
     };
   }
 
@@ -165,10 +164,10 @@ export const doOutside = (
   currentCoordinates: BoxCoordinates,
   targetCoordinates: BoxCoordinates,
 ): boolean => {
-  if (targetCoordinates.leftTop.x > currentCoordinates.leftTop.x &&
-    targetCoordinates.rightBot.x < currentCoordinates.rightBot.x &&
-    targetCoordinates.leftTop.y > currentCoordinates.leftTop.y &&
-    targetCoordinates.leftBot.y < currentCoordinates.leftBot.y) {
+  if (targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
+    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftBot.y <= currentCoordinates.leftBot.y) {
     return false;
   }
 
@@ -406,7 +405,14 @@ export class VisibleNode extends BaseNode {
       return false;
     }
 
-    return doOutside(bbox, childrenRenderingBox);
+    if (childrenRenderingBox.leftTop.x > bbox.leftTop.x &&
+      childrenRenderingBox.rightBot.x < bbox.rightBot.x &&
+      childrenRenderingBox.leftTop.y > bbox.leftTop.y &&
+      childrenRenderingBox.leftBot.y < bbox.leftBot.y) {
+      return false;
+    }
+
+    return true;
   }
 }
 
