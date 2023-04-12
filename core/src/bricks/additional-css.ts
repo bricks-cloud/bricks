@@ -66,9 +66,10 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
   node.addCssAttributes(getAdditionalCssAttributes(node));
+
+
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
-
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
@@ -521,8 +522,8 @@ export const getPositionalCssAttributes = (
 ): Attributes => {
 
   const positionalCssAttributes = node.getPositionalCssAttributes();
-
-  if (!isEmpty(positionalCssAttributes)) {
+  // if autolayout has been set on this node
+  if (positionalCssAttributes["display"]) {
     return positionalCssAttributes;
   }
 

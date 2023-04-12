@@ -1,19 +1,21 @@
 import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
 import { Option } from "./node";
-import { BoxCoordinates } from "../design/adapter/node";
+
+
+const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
 
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
   if (value.endsWith("px")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    return `${Math.trunc(num)}px`;
+    const num = parseFloat(value.slice(0, -2));
+    return `${toOneDecimal(num)}px`;
   }
 
   if (value.endsWith("%")) {
-    const num = parseInt(value.slice(0, -1), 10);
-    return `${Math.trunc(num)}%`;
+    const num = parseFloat(value.slice(0, -1));
+    return `${toOneDecimal(num)}%`;
   }
 
   return value;
@@ -22,8 +24,9 @@ export const truncateNumbers = (value: string): string => {
 // zeroValueFilter prevents values like 0px 0% 0.05px from showing up in generated code
 export const zeroValueFilter = (value: string): boolean => {
   if (value.endsWith("px")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    if (Math.trunc(num) === 0) {
+    const num = parseFloat(value.slice(0, -2));
+
+    if (toOneDecimal(num) === 0) {
       return false;
     }
 
@@ -31,8 +34,8 @@ export const zeroValueFilter = (value: string): boolean => {
   }
 
   if (value.endsWith("%")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    if (Math.trunc(num) === 0) {
+    const num = parseFloat(value.slice(0, -2));
+    if (toOneDecimal(num) === 0) {
       return false;
     }
 

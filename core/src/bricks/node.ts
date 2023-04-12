@@ -68,8 +68,8 @@ export class BaseNode {
 
   addPositionalCssAttributes(attributes: Attributes) {
     this.positionalCssAttributes = {
-      ...attributes,
       ...this.positionalCssAttributes,
+      ...attributes,
     };
   }
 
