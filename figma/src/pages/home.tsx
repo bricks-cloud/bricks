@@ -3,7 +3,7 @@ import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
 import { CssFramework, UiFramework, Language } from "../constants";
-import { EVENT_GENERATE_BUTTON_CLICK, EVENT_INSTALLATION_LINK_CLICK } from "../analytics/amplitude";
+import { EVENT_GENERATE_BUTTON_CLICK, EVENT_INSTALLATION_LINK_CLICK, EVENT_FAQ_LINK_CLICK } from "../analytics/amplitude";
 
 export interface Props {
   connectedToVSCode: boolean;
@@ -80,6 +80,24 @@ const Home = (props: PropsWithChildren<Props>) => {
     );
   };
 
+
+  const handleFaqLinkClick = () => {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "analytics",
+          eventName: EVENT_FAQ_LINK_CLICK,
+          eventProperties: {
+            language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+          },
+        },
+      },
+      "*",
+    );
+  };
+
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
   const buttonColor = isGenerateCodeButtonEnabled
     ? " bg-blue-700 hover:bg-blue-800"
@@ -106,8 +124,11 @@ const Home = (props: PropsWithChildren<Props>) => {
         <p className="font-vietnam text-black font-bold text-lg mb-4">
           Activate your Bricks Design to Code VSCode extension to get started
         </p>
-        <p className="font-vietnam text-black text-sm">
+        <p className="font-vietnam text-black text-sm mb-1">
           Install the VSCode plugin <a onClick={handleInstallationLinkClick} href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
+        </p>
+        <p className="font-vietnam text-black text-sm">
+          For any issues, check out our <a onClick={handleFaqLinkClick} href="https://github.com/bricks-cloud/bricks/tree/main/docs" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline">FAQs</a>
         </p>
       </div>
     );

@@ -9,7 +9,7 @@
   - [Generated components are very different from the design](#generated-components-are-very-different-from-the-design)
 
 ## "Generate Code" button is greyed out
-- Install the [VSCode plugin](#https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode)
+- Install the [VSCode plugin](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode)
 - Activate the plugin as shown down below
 <p align="center">
 <img src="../assets/vscode-plugin-activation.gif" width="500" />
@@ -38,4 +38,4 @@
 - We are working on this.
 
 ## Generated components are very different from the design
-- Let us know the use case through [Slack](#https://join.slack.com/t/brickscommunity/shared_invite/zt-1pb2hy3h2-9rDYWMZdHKxHblzUG0CpTQ) or [Github issues](#https://github.com/bricks-cloud/bricks/issues). We will fix the problem asap.
+- Let us know the use case through [Slack](https://join.slack.com/t/brickscommunity/shared_invite/zt-1pb2hy3h2-9rDYWMZdHKxHblzUG0CpTQ) or [Github issues](https://github.com/bricks-cloud/bricks/issues). We will fix the problem asap.
