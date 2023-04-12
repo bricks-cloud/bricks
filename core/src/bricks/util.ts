@@ -5,6 +5,24 @@ import { Option } from "./node";
 
 const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
 
+// absolutePositioningFilter filters non absolute positioning related attributes
+export const absolutePositioningFilter = (key: string, _: string): boolean => {
+  const absolutePositioningFilters: string[] = [
+    "position",
+    "right",
+    "top",
+    "left",
+    "bottom"
+  ];
+
+  if (absolutePositioningFilters.includes(key)) {
+    return true;
+  }
+
+  return false;
+};
+
+
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
@@ -22,7 +40,7 @@ export const truncateNumbers = (value: string): string => {
 };
 
 // zeroValueFilter prevents values like 0px 0% 0.05px from showing up in generated code
-export const zeroValueFilter = (value: string): boolean => {
+export const zeroValueFilter = (_: string, value: string): boolean => {
   if (value.endsWith("px")) {
     const num = parseFloat(value.slice(0, -2));
 
@@ -45,7 +63,7 @@ export const zeroValueFilter = (value: string): boolean => {
   return true;
 };
 
-type FitlerFunction = (value: string) => boolean;
+type FilterFunction = (key: string, value: string) => boolean;
 type ModifierFunction = (value: string) => string;
 
 // filterAttributes filters and modfies attribtues
@@ -54,7 +72,7 @@ export const filterAttributes = (
   option: Option
 ): Attributes => {
   const copy: Attributes = {};
-  const filters: FitlerFunction[] = [];
+  const filters: FilterFunction[] = [];
   const modifiers: ModifierFunction[] = [];
 
   if (!option.zeroValueAllowed) {
@@ -65,6 +83,10 @@ export const filterAttributes = (
     modifiers.push(truncateNumbers);
   }
 
+  if (option.absolutePositioningOnly) {
+    filters.push(absolutePositioningFilter);
+  }
+
   if (isEmpty(modifiers) && isEmpty(filters)) {
     return attributes;
   }
@@ -72,7 +94,7 @@ export const filterAttributes = (
   Object.entries(attributes).forEach(([key, value]) => {
     let pass: boolean = true;
     for (const filterFunction of filters) {
-      pass = pass && filterFunction(value);
+      pass = pass && filterFunction(key, value);
     }
 
     if (!pass) {
@@ -97,10 +119,15 @@ export const filterCssValue = (
   option: Option
 ): string => {
   const modifiers: ModifierFunction[] = [];
-  const filters: FitlerFunction[] = [];
+  const filters: FilterFunction[] = [];
 
   if (!option.zeroValueAllowed) {
     filters.push(zeroValueFilter);
+  }
+
+
+  if (option.absolutePositioningOnly) {
+    filters.push(absolutePositioningFilter);
   }
 
   if (option.truncateNumbers) {
@@ -117,7 +144,7 @@ export const filterCssValue = (
 
   let pass: boolean = true;
   for (const filterFunction of filters) {
-    pass = pass && filterFunction(cssValue);
+    pass = pass && filterFunction("", cssValue);
   }
 
   if (!pass) {

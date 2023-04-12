@@ -23,6 +23,7 @@ export enum PostionalRelationship {
 export type Option = {
   truncateNumbers?: boolean;
   zeroValueAllowed?: boolean;
+  absolutePositioningOnly?: boolean;
 };
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
@@ -61,7 +62,7 @@ export class BaseNode {
   }
 
   getPositionalCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true, absolutePositioningOnly: false },
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
   }
@@ -82,7 +83,7 @@ export class BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true },
+    option: Option = { zeroValueAllowed: false, truncateNumbers: true, absolutePositioningOnly: false },
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
   }
@@ -116,6 +117,10 @@ export class BaseNode {
 
   getAnnotation(key: string): any {
     return this.annotations[key];
+  }
+
+  hasAnnotation(key: string): boolean {
+    return !!this.annotations[key];
   }
 
   getId() {
@@ -265,13 +270,13 @@ export class GroupNode extends BaseNode {
   constructor(children: Node[], node: AdaptedNode = null) {
     super();
     this.setChildren(children);
-    this.absRenderingBox = this.computeAbsRenderingBox();
-
     if (!isEmpty(node)) {
       this.node = node;
       this.setCssAttributes(this.node.getCssAttributes());
       this.setPositionalCssAttributes(this.node.getPositionalCssAttributes());
     }
+
+    this.absRenderingBox = this.computeAbsRenderingBox();
   }
 
   getType(): NodeType {
@@ -280,6 +285,7 @@ export class GroupNode extends BaseNode {
 
   setChildren(children: Node[]) {
     this.children = children;
+
     this.absRenderingBox = this.computeAbsRenderingBox();
   }
 
@@ -314,6 +320,14 @@ export class GroupNode extends BaseNode {
   }
 
   private computeAbsRenderingBox(): BoxCoordinates {
+    if (!isEmpty(this.node)) {
+      this.absRenderingBox = this.node.getRenderingBoundsCoordinates();
+      this.cssAttributes["width"] = `${Math.abs(this.absRenderingBox.rightBot.x - this.absRenderingBox.leftTop.x)}px`;
+      this.cssAttributes["height"] = `${Math.abs(this.absRenderingBox.rightBot.y - this.absRenderingBox.rightTop.y)}px`;
+      return this.absRenderingBox;
+    }
+
+
     let xl = Infinity;
     let xr = -Infinity;
     let yt = Infinity;
@@ -337,10 +351,18 @@ export class GroupNode extends BaseNode {
       if (coordinates.rightBot.y > yb) {
         yb = coordinates.rightBot.y;
       }
+
+      // console.log("child: ", child);
     }
 
     this.cssAttributes["width"] = `${Math.abs(xr - xl)}px`;
     this.cssAttributes["height"] = `${Math.abs(yb - yt)}px`;
+
+
+    // console.log("node: ", this.node);
+    // console.log(`this.cssAttributes["width"]: `, this.cssAttributes["width"]);
+    // console.log(`this.cssAttributes["height"]: `, this.cssAttributes["height"]);
+
 
     return {
       leftTop: {
@@ -456,7 +478,7 @@ export class TextNode extends VisibleNode {
 export class VectorGroupNode extends GroupNode {
   readonly node: AdaptedVectorGroupNode;
   constructor(node: AdaptedVectorGroupNode, children: Node[] = []) {
-    super(children);
+    super(children, node);
     this.node = node;
   }
 

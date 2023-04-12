@@ -13,6 +13,7 @@ import {
   getLineBasedOnDirection,
 } from "./line";
 import { filterCssValue } from "./util";
+import { absolutePositioningAnnotation } from "./overlap";
 
 export const selectBox = (node: Node, useBoundingBox: boolean = false): BoxCoordinates => {
   if (node.getType() === NodeType.VISIBLE) {
@@ -59,15 +60,9 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
     return;
   }
 
-  if (node.getType() === NodeType.VECTOR_GROUP) {
-    return;
-  }
-
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
   node.addCssAttributes(getAdditionalCssAttributes(node));
-
-
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
 
@@ -346,7 +341,6 @@ const setMarginsForChildren = (
 const isCssValueEmpty = (value: string): boolean => {
   return isEmpty(filterCssValue(value, {
     truncateNumbers: true,
-    zeroValueAllowed: false,
   }));
 };
 
@@ -403,7 +397,10 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
         const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
 
+        const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
         const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
+        let largerHeight = renderingHeight > boundingHeight ? renderingHeight : boundingHeight;
+
 
         if (!isCssValueEmpty(widthCssVal)) {
           const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
@@ -420,8 +417,8 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         if (!isCssValueEmpty(heightCssVal)) {
           const height = Math.trunc(parseInt(heightCssVal.slice(0, -2), 10));
 
-          if (currentRenderingHeight - height + boundingHeight <= maxHeight) {
-            attributes["height"] = `${boundingHeight}px`;
+          if (currentRenderingHeight - height + largerHeight <= maxHeight) {
+            attributes["height"] = `${largerHeight}px`;
           }
         }
 
@@ -442,7 +439,10 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
         const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
 
+        const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
         const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
+
+        let largerWidth = renderingWidth > boundingWidth ? renderingWidth : boundingWidth;
 
         if (!isCssValueEmpty(heightCssVal)) {
           const height = parseInt(heightCssVal.slice(0, -2), 10);
@@ -458,8 +458,8 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         if (!isCssValueEmpty(widthCssVal)) {
           const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
 
-          if (currentRenderingWidth - width + boundingWidth <= maxWidth) {
-            attributes["width"] = `${boundingWidth}px`;
+          if (currentRenderingWidth - width + largerWidth <= maxWidth) {
+            attributes["width"] = `${largerWidth}px`;
           }
         }
 
@@ -530,6 +530,30 @@ export const getPositionalCssAttributes = (
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
+    return attributes;
+  }
+
+  if (node.hasAnnotation(absolutePositioningAnnotation)) {
+    attributes["position"] = "relative";
+
+    const currentBox = node.getAbsRenderingBox();
+    for (const child of node.getChildren()) {
+      const childAttributes: Attributes = {};
+      const targetBox = child.getAbsRenderingBox();
+      const top = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
+      const bottom = Math.abs(currentBox.rightBot.y - targetBox.rightBot.y);
+      const left = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
+      const right = Math.abs(currentBox.rightBot.x - targetBox.rightBot.x);
+
+      childAttributes["position"] = "absolute";
+      childAttributes["top"] = `${top}px`;
+      childAttributes["bottom"] = `${bottom}px`;
+      childAttributes["right"] = `${right}px`;
+      childAttributes["left"] = `${left}px`;
+
+      child.addPositionalCssAttributes(childAttributes);
+    }
+
     return attributes;
   }
 

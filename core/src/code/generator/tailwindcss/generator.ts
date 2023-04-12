@@ -12,6 +12,7 @@ import {
   ImportedComponentMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
+import { filterAttributes } from "../../../bricks/util";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -98,7 +99,13 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses(node.getCssAttributes())
+        convertCssClassesToTwcssClasses(
+          {
+            ...node.getCssAttributes(),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningOnly: true,
+            }),
+          }),
       );
     case NodeType.GROUP:
       return constructClassProp(
@@ -120,10 +127,30 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.IMAGE:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses({
-          ...node.getPositionalCssAttributes(),
-          ...node.getCssAttributes(),
-        }),
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        )
+      );
+
+    case NodeType.VECTOR:
+      return constructClassProp(
+        classPropName,
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        ),
+      );
+    case NodeType.VECTOR_GROUP:
+      return constructClassProp(
+        classPropName,
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        ),
       );
 
     default:

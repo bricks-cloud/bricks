@@ -10,6 +10,7 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { getSortedFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
+import { filterAttributes } from "../../../bricks/util";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -113,7 +114,13 @@ const getProps = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
       return constructStyleProp(
-        convertCssClassesToInlineStyle(node.getCssAttributes(), option),
+        convertCssClassesToInlineStyle(
+          {
+            ...node.getCssAttributes(),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningOnly: true,
+            }),
+          }, option),
         option
       );
     case NodeType.GROUP:
@@ -138,14 +145,34 @@ const getProps = (node: Node, option: Option): string => {
         ),
         option
       );
-
     case NodeType.IMAGE:
       return constructStyleProp(
         convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
+          filterAttributes({
             ...node.getPositionalCssAttributes(),
-          },
+          }, {
+            absolutePositioningOnly: true,
+          }),
+          option,
+        ),
+        option,
+      );
+    case NodeType.VECTOR:
+      return constructStyleProp(
+        convertCssClassesToInlineStyle(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+          option,
+        ),
+        option,
+      );
+    case NodeType.VECTOR_GROUP:
+      return constructStyleProp(
+        convertCssClassesToInlineStyle(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
           option,
         ),
         option,

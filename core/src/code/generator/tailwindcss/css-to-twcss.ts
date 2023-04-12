@@ -562,6 +562,33 @@ export const getTwcssClass = (
       }
     }
 
+    case "position": {
+      switch (cssValue) {
+        case "absolute":
+          return "absolute";
+        case "relative":
+          return "relative";
+        default:
+          return "";
+      }
+    }
+
+    case "top": {
+      return renderTwcssProperty("top-", findClosestTwcssSize(cssValue));
+    }
+
+    case "bottom": {
+      return renderTwcssProperty("bottom-", findClosestTwcssSize(cssValue));
+    }
+
+    case "left": {
+      return renderTwcssProperty("left-", findClosestTwcssSize(cssValue));
+    }
+
+    case "right": {
+      return renderTwcssProperty("right-", findClosestTwcssSize(cssValue));
+    }
+
     case "flex-direction": {
       switch (cssValue) {
         case "row":

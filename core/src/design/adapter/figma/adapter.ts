@@ -177,10 +177,10 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   if (figmaNode.type === NodeType.GROUP) {
     // width
-    attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
 
     // height
-    attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
     addDropShadowCssProperty(figmaNode, attributes);
   }
 
@@ -563,8 +563,8 @@ export class FigmaNodeAdapter {
 }
 
 export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
-  node: VectorNode | EllipseNode;
-  constructor(node: VectorNode | EllipseNode) {
+  node: VectorNode;
+  constructor(node: VectorNode) {
     super(node);
     this.node = node;
   }
@@ -665,7 +665,6 @@ const EXPORTABLE_NODE_TYPES: string[] = [
   NodeType.FRAME,
   NodeType.RECTANGLE,
 ];
-const GROUP_NODE_TYPES: string[] = [NodeType.GROUP, NodeType.INSTANCE];
 
 type Feedbacks = {
   nodes: Node[];
@@ -697,8 +696,7 @@ export const convertFigmaNodesToBricksNodes = (
 
     if (figmaNode.visible) {
       if (
-        !EXPORTABLE_NODE_TYPES.includes(figmaNode.type) &&
-        !GROUP_NODE_TYPES.includes(figmaNode.type)
+        !EXPORTABLE_NODE_TYPES.includes(figmaNode.type)
       ) {
         result.areAllNodesExportable = false;
       }
@@ -734,15 +732,12 @@ export const convertFigmaNodesToBricksNodes = (
             result.areAllNodesExportable = false;
             break;
           }
-
-          newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
       }
 
       //@ts-ignore
       if (!isEmpty(figmaNode?.children)) {
         //@ts-ignore
         const feedbacks = convertFigmaNodesToBricksNodes(figmaNode.children);
-
         if (feedbacks.areAllNodesExportable) {
           newNode = new VectorGroupNode(
             new FigmaVectorGroupNodeAdapter(figmaNode),
@@ -766,6 +761,7 @@ export const convertFigmaNodesToBricksNodes = (
       result.nodes.push(newNode);
     }
   }
+
 
   return result;
 };

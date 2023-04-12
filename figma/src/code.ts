@@ -1,4 +1,8 @@
 import { convertToCode } from "bricks-core/src";
+import { isEmpty } from "bricks-core/src/utils";
+import { init, Identify, identify, track } from '@amplitude/analytics-browser';
+
+init('', figma.currentUser.id, { defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true } });
 
 figma.showUI(__html__, { height: 700, width: 400 });
 
@@ -16,6 +20,14 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "update-settings") {
     figma.clientStorage.setAsync("settings", msg.settings);
+  }
+
+  if (msg.type === "analytics") {
+    const event = new Identify();
+    event.setOnce('username', figma.currentUser.name);
+    identify(event);
+    const eventProperties = isEmpty(msg.eventProperties) ? {} : msg.eventProperties;
+    track(msg.eventName, eventProperties);
   }
 
   if (msg.type === "get-settings") {

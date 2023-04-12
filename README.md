@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./assets/Bricks-Logo.png" width="150" />
+<img src="./assets/bricks-logo.png" width="150" />
 </p>
 
 # **Bricks: Design to Code For Developers**

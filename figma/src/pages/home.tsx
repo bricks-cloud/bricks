@@ -3,6 +3,7 @@ import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
 import { CssFramework, UiFramework, Language } from "../constants";
+import { EVENT_GENERATE_BUTTON_CLICK, EVENT_INSTALLATION_LINK_CLICK } from "../analytics/amplitude";
 
 export interface Props {
   connectedToVSCode: boolean;
@@ -41,10 +42,42 @@ const Home = (props: PropsWithChildren<Props>) => {
     );
     setIsGeneratingCode(true);
     setCurrentPage(PAGES.CODE_GENERATION);
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "analytics",
+          eventName: EVENT_GENERATE_BUTTON_CLICK,
+          eventProperties: {
+            language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+          },
+        },
+      },
+      "*",
+    );
   };
 
   const handleOutputSettingButtonClick = () => {
     setCurrentPage(PAGES.SETTING);
+  };
+
+  const handleInstallationLinkClick = () => {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "analytics",
+          eventName: EVENT_INSTALLATION_LINK_CLICK,
+          eventProperties: {
+            language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+          },
+        },
+      },
+      "*",
+    );
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
@@ -74,7 +107,7 @@ const Home = (props: PropsWithChildren<Props>) => {
           Activate your Bricks Design to Code VSCode extension to get started
         </p>
         <p className="font-vietnam text-black text-sm">
-          Install the VSCode plugin <a href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
+          Install the VSCode plugin <a onClick={handleInstallationLinkClick} href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
         </p>
       </div>
     );
