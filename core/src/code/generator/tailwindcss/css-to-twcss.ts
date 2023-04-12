@@ -66,7 +66,6 @@ export const buildTwcssConfigFileContent = (
 const largestTWCHeightInPixels = 384;
 const largestTWCWidthInPixels = 384;
 
-
 // url("./assets/image-1.png") -> "image-1"
 export const getImageFileNameFromUrl = (path: string) => {
   const parts = path.split("/");
@@ -311,7 +310,6 @@ const findClosestTwcssSize = (cssSize: string): string => {
       let diff: number = Infinity;
 
       if (givenUnit === "px" && cssValue.endsWith("px")) {
-
         const val = parseFloat(cssValue.slice(0, -2));
         // if (val > maxTwcssSizeInPixels) {
         //   return `${val}px`;
@@ -378,8 +376,14 @@ export const getTwcssClass = (
         return `h-[${heightNum}px]`;
       }
 
-      const approximatedTwcssHeightClass = findClosestTwcssClassUsingPixel(cssValue, twHeightMap, "h-0");
-      const approximatedHeightNum = extractPixelNumberFromString(twHeightMap[approximatedTwcssHeightClass]);
+      const approximatedTwcssHeightClass = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twHeightMap,
+        "h-0"
+      );
+      const approximatedHeightNum = extractPixelNumberFromString(
+        twHeightMap[approximatedTwcssHeightClass]
+      );
 
       if (Math.abs(approximatedHeightNum - heightNum) > 2) {
         return `h-[${heightNum}px]`;
@@ -393,8 +397,14 @@ export const getTwcssClass = (
         return `w-[${widthNum}px]`;
       }
 
-      const approximatedTwcssWidthClass = findClosestTwcssClassUsingPixel(cssValue, twWidthMap, "w-0");
-      const approximatedWidthNum = extractPixelNumberFromString(twWidthMap[approximatedTwcssWidthClass]);
+      const approximatedTwcssWidthClass = findClosestTwcssClassUsingPixel(
+        cssValue,
+        twWidthMap,
+        "w-0"
+      );
+      const approximatedWidthNum = extractPixelNumberFromString(
+        twWidthMap[approximatedTwcssWidthClass]
+      );
 
       if (Math.abs(approximatedWidthNum - widthNum) > 2) {
         return `w-[${widthNum}px]`;
@@ -497,7 +507,6 @@ export const getTwcssClass = (
 
     case "background-color":
       return `bg-${findClosestTwcssColor(cssValue)}`;
-
 
     case "background-image":
       return `bg-${getImageFileNameFromUrl(cssValue)}`;

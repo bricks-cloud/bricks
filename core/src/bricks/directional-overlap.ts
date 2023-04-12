@@ -5,7 +5,7 @@ import { Node, GroupNode } from "./node";
 // groupNodesByDirectionalOverlap groups nodes by finding one directional overlap
 export const groupNodesByDirectionalOverlap = (
   nodes: Node[],
-  direction: Direction,
+  direction: Direction
 ): Node[] => {
   if (nodes.length < 2) {
     return nodes;
@@ -24,7 +24,7 @@ export const groupNodesByDirectionalOverlap = (
       currentNode,
       nodes,
       new Set<string>(),
-      direction,
+      direction
     );
 
     if (nodesToBeMerged.length <= 1) {
@@ -45,7 +45,7 @@ export const groupNodesByDirectionalOverlap = (
 // decideBetweenDirectionalOverlappingNodes decides between two sets of grouped directional overlapping nodes.
 export const decideBetweenDirectionalOverlappingNodes = (
   horizontalSegmentedNodes: Node[],
-  verticalSegmentedNodes: Node[],
+  verticalSegmentedNodes: Node[]
 ): Node[] => {
   // when the length of segmented nodes is less than 2, it means that nodes cannot be grouped.
   if (
@@ -81,7 +81,7 @@ export const findDirectionalOverlappingNodes = (
   startingNode: Node,
   targetNodes: Node[],
   currentPath: Set<string>,
-  direction: Direction,
+  direction: Direction
 ): Node[] => {
   let line = getLineBasedOnDirection(startingNode, direction);
 
@@ -113,7 +113,7 @@ export const findDirectionalOverlappingNodes = (
       overlappingNode,
       targetNodes,
       currentPath,
-      direction,
+      direction
     );
     completePath = completePath.concat(...result);
   }

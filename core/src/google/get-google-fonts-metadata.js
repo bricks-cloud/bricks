@@ -28,7 +28,7 @@ const req = https.request(options, (resp) => {
         (err) => {
           // In case of a error throw err.
           if (err) throw err;
-        },
+        }
       );
     } catch (error) {
       console.error(error.message);

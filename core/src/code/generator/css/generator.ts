@@ -2,7 +2,11 @@ import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
+import {
+  getFileExtensionFromLanguage,
+  constructExtraFiles,
+  getExtensionFromFilePath,
+} from "../util";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -25,7 +29,7 @@ export class Generator {
     node: Node,
     option: Option,
     mainComponentName: string,
-    isCssFileNeeded: boolean,
+    isCssFileNeeded: boolean
   ): Promise<[string, ImportedComponentMeta[]]> {
     const [mainFileContent, importComponents] =
       await this.htmlGenerator.generateHtml(node, option);
@@ -38,12 +42,15 @@ export class Generator {
     if (option.uiFramework === UiFramework.react) {
       for (const importComponent of importComponents) {
         const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        if (
+          extension === "png" &&
+          !isEmpty(importComponent.node.getChildren())
+        ) {
           continue;
         }
 
         importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
         );
       }
 
@@ -71,7 +78,12 @@ export class Generator {
     }
 
     const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(node, option, mainComponentName, isCssFileNeeded);
+      await this.generateMainFileContent(
+        node,
+        option,
+        mainComponentName,
+        isCssFileNeeded
+      );
 
     const mainFile: File = {
       content: mainFileContent,
@@ -91,7 +103,6 @@ export class Generator {
 
       return [mainFile, cssFile, ...extraFiles];
     }
-
 
     return [mainFile, ...extraFiles];
   }
@@ -120,7 +131,9 @@ const getProps = (node: Node, option: Option): string => {
             ...filterAttributes(node.getPositionalCssAttributes(), {
               absolutePositioningOnly: true,
             }),
-          }, option),
+          },
+          option
+        ),
         option
       );
     case NodeType.GROUP:
@@ -148,14 +161,17 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.IMAGE:
       return constructStyleProp(
         convertCssClassesToInlineStyle(
-          filterAttributes({
-            ...node.getPositionalCssAttributes(),
-          }, {
-            absolutePositioningOnly: true,
-          }),
-          option,
+          filterAttributes(
+            {
+              ...node.getPositionalCssAttributes(),
+            },
+            {
+              absolutePositioningOnly: true,
+            }
+          ),
+          option
         ),
-        option,
+        option
       );
     case NodeType.VECTOR:
       return constructStyleProp(
@@ -163,9 +179,9 @@ const getProps = (node: Node, option: Option): string => {
           filterAttributes(node.getPositionalCssAttributes(), {
             absolutePositioningOnly: true,
           }),
-          option,
+          option
         ),
-        option,
+        option
       );
     case NodeType.VECTOR_GROUP:
       return constructStyleProp(
@@ -173,9 +189,9 @@ const getProps = (node: Node, option: Option): string => {
           filterAttributes(node.getPositionalCssAttributes(), {
             absolutePositioningOnly: true,
           }),
-          option,
+          option
         ),
-        option,
+        option
       );
   }
 };

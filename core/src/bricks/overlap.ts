@@ -40,13 +40,11 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
       skippable.add(overlappingNode.getId());
     });
 
-
     const newGroupNode = new GroupNode(overlappingNodes);
     newGroupNode.addAnnotations(absolutePositioningAnnotation, true);
     processed.push(newGroupNode);
     currentNode.addAnnotations(overlapAnnotation, true);
   }
-
 
   return processed;
 };

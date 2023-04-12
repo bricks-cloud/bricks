@@ -38,7 +38,7 @@ See `code.ts` for an example of how to use the functions exported by this module
 const bricksNodes = await generateBricksTree(figma.currentPage.selection);
 
 const styledBricksNodes = await Promise.all(
-  bricksNodes.map(generateStyledBricksNode),
+  bricksNodes.map(generateStyledBricksNode)
 );
 // further process nodes
 ```

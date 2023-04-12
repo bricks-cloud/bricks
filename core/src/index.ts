@@ -7,7 +7,7 @@ import { Node, GroupNode } from "./bricks/node";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
-  option: Option,
+  option: Option
 ): Promise<File[]> => {
   const { nodes: converted } = convertFigmaNodesToBricksNodes(figmaNodes);
   if (converted.length < 1) {

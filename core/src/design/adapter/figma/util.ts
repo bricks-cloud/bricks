@@ -27,7 +27,9 @@ export function rgbaToString(color: RGBA): string {
 }
 
 // isFrameNodeTransparent determines whether the Figma frame node is transparent.
-export const isFrameNodeTransparent = (node: FrameNode | InstanceNode | ComponentNode): boolean => {
+export const isFrameNodeTransparent = (
+  node: FrameNode | InstanceNode | ComponentNode
+): boolean => {
   let allColorInvis: boolean = true;
   if (node.fills !== figma.mixed && !isEmpty(node.fills)) {
     for (const fill of node.fills) {

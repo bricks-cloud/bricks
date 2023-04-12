@@ -26,10 +26,9 @@ export const getExtensionFromFilePath = (path: string) => {
   return parts[parts.length - 1];
 };
 
-
 // constructExtraFiles creates extra files if they are imported in the main file
 export const constructExtraFiles = async (
-  importedComponents: ImportedComponentMeta[],
+  importedComponents: ImportedComponentMeta[]
 ): Promise<File[]> => {
   let files: File[] = [];
   if (isEmpty(importedComponents)) {

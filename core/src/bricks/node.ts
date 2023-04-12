@@ -62,7 +62,11 @@ export class BaseNode {
   }
 
   getPositionalCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true, absolutePositioningOnly: false },
+    option: Option = {
+      zeroValueAllowed: false,
+      truncateNumbers: true,
+      absolutePositioningOnly: false,
+    }
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
   }
@@ -83,7 +87,11 @@ export class BaseNode {
   }
 
   getCssAttributes(
-    option: Option = { zeroValueAllowed: false, truncateNumbers: true, absolutePositioningOnly: false },
+    option: Option = {
+      zeroValueAllowed: false,
+      truncateNumbers: true,
+      absolutePositioningOnly: false,
+    }
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
   }
@@ -131,7 +139,7 @@ export class BaseNode {
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
-  targetCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
 ): boolean => {
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
@@ -167,19 +175,21 @@ export const doOverlap = (
 // doOutside determines whether any coorindate of the target box is outside of the current box.
 export const doOutside = (
   currentCoordinates: BoxCoordinates,
-  targetCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
 ): boolean => {
-  if (targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+  if (
+    targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
     targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
     targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
-    targetCoordinates.leftBot.y <= currentCoordinates.leftBot.y) {
+    targetCoordinates.leftBot.y <= currentCoordinates.leftBot.y
+  ) {
     return false;
   }
 
   return true;
 };
 
-// getVisibleChildrenRenderingBox gets the children rendering  
+// getVisibleChildrenRenderingBox gets the children rendering
 const getVisibleChildrenRenderingBox = (children: Node[]): BoxCoordinates => {
   let xl = Infinity;
   let xr = -Infinity;
@@ -235,7 +245,7 @@ const getVisibleChildrenRenderingBox = (children: Node[]): BoxCoordinates => {
 
 const computePositionalRelationship = (
   currentCoordinates: BoxCoordinates,
-  targetCoordinates: BoxCoordinates,
+  targetCoordinates: BoxCoordinates
 ): PostionalRelationship => {
   if (
     targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
@@ -304,12 +314,14 @@ export class GroupNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.absRenderingBox,
-      targetNode.getAbsRenderingBox(),
+      targetNode.getAbsRenderingBox()
     );
   }
 
   areThereOverflowingChildren(): boolean {
-    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(
+      this.getChildren()
+    );
     const bbox = this.getAbsBoundingBox();
 
     if (childrenRenderingBox.leftTop.x === Infinity) {
@@ -322,11 +334,14 @@ export class GroupNode extends BaseNode {
   private computeAbsRenderingBox(): BoxCoordinates {
     if (!isEmpty(this.node)) {
       this.absRenderingBox = this.node.getRenderingBoundsCoordinates();
-      this.cssAttributes["width"] = `${Math.abs(this.absRenderingBox.rightBot.x - this.absRenderingBox.leftTop.x)}px`;
-      this.cssAttributes["height"] = `${Math.abs(this.absRenderingBox.rightBot.y - this.absRenderingBox.rightTop.y)}px`;
+      this.cssAttributes["width"] = `${Math.abs(
+        this.absRenderingBox.rightBot.x - this.absRenderingBox.leftTop.x
+      )}px`;
+      this.cssAttributes["height"] = `${Math.abs(
+        this.absRenderingBox.rightBot.y - this.absRenderingBox.rightTop.y
+      )}px`;
       return this.absRenderingBox;
     }
-
 
     let xl = Infinity;
     let xr = -Infinity;
@@ -358,11 +373,9 @@ export class GroupNode extends BaseNode {
     this.cssAttributes["width"] = `${Math.abs(xr - xl)}px`;
     this.cssAttributes["height"] = `${Math.abs(yb - yt)}px`;
 
-
     // console.log("node: ", this.node);
     // console.log(`this.cssAttributes["width"]: `, this.cssAttributes["width"]);
     // console.log(`this.cssAttributes["height"]: `, this.cssAttributes["height"]);
-
 
     return {
       leftTop: {
@@ -411,7 +424,7 @@ export class VisibleNode extends BaseNode {
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
     return computePositionalRelationship(
       this.getAbsRenderingBox(),
-      targetNode.getAbsRenderingBox(),
+      targetNode.getAbsRenderingBox()
     );
   }
 
@@ -420,17 +433,21 @@ export class VisibleNode extends BaseNode {
   }
 
   areThereOverflowingChildren(): boolean {
-    const childrenRenderingBox = getVisibleChildrenRenderingBox(this.getChildren());
+    const childrenRenderingBox = getVisibleChildrenRenderingBox(
+      this.getChildren()
+    );
     const bbox = this.getAbsBoundingBox();
 
     if (childrenRenderingBox.leftTop.x === Infinity) {
       return false;
     }
 
-    if (childrenRenderingBox.leftTop.x > bbox.leftTop.x &&
+    if (
+      childrenRenderingBox.leftTop.x > bbox.leftTop.x &&
       childrenRenderingBox.rightBot.x < bbox.rightBot.x &&
       childrenRenderingBox.leftTop.y > bbox.leftTop.y &&
-      childrenRenderingBox.leftBot.y < bbox.leftBot.y) {
+      childrenRenderingBox.leftBot.y < bbox.leftBot.y
+    ) {
       return false;
     }
 
@@ -522,4 +539,3 @@ export class ImageNode extends VisibleNode {
     return await this.imageNode.export(exportFormat);
   }
 }
-

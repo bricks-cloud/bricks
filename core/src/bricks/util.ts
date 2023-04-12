@@ -2,7 +2,6 @@ import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
 import { Option } from "./node";
 
-
 const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
 
 // absolutePositioningFilter filters non absolute positioning related attributes
@@ -12,7 +11,7 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
     "right",
     "top",
     "left",
-    "bottom"
+    "bottom",
   ];
 
   if (absolutePositioningFilters.includes(key)) {
@@ -21,7 +20,6 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
 
   return false;
 };
-
 
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
@@ -112,19 +110,14 @@ export const filterAttributes = (
   return copy;
 };
 
-
 // filterCssValue filters and modfies cssValue
-export const filterCssValue = (
-  cssValue: string,
-  option: Option
-): string => {
+export const filterCssValue = (cssValue: string, option: Option): string => {
   const modifiers: ModifierFunction[] = [];
   const filters: FilterFunction[] = [];
 
   if (!option.zeroValueAllowed) {
     filters.push(zeroValueFilter);
   }
-
 
   if (option.absolutePositioningOnly) {
     filters.push(absolutePositioningFilter);
@@ -155,7 +148,6 @@ export const filterCssValue = (
   for (const modifierFunction of modifiers) {
     updated = modifierFunction(updated);
   }
-
 
   return updated;
 };
