@@ -7,7 +7,7 @@ import { Node, GroupNode } from "./bricks/node";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
-  option: Option,
+  option: Option
 ): Promise<File[]> => {
   const { nodes: converted } = convertFigmaNodesToBricksNodes(figmaNodes);
   if (converted.length < 1) {
@@ -20,17 +20,17 @@ export const convertToCode = async (
   groupNodes(startingNode);
 
   // this is not a great fix
-  setStartingNodeWidth(startingNode);
+  // setStartingNodeWidth(startingNode);
 
   addAdditionalCssAttributesToNodes(startingNode);
 
   return generateCodingFiles(startingNode, option);
 };
 
-const setStartingNodeWidth = (node: Node) => {
-  const boundingBox = node.getAbsBoundingBox();
-  node.addCssAttributes({
-    "width": `${boundingBox.rightBot.x - boundingBox.leftTop.x}px`,
-    "height": `${boundingBox.rightBot.y - boundingBox.leftTop.y}px`,
-  });
-};
+// const setStartingNodeWidth = (node: Node) => {
+//   const boundingBox = node.getAbsBoundingBox();
+//   node.addCssAttributes({
+//     "width": `${boundingBox.rightBot.x - boundingBox.leftTop.x}px`,
+//     "height": `${boundingBox.rightBot.y - boundingBox.leftTop.y}px`,
+//   });
+// };

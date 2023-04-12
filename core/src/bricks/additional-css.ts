@@ -13,8 +13,12 @@ import {
   getLineBasedOnDirection,
 } from "./line";
 import { filterCssValue } from "./util";
+import { absolutePositioningAnnotation } from "./overlap";
 
-export const selectBox = (node: Node, useBoundingBox: boolean = false): BoxCoordinates => {
+export const selectBox = (
+  node: Node,
+  useBoundingBox: boolean = false
+): BoxCoordinates => {
   if (node.getType() === NodeType.VISIBLE) {
     const visibleNode = node as VisibleNode;
     return visibleNode.getAbsBoundingBox();
@@ -59,16 +63,11 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
     return;
   }
 
-  if (node.getType() === NodeType.VECTOR_GROUP) {
-    return;
-  }
-
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
   node.addCssAttributes(getAdditionalCssAttributes(node));
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
-
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
@@ -86,7 +85,6 @@ export const getPaddingInPixels = (
   let paddingBot: number = 0;
   let paddingLeft: number = 0;
   let paddingRight: number = 0;
-
 
   const targetLine = getContainerLineFromNodes(node.getChildren(), direction);
   const parentLine = getContainerLineFromNodes([node], direction);
@@ -341,20 +339,23 @@ const setMarginsForChildren = (
   }
 };
 
-
 const isCssValueEmpty = (value: string): boolean => {
-  return isEmpty(filterCssValue(value, {
-    truncateNumbers: true,
-    zeroValueAllowed: false,
-  }));
+  return isEmpty(
+    filterCssValue(value, {
+      truncateNumbers: true,
+    })
+  );
 };
-
 
 // getAdditionalCssAttributes gets additioanl css information of a node in relation to its children.
 export const getAdditionalCssAttributes = (node: Node): Attributes => {
   const attributes: Attributes = {};
 
-  if ((!isCssValueEmpty(node.getACssAttribute("border-radius")) || !isCssValueEmpty(node.getACssAttribute("border-width"))) && node.areThereOverflowingChildren()) {
+  if (
+    (!isCssValueEmpty(node.getACssAttribute("border-radius")) ||
+      !isCssValueEmpty(node.getACssAttribute("border-width"))) &&
+    node.areThereOverflowingChildren()
+  ) {
     attributes["overflow"] = "hidden";
   }
 
@@ -379,15 +380,19 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
     const children: Node[] = node.getChildren();
     for (const child of children) {
       const renderingBox = child.getAbsRenderingBox();
-      const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
-      const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
+      const renderingWidth = Math.abs(
+        renderingBox.rightBot.x - renderingBox.leftTop.x
+      );
+      const renderingHeight = Math.abs(
+        renderingBox.rightBot.y - renderingBox.leftTop.y
+      );
 
       currentRenderingWidth += renderingWidth;
       currentRenderingHeight += renderingHeight;
     }
 
-    currentRenderingWidth += (children.length - 1 * gap);
-    currentRenderingHeight += (children.length - 1 * gap);
+    currentRenderingWidth += children.length - 1 * gap;
+    currentRenderingHeight += children.length - 1 * gap;
 
     if (flexDir === "column") {
       for (const child of node.getChildren()) {
@@ -399,10 +404,21 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingBox = child.getAbsRenderingBox();
         const boundingBox = child.getAbsBoundingBox();
 
-        const renderingWidth = Math.abs(renderingBox.rightBot.x - renderingBox.leftTop.x);
-        const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
+        const renderingWidth = Math.abs(
+          renderingBox.rightBot.x - renderingBox.leftTop.x
+        );
+        const boundingWidth = Math.abs(
+          boundingBox.rightBot.x - boundingBox.leftTop.x
+        );
 
-        const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
+        const renderingHeight = Math.abs(
+          renderingBox.rightBot.y - renderingBox.leftTop.y
+        );
+        const boundingHeight = Math.abs(
+          boundingBox.rightBot.y - boundingBox.leftTop.y
+        );
+        let largerHeight =
+          renderingHeight > boundingHeight ? renderingHeight : boundingHeight;
 
         if (!isCssValueEmpty(widthCssVal)) {
           const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
@@ -419,11 +435,10 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         if (!isCssValueEmpty(heightCssVal)) {
           const height = Math.trunc(parseInt(heightCssVal.slice(0, -2), 10));
 
-          if (currentRenderingHeight - height + boundingHeight <= maxHeight) {
-            attributes["height"] = `${boundingHeight}px`;
+          if (currentRenderingHeight - height + largerHeight <= maxHeight) {
+            attributes["height"] = `${largerHeight}px`;
           }
         }
-
 
         child.addCssAttributes(attributes);
       }
@@ -438,10 +453,22 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingBox = child.getAbsRenderingBox();
         const boundingBox = child.getAbsBoundingBox();
 
-        const renderingHeight = Math.abs(renderingBox.rightBot.y - renderingBox.leftTop.y);
-        const boundingHeight = Math.abs(boundingBox.rightBot.y - boundingBox.leftTop.y);
+        const renderingHeight = Math.abs(
+          renderingBox.rightBot.y - renderingBox.leftTop.y
+        );
+        const boundingHeight = Math.abs(
+          boundingBox.rightBot.y - boundingBox.leftTop.y
+        );
 
-        const boundingWidth = Math.abs(boundingBox.rightBot.x - boundingBox.leftTop.x);
+        const renderingWidth = Math.abs(
+          renderingBox.rightBot.x - renderingBox.leftTop.x
+        );
+        const boundingWidth = Math.abs(
+          boundingBox.rightBot.x - boundingBox.leftTop.x
+        );
+
+        let largerWidth =
+          renderingWidth > boundingWidth ? renderingWidth : boundingWidth;
 
         if (!isCssValueEmpty(heightCssVal)) {
           const height = parseInt(heightCssVal.slice(0, -2), 10);
@@ -457,8 +484,8 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         if (!isCssValueEmpty(widthCssVal)) {
           const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
 
-          if (currentRenderingWidth - width + boundingWidth <= maxWidth) {
-            attributes["width"] = `${boundingWidth}px`;
+          if (currentRenderingWidth - width + largerWidth <= maxWidth) {
+            attributes["width"] = `${largerWidth}px`;
           }
         }
 
@@ -467,7 +494,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
     }
   }
 };
-
 
 const cssValueToNumber = (cssValue: string): number => {
   if (cssValue.endsWith("px")) {
@@ -519,16 +545,39 @@ export const getPositionalCssAttributes = (
   node: Node,
   direction: Direction
 ): Attributes => {
-
   const positionalCssAttributes = node.getPositionalCssAttributes();
-
-  if (!isEmpty(positionalCssAttributes)) {
+  // if autolayout has been set on this node
+  if (positionalCssAttributes["display"]) {
     return positionalCssAttributes;
   }
 
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
+    return attributes;
+  }
+
+  if (node.hasAnnotation(absolutePositioningAnnotation)) {
+    attributes["position"] = "relative";
+
+    const currentBox = node.getAbsRenderingBox();
+    for (const child of node.getChildren()) {
+      const childAttributes: Attributes = {};
+      const targetBox = child.getAbsRenderingBox();
+      const top = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
+      const bottom = Math.abs(currentBox.rightBot.y - targetBox.rightBot.y);
+      const left = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
+      const right = Math.abs(currentBox.rightBot.x - targetBox.rightBot.x);
+
+      childAttributes["position"] = "absolute";
+      childAttributes["top"] = `${top}px`;
+      childAttributes["bottom"] = `${bottom}px`;
+      childAttributes["right"] = `${right}px`;
+      childAttributes["left"] = `${left}px`;
+
+      child.addPositionalCssAttributes(childAttributes);
+    }
+
     return attributes;
   }
 

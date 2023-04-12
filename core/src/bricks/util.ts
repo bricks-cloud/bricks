@@ -1,29 +1,48 @@
 import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
 import { Option } from "./node";
-import { BoxCoordinates } from "../design/adapter/node";
+
+const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
+
+// absolutePositioningFilter filters non absolute positioning related attributes
+export const absolutePositioningFilter = (key: string, _: string): boolean => {
+  const absolutePositioningFilters: string[] = [
+    "position",
+    "right",
+    "top",
+    "left",
+    "bottom",
+  ];
+
+  if (absolutePositioningFilters.includes(key)) {
+    return true;
+  }
+
+  return false;
+};
 
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
   if (value.endsWith("px")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    return `${Math.trunc(num)}px`;
+    const num = parseFloat(value.slice(0, -2));
+    return `${toOneDecimal(num)}px`;
   }
 
   if (value.endsWith("%")) {
-    const num = parseInt(value.slice(0, -1), 10);
-    return `${Math.trunc(num)}%`;
+    const num = parseFloat(value.slice(0, -1));
+    return `${toOneDecimal(num)}%`;
   }
 
   return value;
 };
 
 // zeroValueFilter prevents values like 0px 0% 0.05px from showing up in generated code
-export const zeroValueFilter = (value: string): boolean => {
+export const zeroValueFilter = (_: string, value: string): boolean => {
   if (value.endsWith("px")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    if (Math.trunc(num) === 0) {
+    const num = parseFloat(value.slice(0, -2));
+
+    if (toOneDecimal(num) === 0) {
       return false;
     }
 
@@ -31,8 +50,8 @@ export const zeroValueFilter = (value: string): boolean => {
   }
 
   if (value.endsWith("%")) {
-    const num = parseInt(value.slice(0, -2), 10);
-    if (Math.trunc(num) === 0) {
+    const num = parseFloat(value.slice(0, -2));
+    if (toOneDecimal(num) === 0) {
       return false;
     }
 
@@ -42,7 +61,7 @@ export const zeroValueFilter = (value: string): boolean => {
   return true;
 };
 
-type FitlerFunction = (value: string) => boolean;
+type FilterFunction = (key: string, value: string) => boolean;
 type ModifierFunction = (value: string) => string;
 
 // filterAttributes filters and modfies attribtues
@@ -51,7 +70,7 @@ export const filterAttributes = (
   option: Option
 ): Attributes => {
   const copy: Attributes = {};
-  const filters: FitlerFunction[] = [];
+  const filters: FilterFunction[] = [];
   const modifiers: ModifierFunction[] = [];
 
   if (!option.zeroValueAllowed) {
@@ -62,6 +81,10 @@ export const filterAttributes = (
     modifiers.push(truncateNumbers);
   }
 
+  if (option.absolutePositioningOnly) {
+    filters.push(absolutePositioningFilter);
+  }
+
   if (isEmpty(modifiers) && isEmpty(filters)) {
     return attributes;
   }
@@ -69,7 +92,7 @@ export const filterAttributes = (
   Object.entries(attributes).forEach(([key, value]) => {
     let pass: boolean = true;
     for (const filterFunction of filters) {
-      pass = pass && filterFunction(value);
+      pass = pass && filterFunction(key, value);
     }
 
     if (!pass) {
@@ -87,17 +110,17 @@ export const filterAttributes = (
   return copy;
 };
 
-
 // filterCssValue filters and modfies cssValue
-export const filterCssValue = (
-  cssValue: string,
-  option: Option
-): string => {
+export const filterCssValue = (cssValue: string, option: Option): string => {
   const modifiers: ModifierFunction[] = [];
-  const filters: FitlerFunction[] = [];
+  const filters: FilterFunction[] = [];
 
   if (!option.zeroValueAllowed) {
     filters.push(zeroValueFilter);
+  }
+
+  if (option.absolutePositioningOnly) {
+    filters.push(absolutePositioningFilter);
   }
 
   if (option.truncateNumbers) {
@@ -114,7 +137,7 @@ export const filterCssValue = (
 
   let pass: boolean = true;
   for (const filterFunction of filters) {
-    pass = pass && filterFunction(cssValue);
+    pass = pass && filterFunction("", cssValue);
   }
 
   if (!pass) {
@@ -125,7 +148,6 @@ export const filterCssValue = (
   for (const modifierFunction of modifiers) {
     updated = modifierFunction(updated);
   }
-
 
   return updated;
 };

@@ -2,7 +2,7 @@ export class Generator {
   generateReactFileContent(
     content: string,
     componentName: string,
-    additionalImportStatements: string[] = [],
+    additionalImportStatements: string[] = []
   ): string {
     const importStatements = [
       `import React from "react";`,

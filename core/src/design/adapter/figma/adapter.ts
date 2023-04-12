@@ -23,12 +23,14 @@ const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
   let boxA: BoxCoordinates = nodeA.getAbsBoundingBox();
   let boxB: BoxCoordinates = nodeB.getAbsBoundingBox();
 
-
   if (boxA.leftBot.x !== boxB.leftBot.x || boxA.leftBot.y !== boxB.leftBot.y) {
     return false;
   }
 
-  if (boxA.rightBot.x !== boxB.rightBot.x || boxA.rightBot.y !== boxB.rightBot.y) {
+  if (
+    boxA.rightBot.x !== boxB.rightBot.x ||
+    boxA.rightBot.y !== boxB.rightBot.y
+  ) {
     return false;
   }
 
@@ -36,7 +38,10 @@ const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
     return false;
   }
 
-  if (boxA.rightTop.x !== boxB.rightTop.x || boxA.rightTop.y !== boxB.rightTop.y) {
+  if (
+    boxA.rightTop.x !== boxB.rightTop.x ||
+    boxA.rightTop.y !== boxB.rightTop.y
+  ) {
     return false;
   }
 
@@ -54,18 +59,27 @@ enum NodeType {
   COMPONENT = "COMPONENT",
 }
 
-const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNode | InstanceNode | ComponentNode, attributes: Attributes) => {
+const addDropShadowCssProperty = (
+  figmaNode:
+    | GroupNode
+    | FrameNode
+    | RectangleNode
+    | InstanceNode
+    | ComponentNode,
+  attributes: Attributes
+) => {
   const dropShadowStrings: string[] = figmaNode.effects
     .filter(
       (effect) =>
         effect.visible &&
-        (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"),
+        (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW")
     )
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -78,7 +92,6 @@ const addDropShadowCssProperty = (figmaNode: GroupNode | FrameNode | RectangleNo
     attributes["box-shadow"] = dropShadowStrings.join(",");
   }
 };
-
 
 export const isAutoLayout = (node: SceneNode): boolean => {
   return !!(
@@ -174,17 +187,19 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
 const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
 
-
   if (figmaNode.type === NodeType.GROUP) {
     // width
-    attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
 
     // height
-    attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
     addDropShadowCssProperty(figmaNode, attributes);
   }
 
-  if (figmaNode.type === NodeType.VECTOR || figmaNode.type === NodeType.ELLIPSE) {
+  if (
+    figmaNode.type === NodeType.VECTOR ||
+    figmaNode.type === NodeType.ELLIPSE
+  ) {
     if (!isEmpty(figmaNode.absoluteRenderBounds)) {
       // width
       attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
@@ -207,7 +222,11 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // border
     const borderColors = figmaNode.strokes;
-    if (borderColors.length > 0 && borderColors[0].visible && borderColors[0].type === "SOLID") {
+    if (
+      borderColors.length > 0 &&
+      borderColors[0].visible &&
+      borderColors[0].type === "SOLID"
+    ) {
       attributes["border-color"] = colorToString(borderColors[0].color);
 
       const {
@@ -325,7 +344,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
-      figmaNode.absoluteBoundingBox.width >
+        figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -563,8 +582,8 @@ export class FigmaNodeAdapter {
 }
 
 export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
-  node: VectorNode | EllipseNode;
-  constructor(node: VectorNode | EllipseNode) {
+  node: VectorNode;
+  constructor(node: VectorNode) {
     super(node);
     this.node = node;
   }
@@ -604,7 +623,6 @@ export class FigmaVectorGroupNodeAdapter extends FigmaNodeAdapter {
   }
 }
 
-
 export class FigmaImageNodeAdapter extends FigmaNodeAdapter {
   constructor(node: SceneNode) {
     super(node);
@@ -624,7 +642,6 @@ export class FigmaImageNodeAdapter extends FigmaNodeAdapter {
     return img;
   }
 }
-
 
 export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   node: TextNode;
@@ -665,7 +682,6 @@ const EXPORTABLE_NODE_TYPES: string[] = [
   NodeType.FRAME,
   NodeType.RECTANGLE,
 ];
-const GROUP_NODE_TYPES: string[] = [NodeType.GROUP, NodeType.INSTANCE];
 
 type Feedbacks = {
   nodes: Node[];
@@ -696,10 +712,7 @@ export const convertFigmaNodesToBricksNodes = (
     const figmaNode = reordered[i];
 
     if (figmaNode.visible) {
-      if (
-        !EXPORTABLE_NODE_TYPES.includes(figmaNode.type) &&
-        !GROUP_NODE_TYPES.includes(figmaNode.type)
-      ) {
+      if (!EXPORTABLE_NODE_TYPES.includes(figmaNode.type)) {
         result.areAllNodesExportable = false;
       }
 
@@ -734,15 +747,12 @@ export const convertFigmaNodesToBricksNodes = (
             result.areAllNodesExportable = false;
             break;
           }
-
-          newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
       }
 
       //@ts-ignore
       if (!isEmpty(figmaNode?.children)) {
         //@ts-ignore
         const feedbacks = convertFigmaNodesToBricksNodes(figmaNode.children);
-
         if (feedbacks.areAllNodesExportable) {
           newNode = new VectorGroupNode(
             new FigmaVectorGroupNodeAdapter(figmaNode),
@@ -754,7 +764,10 @@ export const convertFigmaNodesToBricksNodes = (
           feedbacks.areAllNodesExportable && result.areAllNodesExportable;
 
         // merge parent and child if they have the same boundingbox
-        if (feedbacks.nodes.length === 1 && doTwoNodesHaveTheSameBoundingBox(feedbacks.nodes[0], newNode)) {
+        if (
+          feedbacks.nodes.length === 1 &&
+          doTwoNodesHaveTheSameBoundingBox(feedbacks.nodes[0], newNode)
+        ) {
           feedbacks.nodes[0].addCssAttributes(newNode.getCssAttributes());
           result.nodes = result.nodes.concat(feedbacks.nodes);
           continue;

@@ -83,7 +83,7 @@ export class Line {
 // getLinesFromNodes gets boundaries from nodes based on direction.
 export const getLinesFromNodes = (
   nodes: Node[],
-  direction: Direction,
+  direction: Direction
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
@@ -106,7 +106,7 @@ export const getLinesFromNodes = (
 export const getContainerLineFromNodes = (
   nodes: Node[],
   direction: Direction,
-  useBoundingBox: boolean = false,
+  useBoundingBox: boolean = false
 ): Line => {
   let lower: number = Infinity;
   let upper: number = -Infinity;

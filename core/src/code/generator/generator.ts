@@ -5,7 +5,7 @@ import { Generator as TwcssGenerator } from "./tailwindcss/generator";
 
 export const generateCodingFiles = async (
   node: Node,
-  option: Option,
+  option: Option
 ): Promise<File[]> => {
   switch (option.cssFramework) {
     case CssFramework.css:

@@ -4,17 +4,17 @@ import {
   decideBetweenDirectionalOverlappingNodes,
   groupNodesByDirectionalOverlap,
 } from "./directional-overlap";
-import { groupNodesByOverlap } from "./overlap";
+import { groupNodesByOverlap, absolutePositioningAnnotation } from "./overlap";
 import { groupNodesByInclusion } from "./inclusion";
 import { isEmpty } from "../utils";
 
 export const groupNodes = (parentNode: Node) => {
-  if (parentNode.getType() === NodeType.VECTOR_GROUP) {
+  const children = parentNode.getChildren();
+  if (isEmpty(children)) {
     return;
   }
 
-  const children = parentNode.getChildren();
-  if (isEmpty(children)) {
+  if (parentNode.getType() === NodeType.VECTOR_GROUP) {
     return;
   }
 
@@ -30,19 +30,28 @@ export const groupNodes = (parentNode: Node) => {
     groupedNodes,
     Direction.HORIZONTAL
   );
+
   const verticalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
     Direction.VERTICAL
   );
+
   const decided = decideBetweenDirectionalOverlappingNodes(
     horizontalSegmentedNodes,
     verticalSegmentedNodes
   );
 
-
   if (!isEmpty(decided)) {
     groupedNodes = decided;
   }
+
+  if (groupedNodes.length > 1 && isEmpty(decided)) {
+    parentNode.addAnnotations(absolutePositioningAnnotation, true);
+  }
+
+  // if (isEmpty(decided)) {
+  //   parentNode.addAnnotations(absolutePositioningAnnotation, true);
+  // }
 
   for (const node of groupedNodes) {
     groupNodes(node);

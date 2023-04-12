@@ -1,8 +1,15 @@
 import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
-import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
-import { convertCssClassesToTwcssClasses, getImageFileNameFromUrl } from "./css-to-twcss";
+import {
+  getFileExtensionFromLanguage,
+  constructExtraFiles,
+  getExtensionFromFilePath,
+} from "../util";
+import {
+  convertCssClassesToTwcssClasses,
+  getImageFileNameFromUrl,
+} from "./css-to-twcss";
 import {
   instantiateFontsRegistryGlobalInstance,
   FontsRegistryGlobalInstance,
@@ -12,6 +19,7 @@ import {
   ImportedComponentMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
+import { filterAttributes } from "../../../bricks/util";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -34,12 +42,15 @@ export class Generator {
     if (option.uiFramework === UiFramework.react) {
       for (const importComponent of importComponents) {
         const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        if (
+          extension === "png" &&
+          !isEmpty(importComponent.node.getChildren())
+        ) {
           continue;
         }
 
         importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
         );
       }
 
@@ -98,7 +109,12 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses(node.getCssAttributes())
+        convertCssClassesToTwcssClasses({
+          ...node.getCssAttributes(),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        })
       );
     case NodeType.GROUP:
       return constructClassProp(
@@ -120,10 +136,30 @@ const getProps = (node: Node, option: Option): string => {
     case NodeType.IMAGE:
       return constructClassProp(
         classPropName,
-        convertCssClassesToTwcssClasses({
-          ...node.getPositionalCssAttributes(),
-          ...node.getCssAttributes(),
-        }),
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          })
+        )
+      );
+
+    case NodeType.VECTOR:
+      return constructClassProp(
+        classPropName,
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          })
+        )
+      );
+    case NodeType.VECTOR_GROUP:
+      return constructClassProp(
+        classPropName,
+        convertCssClassesToTwcssClasses(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          })
+        )
       );
 
     default:
@@ -155,20 +191,22 @@ export const buildTwcssConfigFileContent = (
       .join("");
   }
 
-
   if (!isEmpty(importComponents)) {
     importComponents.forEach((importComponent: ImportedComponentMeta) => {
       const extension = getExtensionFromFilePath(importComponent.importPath);
       if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
-        backgroundImages += `"${getImageFileNameFromUrl(importComponent.importPath)}": "url(.${importComponent.importPath})",`;
+        backgroundImages += `"${getImageFileNameFromUrl(
+          importComponent.importPath
+        )}": "url(.${importComponent.importPath})",`;
       }
     });
   }
 
-  const backgroundImagesConfig = !isEmpty(backgroundImages) ?
-    `backgroundImage: {
+  const backgroundImagesConfig = !isEmpty(backgroundImages)
+    ? `backgroundImage: {
     ${backgroundImages}
-  },` : "";
+  },`
+    : "";
 
   const fontFamilyConfig = !isEmpty(fontFamilies)
     ? `fontFamily: {

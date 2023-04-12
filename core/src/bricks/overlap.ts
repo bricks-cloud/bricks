@@ -2,6 +2,7 @@ import { isEmpty } from "../utils";
 import { Node, PostionalRelationship, GroupNode } from "./node";
 
 const overlapAnnotation: string = "checkedForOverlap";
+export const absolutePositioningAnnotation: string = "absolutePositioning";
 
 // groupNodesByOverlap groups nodes if they have an overlap relationship.
 export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
@@ -15,7 +16,7 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
   for (let i = 0; i < nodes.length; i++) {
     const currentNode = nodes[i];
 
-    if (currentNode.getAnnotation(overlapAnnotation)) {
+    if (currentNode.hasAnnotation(overlapAnnotation)) {
       return nodes;
     }
 
@@ -26,7 +27,7 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
     const overlappingNodes = findOverlappingNodes(
       currentNode,
       nodes,
-      new Set()
+      new Set<string>()
     );
 
     if (isEmpty(overlappingNodes)) {
@@ -35,11 +36,13 @@ export const groupNodesByOverlap = (nodes: Node[]): Node[] => {
     }
 
     overlappingNodes.forEach((overlappingNode) => {
+      overlappingNode.addAnnotations(overlapAnnotation, true);
       skippable.add(overlappingNode.getId());
     });
 
-    processed.push(new GroupNode(overlappingNodes));
-
+    const newGroupNode = new GroupNode(overlappingNodes);
+    newGroupNode.addAnnotations(absolutePositioningAnnotation, true);
+    processed.push(newGroupNode);
     currentNode.addAnnotations(overlapAnnotation, true);
   }
 
@@ -71,7 +74,6 @@ export const findOverlappingNodes = (
         overlappingNodes.push(startingNode);
         currentPath.add(startingNode.getId());
       }
-
       currentPath.add(targetNode.getId());
     }
 

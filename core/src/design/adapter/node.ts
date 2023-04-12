@@ -44,4 +44,3 @@ export interface VectorGroupNode extends Node {
 export interface ImageNode extends Node {
   export(exportFormat: ExportFormat): Promise<string>;
 }
-

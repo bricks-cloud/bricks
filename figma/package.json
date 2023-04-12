@@ -71,6 +71,9 @@
     "id": "1178847414663679049",
     "api": "1.0.0",
     "main": "./code.js",
+    "permissions": [
+      "currentuser"
+    ],
     "editorType": [
       "figma"
     ],

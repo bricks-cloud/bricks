@@ -2,7 +2,11 @@ import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import { getFileExtensionFromLanguage, constructExtraFiles, getExtensionFromFilePath } from "../util";
+import {
+  getFileExtensionFromLanguage,
+  constructExtraFiles,
+  getExtensionFromFilePath,
+} from "../util";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -10,6 +14,7 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { getSortedFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
+import { filterAttributes } from "../../../bricks/util";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -24,7 +29,7 @@ export class Generator {
     node: Node,
     option: Option,
     mainComponentName: string,
-    isCssFileNeeded: boolean,
+    isCssFileNeeded: boolean
   ): Promise<[string, ImportedComponentMeta[]]> {
     const [mainFileContent, importComponents] =
       await this.htmlGenerator.generateHtml(node, option);
@@ -37,12 +42,15 @@ export class Generator {
     if (option.uiFramework === UiFramework.react) {
       for (const importComponent of importComponents) {
         const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        if (
+          extension === "png" &&
+          !isEmpty(importComponent.node.getChildren())
+        ) {
           continue;
         }
 
         importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`,
+          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
         );
       }
 
@@ -70,7 +78,12 @@ export class Generator {
     }
 
     const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(node, option, mainComponentName, isCssFileNeeded);
+      await this.generateMainFileContent(
+        node,
+        option,
+        mainComponentName,
+        isCssFileNeeded
+      );
 
     const mainFile: File = {
       content: mainFileContent,
@@ -90,7 +103,6 @@ export class Generator {
 
       return [mainFile, cssFile, ...extraFiles];
     }
-
 
     return [mainFile, ...extraFiles];
   }
@@ -113,7 +125,15 @@ const getProps = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
       return constructStyleProp(
-        convertCssClassesToInlineStyle(node.getCssAttributes(), option),
+        convertCssClassesToInlineStyle(
+          {
+            ...node.getCssAttributes(),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningOnly: true,
+            }),
+          },
+          option
+        ),
         option
       );
     case NodeType.GROUP:
@@ -138,17 +158,40 @@ const getProps = (node: Node, option: Option): string => {
         ),
         option
       );
-
     case NodeType.IMAGE:
       return constructStyleProp(
         convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
-            ...node.getPositionalCssAttributes(),
-          },
-          option,
+          filterAttributes(
+            {
+              ...node.getPositionalCssAttributes(),
+            },
+            {
+              absolutePositioningOnly: true,
+            }
+          ),
+          option
         ),
-        option,
+        option
+      );
+    case NodeType.VECTOR:
+      return constructStyleProp(
+        convertCssClassesToInlineStyle(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+          option
+        ),
+        option
+      );
+    case NodeType.VECTOR_GROUP:
+      return constructStyleProp(
+        convertCssClassesToInlineStyle(
+          filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+          option
+        ),
+        option
       );
   }
 };

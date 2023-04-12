@@ -6,7 +6,7 @@ const MAX_BODY_FONT_SIZE = 30;
 
 // buildFontMetadataMapWithTwcssAliases assigns fonts aliases based on their sizes.
 export const buildFontMetadataMapWithTwcssAliases = (
-  sortedFontsMetadata: FontMetadata[],
+  sortedFontsMetadata: FontMetadata[]
 ): FontMetadataMap => {
   let metadataMap: FontMetadataMap = {};
   let aliases: string[] = [];

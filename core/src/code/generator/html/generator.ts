@@ -8,7 +8,7 @@ import {
   VectorGroupNode,
   VectorNode,
 } from "../../../bricks/node";
-import { ExportFormat } from "../../../design/adapter/node";
+import { Attributes, ExportFormat } from "../../../design/adapter/node";
 import { filterCssValue } from "../../../bricks/util";
 
 export type GetProps = (node: Node, option: Option) => string;
@@ -105,7 +105,11 @@ export class Generator {
       case NodeType.IMAGE:
         const imageNode = node as ImageNode;
         if (isEmpty(imageNode.getChildren())) {
-          const [codeString] = await this.generateHtmlElementForImageNodes(imageNode, option, importComponents);
+          const [codeString] = await this.generateHtmlElementForImageNode(
+            imageNode,
+            option,
+            importComponents
+          );
           return [codeString, importComponents];
         }
 
@@ -116,7 +120,7 @@ export class Generator {
             node.getChildren(),
             [`<div ${imageNodeClassProps}>`, "</div>"],
             option,
-            importComponents,
+            importComponents
           ),
           importComponents,
         ];
@@ -191,7 +195,13 @@ export class Generator {
               option,
               importComponents
             );
-          childrenCodeStrings.push(vectorGroupCodeString);
+          childrenCodeStrings.push(
+            this.renderNodeWithAbsolutePosition(
+              vectorGroupNode,
+              vectorGroupCodeString,
+              option
+            )
+          );
           continue;
 
         case NodeType.VECTOR:
@@ -201,17 +211,22 @@ export class Generator {
             option,
             importComponents
           );
-          childrenCodeStrings.push(vectorCodeString);
+          childrenCodeStrings.push(
+            this.renderNodeWithAbsolutePosition(
+              vectorNode,
+              vectorCodeString,
+              option
+            )
+          );
           continue;
 
         case NodeType.IMAGE:
           const imageNode = child as ImageNode;
-          const codeStrings = await this.generateHtmlElementForImageNodes(
+          const codeStrings = await this.generateHtmlElementForImageNode(
             imageNode,
             option,
-            importComponents,
+            importComponents
           );
-
 
           if (codeStrings.length === 1) {
             childrenCodeStrings.push(codeStrings[0]);
@@ -222,7 +237,7 @@ export class Generator {
             child.getChildren(),
             codeStrings,
             option,
-            importComponents,
+            importComponents
           );
 
           childrenCodeStrings.push(imageNodeCodeString);
@@ -236,7 +251,7 @@ export class Generator {
   private async generateHtmlElementForVectorNode(
     node: VectorNode | VectorGroupNode,
     option: Option,
-    importComponents: ImportedComponentMeta[],
+    importComponents: ImportedComponentMeta[]
   ): Promise<string> {
     const vectorComponentName = "SvgAsset" + this.numberOfVectors;
     const alt = `"Svg Asset ${this.numberOfVectors}"`;
@@ -251,16 +266,19 @@ export class Generator {
 
       const width = node.getACssAttribute("width");
 
-      return `<img width="${filterCssValue(width, { truncateNumbers: true, zeroValueAllowed: true })}" src={${vectorComponentName}} alt=${alt} />`;
+      return `<img width="${filterCssValue(width, {
+        truncateNumbers: true,
+        zeroValueAllowed: true,
+      })}" src={${vectorComponentName}} alt=${alt} />`;
     }
 
     return await node.export(ExportFormat.SVG);
   }
 
-  private async generateHtmlElementForImageNodes(
+  private async generateHtmlElementForImageNode(
     node: ImageNode,
     option: Option,
-    importComponents: ImportedComponentMeta[],
+    importComponents: ImportedComponentMeta[]
   ): Promise<string[]> {
     const imageComponentName = "ImageAsset" + this.numberOfImages;
     const alt = `"Image Asset ${this.numberOfImages}"`;
@@ -273,11 +291,30 @@ export class Generator {
     });
 
     if (isEmpty(node.getChildren())) {
-      if (option.uiFramework === UiFramework.react) {
-        return [`<img src={${imageComponentName}} alt=${alt} />`];
+      const cssAttribtues: Attributes = node.getCssAttributes();
+      let widthAndHeight: string = "";
+
+      if (cssAttribtues["width"] && cssAttribtues["height"]) {
+        widthAndHeight = `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
       }
 
-      return [`<img src="./assets/${imageComponentName}.png" alt=${alt} />`];
+      if (option.uiFramework === UiFramework.react) {
+        return [
+          this.renderNodeWithAbsolutePosition(
+            node,
+            `<img src={${imageComponentName}} alt=${alt} ${widthAndHeight}/>`,
+            option
+          ),
+        ];
+      }
+
+      return [
+        this.renderNodeWithAbsolutePosition(
+          node,
+          `<img src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}/>`,
+          option
+        ),
+      ];
     }
 
     node.addCssAttributes({
@@ -285,5 +322,18 @@ export class Generator {
     });
 
     return [`<div ${this.getProps(node, option)}>`, `</div>`];
+  }
+
+  renderNodeWithAbsolutePosition(
+    node: ImageNode | VectorNode | VectorGroupNode,
+    inner: string,
+    option: Option
+  ): string {
+    const positionalCssAttribtues: Attributes =
+      node.getPositionalCssAttributes();
+    if (positionalCssAttribtues["position"] === "absolute") {
+      return `<div ${this.getProps(node, option)}>` + inner + `</div>`;
+    }
+    return inner;
   }
 }
