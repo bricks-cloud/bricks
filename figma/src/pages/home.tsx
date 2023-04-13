@@ -122,10 +122,10 @@ const Home = (props: PropsWithChildren<Props>) => {
     return (
       <div>
         <p className="font-vietnam text-black font-bold text-lg mb-4">
-          Activate your Bricks Design to Code VSCode extension to get started
+          Activate Bricks VSCode extension to get started
         </p>
         <p className="font-vietnam text-black text-sm mb-1">
-          Install the VSCode plugin <a onClick={handleInstallationLinkClick} href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
+          Install VSCode extension <a onClick={handleInstallationLinkClick} href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
         </p>
         <p className="font-vietnam text-black text-sm">
           For any issues, check out our <a onClick={handleFaqLinkClick} href="https://github.com/bricks-cloud/bricks/tree/main/docs" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline">FAQs</a>
