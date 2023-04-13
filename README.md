@@ -20,13 +20,17 @@ Check out our [demo video](https://www.loom.com/share/677ef1bc5f2144f6be4d27f4bb
 ## Getting Started
 ### Development Version
 
-#### **VSCode plugin**:
+#### **VSCode extension**:
 1. Make sure that you have installed [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install). 
-2. Clone our [VSCode plugin](https://github.com/bricks-cloud/d2c-vscode). 
+2. Clone our [VSCode extension](https://github.com/bricks-cloud/d2c-vscode). 
 3. Run `yarn install` in the repository's root directory. 
-4. Click on "Run" and select "Start Debugging" to start the VSCode plugin in development mode.
+4. Click on "Run" and select "Start Debugging" to start the VSCode extension in development mode.
 5. Click on "Activate Bricks" in VSCode's status bar in the right corner.
 6. Proceed to start the Figma plugin.
+
+<p align="center">
+<img src="./assets/vscode-extension-activation.gif" width="500" />
+</p>
 
 #### **Figma plugin**:
 1. Install [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install). 
@@ -34,12 +38,12 @@ Check out our [demo video](https://www.loom.com/share/677ef1bc5f2144f6be4d27f4bb
 3. Right Click in Figma -> "Plugins" -> "Development" -> "Manage plugins in development"
 4. Click on "+" -> import plugin from manifest -> Select bricks/figma/dist/manifest.json file to import the plugin
 5. Click on "Run" and select "In-development version" to start the Figma plugin in development mode.
-6. After activating Bricks' VSCode plugin, start selecting components and click on "Generate" button to start generating code.
+6. After activating Bricks' VSCode extension, start selecting components and click on "Generate" button to start generating code.
 
 ### Production Version
 1. Install [Node.js](https://nodejs.org/en/). 
-2. Install both the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
-3. Click on "Activate Bricks" in VSCode's status bar in the right corner to activate the plugin.
+2. Install both the [VSCode extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
+3. Click on "Activate Bricks" in VSCode's status bar in the right corner to activate the extension.
 4. In Figma, select components to convert to code.
 5. Click “Generate”.
 6. Done! The generated code shows up in VS Code, along with a live preview.
