@@ -306,8 +306,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   if (figmaNode.type === NodeType.TEXT) {
     const fontFamily = (figmaNode.fontName as FontName).family;
 
-    // source = computeURL([figmaNode]);
-
     // font family
     if (figmaNode.fontName !== figma.mixed) {
       attributes[

@@ -12,7 +12,7 @@ import {
   ImportedComponentMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
-import { getSortedFontsMetadata } from "../font";
+import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
 
@@ -68,8 +68,8 @@ export class Generator {
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
-    const sortedFontdata = getSortedFontsMetadata(node);
-    const googleFontUrl = computeGoogleFontURL(sortedFontdata);
+    const fontMetadata = getFontsMetadata(node);
+    const googleFontUrl = computeGoogleFontURL(fontMetadata);
     const mainComponentName = "GeneratedComponent";
     let isCssFileNeeded: boolean = false;
 

@@ -1,8 +1,9 @@
 import { convertToCode } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
 import { init, Identify, identify, track } from '@amplitude/analytics-browser';
+import { AMPLITUDE_API_KEY } from "./env";
 
-init('', figma.currentUser.id, { defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true } });
+init(AMPLITUDE_API_KEY, figma.currentUser.id, { defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true } });
 
 figma.showUI(__html__, { height: 700, width: 400 });
 
