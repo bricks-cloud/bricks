@@ -2,9 +2,9 @@ const InlineChunkHtmlPlugin = require("react-dev-utils/InlineChunkHtmlPlugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CreateFileWebpack = require("create-file-webpack");
 const { figmaPlugin } = require("./package.json");
-
 const path = require("path");
 const webpack = require("webpack");
+const Dotenv = require("dotenv-webpack");
 
 module.exports = (env, argv) => ({
   mode: argv.mode === "production" ? "production" : "development",
@@ -37,7 +37,7 @@ module.exports = (env, argv) => ({
         test: /\.css$/,
         include: path.resolve(
           __dirname,
-          "node_modules/prismjs/themes/prism-solarizedlight.css",
+          "node_modules/prismjs/themes/prism-solarizedlight.css"
         ),
         use: ["style-loader", "css-loader", "postcss-loader"],
       },
@@ -86,5 +86,6 @@ module.exports = (env, argv) => ({
       fileName: "manifest.json",
       content: JSON.stringify(figmaPlugin),
     }),
+    new Dotenv(),
   ],
 });

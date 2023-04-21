@@ -1,5 +1,5 @@
 import { isEmpty } from "../../../utils";
-import { CssFramework, Option, UiFramework } from "../../code";
+import { Option, UiFramework } from "../../code";
 import {
   ImageNode,
   Node,
@@ -33,30 +33,29 @@ export class Generator {
     option: Option
   ): Promise<[string, ImportedComponentMeta[]]> {
     const importComponents: ImportedComponentMeta[] = [];
+    const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
       case NodeType.TEXT:
         const textNode = node as TextNode;
         const textNodeClassProps = this.getProps(node, option);
-        const tag =
-          option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
-
+        const attributes = htmlTag === "a" ? 'href="#" ' : "";
         return [
-          `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`,
+          `<${htmlTag} ${attributes}${textNodeClassProps}>${textNode.getText()}</${htmlTag}>`,
           importComponents,
         ];
 
       case NodeType.GROUP:
         // this edge case should never happen
         if (isEmpty(node.getChildren())) {
-          return [`<div />`, importComponents];
+          return [`<${htmlTag} />`, importComponents];
         }
 
         const groupNodeClassProps = this.getProps(node, option);
         return [
           await this.generateHtmlFromNodes(
             node.getChildren(),
-            [`<div ${groupNodeClassProps}>`, "</div>"],
+            [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
             option,
             importComponents
           ),
@@ -67,13 +66,16 @@ export class Generator {
         const visibleNodeClassProps = this.getProps(node, option);
 
         if (isEmpty(node.getChildren())) {
-          return [`<div ${visibleNodeClassProps} />`, importComponents];
+          return [
+            `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`,
+            importComponents,
+          ];
         }
 
         return [
           await this.generateHtmlFromNodes(
             node.getChildren(),
-            [`<div ${visibleNodeClassProps}>`, "</div>"],
+            [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
             option,
             importComponents
           ),
@@ -118,7 +120,7 @@ export class Generator {
         return [
           await this.generateHtmlFromNodes(
             node.getChildren(),
-            [`<div ${imageNodeClassProps}>`, "</div>"],
+            [`<${htmlTag} ${imageNodeClassProps}>`, `</${htmlTag}>`],
             option,
             importComponents
           ),
@@ -126,7 +128,7 @@ export class Generator {
         ];
     }
 
-    return [`<div></div>`, importComponents];
+    return [`<${htmlTag}></${htmlTag}>`, importComponents];
   }
 
   private async generateHtmlFromNodes(
@@ -138,15 +140,16 @@ export class Generator {
     let childrenCodeStrings: string[] = [];
 
     for (const child of nodes) {
+      const htmlTag = child.getAnnotation("htmlTag") || "div";
+
       switch (child.getType()) {
         case NodeType.TEXT:
           const textNode = child as TextNode;
           const textNodeClassProps = this.getProps(child, option);
-          const tag =
-            option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
+          const attributes = htmlTag === "a" ? 'href="#" ' : "";
 
           childrenCodeStrings.push(
-            `<${tag} ${textNodeClassProps}>${textNode.getText()}</${tag}>`
+            `<${htmlTag} ${attributes}${textNodeClassProps}>${textNode.getText()}</${htmlTag}>`
           );
           continue;
 
@@ -160,7 +163,7 @@ export class Generator {
           const groupNodeClassProps = this.getProps(child, option);
           const groupNodeCodeString = await this.generateHtmlFromNodes(
             child.getChildren(),
-            [`<div ${groupNodeClassProps}>`, "</div>"],
+            [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
             option,
             importComponents
           );
@@ -174,13 +177,15 @@ export class Generator {
           }
 
           if (isEmpty(child.getChildren())) {
-            childrenCodeStrings.push(`<div ${visibleNodeClassProps}></div>`);
+            childrenCodeStrings.push(
+              `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`
+            );
             continue;
           }
 
           const visibleNodeCodeString = await this.generateHtmlFromNodes(
             child.getChildren(),
-            [`<div ${visibleNodeClassProps}>`, "</div>"],
+            [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
             option,
             importComponents
           );
