@@ -1,4 +1,5 @@
 import { Node } from "./bricks/node";
+import { NameMap, File } from "./code/code";
 
 export const isEmpty = (value: any): boolean => {
   return (
@@ -22,4 +23,23 @@ export const traverseNodes = async (
   await Promise.all(
     node.children.map((child) => traverseNodes(child, callback))
   );
+};
+
+export const replaceVariableNameWithinFile = (
+  files: File[],
+  nameMap: NameMap
+) => {
+  for (const file of files) {
+    if (file.path === "/GeneratedComponent.jsx") {
+      let content: string = file.content;
+      Object.entries(nameMap).forEach(([oldName, newName]) => {
+        content = content.replaceAll(
+          new RegExp("\\b" + oldName + "\\b", "g"),
+          newName
+        );
+      });
+
+      file.content = content;
+    }
+  }
 };

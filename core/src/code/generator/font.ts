@@ -1,32 +1,10 @@
 import { Node, NodeType, TextNode } from "../../bricks/node";
 
-export type FontMetadata = {
-  family: string;
-  familyCss: string;
-  isItalic: boolean;
-  size: number;
-  weights: string[];
-};
-
-// getSortedFontsMetadata sorts all the fonts found within a Bricks node and sort them by font sizes.
-export const getSortedFontsMetadata = (node: Node): FontMetadata[] => {
-  const fonts: FontMap = {};
+// getFontsMetadata sorts all the fonts found within a Bricks node and sort them by font sizes.
+export const getFontsMetadata = (node: Node): FontMetadataMap => {
+  const fonts: FontMetadataMap = {};
   findAllFonts(node, fonts);
-  const rankedFonts: FontMetadata[] = [];
-
-  Object.entries(fonts).forEach(([key, value]) => {
-    rankedFonts.push({
-      family: key,
-      familyCss: value.familyCss,
-      isItalic: value.isItalic,
-      size: getAverageFontSize(value.sizes),
-      weights: value.weights,
-    });
-  });
-
-  rankedFonts.sort((a, b) => b.size - a.size);
-
-  return rankedFonts;
+  return fonts;
 };
 
 type Font = {
@@ -36,12 +14,12 @@ type Font = {
   weights: string[];
 };
 
-type FontMap = {
+export type FontMetadataMap = {
   [family: string]: Font;
 };
 
 // findAllFonts finds all the fonts
-const findAllFonts = (node: Node, fonts: FontMap) => {
+const findAllFonts = (node: Node, fonts: FontMetadataMap) => {
   if (node.getType() === NodeType.TEXT) {
     const textNode = node as TextNode;
     const attributes = textNode.getCssAttributes();
@@ -79,15 +57,4 @@ const findAllFonts = (node: Node, fonts: FontMap) => {
   for (const child of children) {
     findAllFonts(child, fonts);
   }
-};
-
-// getAverageFontSize calculates the average given a list of font sizes in string format
-const getAverageFontSize = (fontsizes: string[]): number => {
-  let sum = 0;
-
-  fontsizes.forEach((fontsize) => {
-    sum += parseFloat(fontsize.slice(0, -2));
-  });
-
-  return sum / fontsizes.length;
 };

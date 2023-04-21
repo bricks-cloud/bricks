@@ -24,3 +24,7 @@ export interface Option {
   uiFramework?: UiFramework;
   cssFramework?: CssFramework;
 }
+
+export type NameMap = {
+  [oldName: string]: string,
+};

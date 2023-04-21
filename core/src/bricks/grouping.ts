@@ -49,10 +49,6 @@ export const groupNodes = (parentNode: Node) => {
     parentNode.addAnnotations(absolutePositioningAnnotation, true);
   }
 
-  // if (isEmpty(decided)) {
-  //   parentNode.addAnnotations(absolutePositioningAnnotation, true);
-  // }
-
   for (const node of groupedNodes) {
     groupNodes(node);
   }

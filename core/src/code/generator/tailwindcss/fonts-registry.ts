@@ -1,57 +1,33 @@
-import { getSortedFontsMetadata, FontMetadata } from "../font";
+import { getFontsMetadata, FontMetadataMap } from "../font";
 import { Node } from "../../../bricks/node";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 
-const MAX_BODY_FONT_SIZE = 30;
-
 // buildFontMetadataMapWithTwcssAliases assigns fonts aliases based on their sizes.
 export const buildFontMetadataMapWithTwcssAliases = (
-  sortedFontsMetadata: FontMetadata[]
-): FontMetadataMap => {
-  let metadataMap: FontMetadataMap = {};
-  let aliases: string[] = [];
+  fontsMetadata: FontMetadataMap
+): TwcssFontMetadataMap => {
+  let twcssMetadataMap: TwcssFontMetadataMap = {};
 
-  switch (sortedFontsMetadata.length) {
-    case 1:
-      const font = sortedFontsMetadata[0];
-      if (font.size >= MAX_BODY_FONT_SIZE) {
-        aliases = ["primary"];
-        break;
-      }
-      aliases = ["body"];
-      break;
-    case 2:
-      if (
-        sortedFontsMetadata[0].size >= MAX_BODY_FONT_SIZE &&
-        sortedFontsMetadata[1].size >= MAX_BODY_FONT_SIZE
-      ) {
-        aliases = ["primary", "secondary"];
-        break;
-      }
-
-      aliases = ["primary", "body"];
-      break;
-    case 3:
-      aliases = ["primary", "secondary", "body"];
-      break;
-  }
-
-  for (let i = 0; i < aliases.length; i++) {
-    const font = sortedFontsMetadata[i];
-    metadataMap[font.family] = {
-      ...font,
-      alias: aliases[i],
+  const fontMetadataEntries = Object.entries(fontsMetadata);
+  fontMetadataEntries.forEach(([family, { isItalic, weights, familyCss }]) => {
+    const alias = family.replaceAll(" ", "-");
+    twcssMetadataMap[family] = {
+      familyCss,
+      weights,
+      isItalic,
+      alias: alias.toLowerCase(),
     };
-  }
 
-  return metadataMap;
+  });
+
+  return twcssMetadataMap;
 };
 
-export type FontMetadataMap = {
-  [family: string]: FontMetadataWithAlias;
+export type TwcssFontMetadataMap = {
+  [family: string]: TwcssFontMetadataWithAlias;
 };
 
-export type FontMetadataWithAlias = {
+export type TwcssFontMetadataWithAlias = {
   familyCss: string;
   weights: string[];
   isItalic: boolean;
@@ -60,16 +36,16 @@ export type FontMetadataWithAlias = {
 
 // FontsRegistry contains related informaiton used for rendering fonts in tailwindcss.
 export class FontsRegistry {
-  fontMetadataMap: FontMetadataMap;
+  fontMetadataMap: TwcssFontMetadataMap;
   googleFontUrl: string;
 
   constructor(node: Node) {
-    const sortedFontdata = getSortedFontsMetadata(node);
-    this.googleFontUrl = computeGoogleFontURL(sortedFontdata);
-    this.fontMetadataMap = buildFontMetadataMapWithTwcssAliases(sortedFontdata);
+    const fontMetadataMap = getFontsMetadata(node);
+    this.googleFontUrl = computeGoogleFontURL(fontMetadataMap);
+    this.fontMetadataMap = buildFontMetadataMapWithTwcssAliases(fontMetadataMap);
   }
 
-  getFontMetadataInArray(): FontMetadataWithAlias[] {
+  getFontMetadataInArray(): TwcssFontMetadataWithAlias[] {
     return Object.entries(this.fontMetadataMap).map(([_, metadata]) => ({
       ...metadata,
     }));
@@ -77,10 +53,6 @@ export class FontsRegistry {
 
   getGoogleFontUrl(): string {
     return this.googleFontUrl;
-  }
-
-  setFontMetadataMap(fontMetadataMap: FontMetadataMap) {
-    this.fontMetadataMap = fontMetadataMap;
   }
 
   getTwcssAlias(familyCss: string): string {
@@ -95,6 +67,7 @@ export class FontsRegistry {
     return "";
   }
 }
+
 export let FontsRegistryGlobalInstance: FontsRegistry;
 
 // instantiateFontsRegistryGlobalInstance creates a singleton.
