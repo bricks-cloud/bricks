@@ -5,6 +5,7 @@ export const PAGES = {
   SETTING: "SETTING",
   CODE_GENERATION: "CODE_GENERATION",
   POST_CODE_GENERATION: "POST_CODE_GENERATION",
+  ERROR: "ERROR",
 };
 
 const PageContext = React.createContext({

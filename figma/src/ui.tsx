@@ -5,9 +5,11 @@ import Home from "./pages/home";
 import PostCodeGeneration from "./pages/post-code-generation";
 import CodeGenerationStatus from "./pages/code-generation-status";
 import CodeOutputSetting from "./pages/code-output-setting";
+import Error from "./pages/error";
 import PageContext, { PAGES } from "./context/page-context";
 import { io } from "socket.io-client";
 import { CssFramework, Language, UiFramework } from "./constants";
+import { withTimeout } from "./utils";
 
 const socket = io("ws://localhost:32044");
 
@@ -21,10 +23,10 @@ const UI = () => {
   // User settings
   const [selectedLanguage, setSelectedLanguage] = useState(Language.javascript);
   const [selectedUiFramework, setSelectedUiFramework] = useState(
-    UiFramework.react,
+    UiFramework.react
   );
   const [selectedCssFramework, setSelectedCssFramework] = useState(
-    CssFramework.tailwindcss,
+    CssFramework.tailwindcss
   );
 
   useEffect(() => {
@@ -68,15 +70,33 @@ const UI = () => {
       setCurrentPage(PAGES.HOME);
     }
 
-    if (pluginMessage.type === "styled-bricks-nodes") {
+    if (pluginMessage.type === "generated-files") {
+      setIsGeneratingCode(false);
+
+      if (pluginMessage.error) {
+        console.error("There is an error from Bricks core.");
+        setCurrentPage(PAGES.ERROR);
+        return;
+      }
+
       socket.emit(
         "code-generation",
         { files: pluginMessage.files },
-        (response) => {
-          if (response.status === "ok") {
-            setIsGeneratingCode(false);
-          }
-        },
+        withTimeout(
+          (response) => {
+            if (response.error) {
+              console.error("There is an error from VS Code.");
+              // TODO: log response.error to amplitude
+              setCurrentPage(PAGES.ERROR);
+            }
+          },
+          () => {
+            console.error("VS Code took too long to respond.");
+            setCurrentPage(PAGES.ERROR);
+          },
+          // set timeout to 10 seconds
+          10 * 1000
+        )
       );
     }
   };
@@ -117,6 +137,7 @@ const UI = () => {
           <CodeGenerationStatus isGeneratingCode={isGeneratingCode} />
         )}
         {currentPage === PAGES.POST_CODE_GENERATION && <PostCodeGeneration />}
+        {currentPage === PAGES.ERROR && <Error />}
       </div>
     </PageContext.Provider>
   );
