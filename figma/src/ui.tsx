@@ -10,6 +10,7 @@ import PageContext, { PAGES } from "./context/page-context";
 import { io } from "socket.io-client";
 import { CssFramework, Language, UiFramework } from "./constants";
 import { withTimeout } from "./utils";
+import { EVENT_ERROR } from "./analytics/amplitude";
 
 const socket = io("ws://localhost:32044");
 
@@ -74,10 +75,12 @@ const UI = () => {
       setIsGeneratingCode(false);
 
       if (pluginMessage.error) {
-        console.error("There is an error from Bricks core.");
+        // Error from Bricks core
         setCurrentPage(PAGES.ERROR);
         return;
       }
+
+      const TIMEOUT_SECONDS = 10;
 
       socket.emit(
         "code-generation",
@@ -85,17 +88,43 @@ const UI = () => {
         withTimeout(
           (response) => {
             if (response.error) {
-              console.error("There is an error from VS Code.");
-              // TODO: log response.error to amplitude
+              // Error from VS Code
+              parent.postMessage(
+                {
+                  pluginMessage: {
+                    type: "analytics",
+                    eventName: EVENT_ERROR,
+                    eventProperties: {
+                      source: "vscode",
+                      error: response.error,
+                    },
+                  },
+                },
+                "*"
+              );
+
               setCurrentPage(PAGES.ERROR);
             }
           },
           () => {
-            console.error("VS Code took too long to respond.");
+            // VS Code took too long to respond
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "analytics",
+                  eventName: EVENT_ERROR,
+                  eventProperties: {
+                    source: "vscode",
+                    error: `VS Code timeout after ${TIMEOUT_SECONDS} seconds`,
+                  },
+                },
+              },
+              "*"
+            );
             setCurrentPage(PAGES.ERROR);
           },
-          // set timeout to 10 seconds
-          10 * 1000
+          // set timeout
+          TIMEOUT_SECONDS * 1000
         )
       );
     }
