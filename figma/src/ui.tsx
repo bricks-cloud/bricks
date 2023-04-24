@@ -88,7 +88,7 @@ const UI = () => {
         withTimeout(
           (response) => {
             if (response.error) {
-              // Error from VS Code
+              console.error("Error from VS Code. See more in VS code console.");
               parent.postMessage(
                 {
                   pluginMessage: {
@@ -107,7 +107,9 @@ const UI = () => {
             }
           },
           () => {
-            // VS Code took too long to respond
+            const error = `VS Code timeout after ${TIMEOUT_SECONDS} seconds.`;
+
+            console.error(error);
             parent.postMessage(
               {
                 pluginMessage: {
@@ -115,7 +117,7 @@ const UI = () => {
                   eventName: EVENT_ERROR,
                   eventProperties: {
                     source: "vscode",
-                    error: `VS Code timeout after ${TIMEOUT_SECONDS} seconds`,
+                    error,
                   },
                 },
               },

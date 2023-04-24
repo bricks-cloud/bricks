@@ -35,6 +35,7 @@ figma.ui.onmessage = async (msg) => {
         files,
       });
     } catch (e) {
+      console.error("Error from Figma core:\n", e.stack);
       trackEvent(EVENT_ERROR, {
         source: "figma",
         error: e.stack,
