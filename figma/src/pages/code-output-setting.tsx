@@ -9,6 +9,7 @@ import cssLogo from "../assets/css-logo.svg";
 import tailwindcssLogo from "../assets/tailwindcss-logo.svg";
 import javascriptLogo from "../assets/javascript-logo.svg";
 import typescriptLogo from "../assets/typescript-logo.svg";
+import Button from "../components/Button";
 
 type Option<T> = {
   id: T;
@@ -38,7 +39,7 @@ function classNames(...classes) {
 function updateSettings(
   uiFramework: string,
   cssFramework: string,
-  language: string,
+  language: string
 ) {
   parent.postMessage(
     {
@@ -51,7 +52,7 @@ function updateSettings(
         } as Settings,
       },
     },
-    "*", //TODO: can use different origin??
+    "*" //TODO: can use different origin??
   );
 }
 
@@ -61,7 +62,7 @@ const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
   if (disabled) {
     return classNames(
       "bg-gray-300 border-gray-300 text-gray-500",
-      baseClassName,
+      baseClassName
     );
   }
 
@@ -70,7 +71,7 @@ const chooseRadioButtonStyle = (checked: boolean, disabled: boolean) => {
       "bg-blue-50 border-blue-700 border-2 text-gray-900 hover:bg-blue-50",
       "shadow-md",
       "text-gray-900",
-      baseClassName,
+      baseClassName
     );
   }
 
@@ -181,13 +182,9 @@ const CodeOutputSetting: React.FC<Props> = ({
       </div>
 
       <div className="h-36 w-full flex justify-center items-center">
-        <button
-          type="button"
-          onClick={handleSaveButtonClick}
-          className="font-roboto text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-8 py-3 dark:bg-blue-600 focus:outline-none"
-        >
+        <Button type="button" onClick={handleSaveButtonClick}>
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );

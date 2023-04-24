@@ -1,19 +1,14 @@
 import { useContext } from "react";
 import errorIcon from "../assets/error-icon.svg";
 import PageContext, { PAGES } from "../context/page-context";
+import Link, { URL } from "../components/Link";
+import Button from "../components/Button";
 
 const Error = () => {
   const { setCurrentPage } = useContext(PageContext);
 
   const handleDismissButtonClick = () => {
     setCurrentPage(PAGES.HOME);
-  };
-
-  const handleLinkClick = () => {
-    window.open(
-      "https://join.slack.com/t/brickscommunity/shared_invite/zt-1pb2hy3h2-9rDYWMZdHKxHblzUG0CpTQ",
-      "_blank"
-    );
   };
 
   return (
@@ -29,23 +24,17 @@ const Error = () => {
         </p>
         <p className="font-vietnam text-sm text-gray-400 text-center">
           Feel free to{" "}
-          <a
-            className="underline hover:cursor-pointer"
-            onClick={handleLinkClick}
-          >
+          <Link className="underline hover:cursor-pointer" href={URL.SLACK}>
             contact us
-          </a>{" "}
+          </Link>{" "}
           if the problem persists.
         </p>
       </div>
 
       <div className="h-36 w-full flex flex-col justify-center items-center mb-20">
-        <button
-          onClick={handleDismissButtonClick}
-          className="text-base text-blue-600"
-        >
+        <Button onClick={handleDismissButtonClick} secondary>
           Dismiss
-        </button>
+        </Button>
       </div>
     </div>
   );
