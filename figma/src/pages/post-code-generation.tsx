@@ -62,7 +62,7 @@ const PostCodeGeneration = () => {
           disabled={feedback.trim() === "" || submitted}
           onClick={handleSubmitFeedback}
         >
-          {!submitted ? "Submit" : "Thank you!"}
+          {!submitted ? "Submit" : "Submitted!"}
         </Button>
         <Button secondary onClick={handleDismissButtonClick}>
           Dismiss
