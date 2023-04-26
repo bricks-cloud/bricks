@@ -1,5 +1,6 @@
 import { useContext, useState } from "react";
-import * as logo from "../assets/visual-studio-code.png";
+//@ts-ignore
+import demo from "../assets/bricks-demo.gif";
 import PageContext, { PAGES } from "../context/page-context";
 import Button from "../components/Button";
 import { EVENT_FEEDBACK } from "../analytics/amplitude";
@@ -34,15 +35,15 @@ const PostCodeGeneration = () => {
 
   return (
     <div className="h-full w-full flex flex-col justify-center items-center gap-12 pt-12">
-      <img className="h-32" src={logo.default} />
-
       <div className="max-w-xs mx-auto flex flex-col justify-between items-center">
         <p className="font-vietnam text-black font-bold text-lg mb-4 text-center">
-          Your generated code is ready!
+          Your code is ready under <br /> "Bricks Generated Files"!
         </p>
-        <p className="font-vietnam text-sm text-gray-400 text-center">
-          Preview and edit your code under "Bricks Workspace" in VS Code
+        <p className="font-vietnam text-sm text-gray-400 mb-4 text-center">
+          Return to VS Code to view, edit, and export generated files to your
+          project.
         </p>
+        <img className="h-32" src={demo} />
       </div>
 
       <div className="max-w-xs mx-auto flex flex-col justify-between items-center">
