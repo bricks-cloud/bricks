@@ -62,6 +62,7 @@ figma.ui.onmessage = async (msg) => {
 
     figma.ui.postMessage({
       type: "settings",
+      userId: figma.currentUser.id,
       settings,
     });
   }

@@ -58,7 +58,14 @@ const UI = () => {
     const pluginMessage = event.data.pluginMessage;
 
     if (pluginMessage.type === "settings") {
-      const settings = pluginMessage.settings;
+      const { userId, settings } = pluginMessage;
+
+      // Send user id to VS Code for analytics purpose. This code will try sending until connected.
+      const intervalId = setInterval(() => {
+        if (!socket.connected) return;
+        socket.emit("user-id", userId);
+        clearInterval(intervalId);
+      }, 1000);
 
       setSelectedLanguage(settings.language);
       setSelectedUiFramework(settings.uiFramework);
