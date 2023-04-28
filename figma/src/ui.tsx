@@ -5,9 +5,12 @@ import Home from "./pages/home";
 import PostCodeGeneration from "./pages/post-code-generation";
 import CodeGenerationStatus from "./pages/code-generation-status";
 import CodeOutputSetting from "./pages/code-output-setting";
+import Error from "./pages/error";
 import PageContext, { PAGES } from "./context/page-context";
 import { io } from "socket.io-client";
 import { CssFramework, Language, UiFramework } from "./constants";
+import { withTimeout } from "./utils";
+import { EVENT_ERROR } from "./analytics/amplitude";
 
 const socket = io("ws://localhost:32044");
 
@@ -21,10 +24,10 @@ const UI = () => {
   // User settings
   const [selectedLanguage, setSelectedLanguage] = useState(Language.javascript);
   const [selectedUiFramework, setSelectedUiFramework] = useState(
-    UiFramework.react,
+    UiFramework.react
   );
   const [selectedCssFramework, setSelectedCssFramework] = useState(
-    CssFramework.tailwindcss,
+    CssFramework.tailwindcss
   );
 
   useEffect(() => {
@@ -55,7 +58,14 @@ const UI = () => {
     const pluginMessage = event.data.pluginMessage;
 
     if (pluginMessage.type === "settings") {
-      const settings = pluginMessage.settings;
+      const { userId, settings } = pluginMessage;
+
+      // Send user id to VS Code for analytics purpose. This code will try sending until connected.
+      const intervalId = setInterval(() => {
+        if (!socket.connected) return;
+        socket.emit("user-id", userId);
+        clearInterval(intervalId);
+      }, 1000);
 
       setSelectedLanguage(settings.language);
       setSelectedUiFramework(settings.uiFramework);
@@ -68,15 +78,63 @@ const UI = () => {
       setCurrentPage(PAGES.HOME);
     }
 
-    if (pluginMessage.type === "styled-bricks-nodes") {
+    if (pluginMessage.type === "generated-files") {
+      setIsGeneratingCode(false);
+
+      if (pluginMessage.error) {
+        // Error from Bricks core
+        setCurrentPage(PAGES.ERROR);
+        return;
+      }
+
+      const TIMEOUT_SECONDS = 10;
+
       socket.emit(
         "code-generation",
         { files: pluginMessage.files },
-        (response) => {
-          if (response.status === "ok") {
-            setIsGeneratingCode(false);
-          }
-        },
+        withTimeout(
+          (response) => {
+            if (response.error) {
+              console.error("Error from VS Code. See more in VS code console.");
+              parent.postMessage(
+                {
+                  pluginMessage: {
+                    type: "analytics",
+                    eventName: EVENT_ERROR,
+                    eventProperties: {
+                      source: "vscode",
+                      error: response.error,
+                    },
+                  },
+                },
+                "*"
+              );
+
+              setCurrentPage(PAGES.ERROR);
+            }
+          },
+          () => {
+            const error = `VS Code timeout after ${TIMEOUT_SECONDS} seconds.`;
+
+            console.error(error);
+            parent.postMessage(
+              {
+                pluginMessage: {
+                  type: "analytics",
+                  eventName: EVENT_ERROR,
+                  eventProperties: {
+                    source: "vscode",
+                    error,
+                  },
+                },
+              },
+              "*"
+            );
+            setCurrentPage(PAGES.ERROR);
+          },
+          // set timeout
+          TIMEOUT_SECONDS * 1000
+        )
       );
     }
   };
@@ -117,6 +175,7 @@ const UI = () => {
           <CodeGenerationStatus isGeneratingCode={isGeneratingCode} />
         )}
         {currentPage === PAGES.POST_CODE_GENERATION && <PostCodeGeneration />}
+        {currentPage === PAGES.ERROR && <Error />}
       </div>
     </PageContext.Provider>
   );

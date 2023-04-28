@@ -1,4 +1,8 @@
 node_modules
 dist
 env.sh
+<<<<<<< HEAD
 /figma/src/env.ts
+=======
+.env
+>>>>>>> c757efec95adb78a68bcdad9cfe9fb988734da40
