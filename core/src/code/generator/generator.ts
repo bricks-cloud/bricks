@@ -2,11 +2,17 @@ import { File, CssFramework, Option } from "../code";
 import { Node } from "../../bricks/node";
 import { Generator as CssGenerator } from "./css/generator";
 import { Generator as TwcssGenerator } from "./tailwindcss/generator";
+import { InstantiateDataArrRegistryGlobalInstance } from "../loop/loop";
+import { InstantiateExtraFileRegistryGlobalInstance, gatherExtraFilesAndImportedComponentsMeta } from "../extra-file-registry/extra-file-registry";
 
 export const generateCodingFiles = async (
   node: Node,
   option: Option
 ): Promise<File[]> => {
+  InstantiateDataArrRegistryGlobalInstance();
+  InstantiateExtraFileRegistryGlobalInstance();
+  gatherExtraFilesAndImportedComponentsMeta(node);
+
   switch (option.cssFramework) {
     case CssFramework.css:
       const cssGenerator = new CssGenerator();

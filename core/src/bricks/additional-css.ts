@@ -269,10 +269,10 @@ const setMarginsForChildren = (
       }
 
       targetNode.addPositionalCssAttributes({
-        "margin-top": `${marginTop}px`,
-        "margin-bottom": `${marginBot}px`,
-        "margin-right": `${marginRight}px`,
-        "margin-left": `${marginLeft}px`,
+        ...((marginTop > 0) && { "margin-top": `${marginTop}px` }),
+        ...((marginLeft > 0) && { "margin-left": `${marginLeft}px` }),
+        ...((marginBot > 0) && { "margin-bottom": `${marginBot}px` }),
+        ...((marginRight > 0) && { "margin-right": `${marginRight}px` }),
       });
       continue;
     }
@@ -331,10 +331,10 @@ const setMarginsForChildren = (
     }
 
     targetNode.addPositionalCssAttributes({
-      "margin-top": `${marginTop}px`,
-      "margin-bottom": `${marginBot}px`,
-      "margin-right": `${marginRight}px`,
-      "margin-left": `${marginLeft}px`,
+      ...((marginTop > 0) && { "margin-top": `${marginTop}px` }),
+      ...((marginLeft > 0) && { "margin-left": `${marginLeft}px` }),
+      ...((marginBot > 0) && { "margin-bottom": `${marginBot}px` }),
+      ...((marginRight > 0) && { "margin-right": `${marginRight}px` }),
     });
   }
 };

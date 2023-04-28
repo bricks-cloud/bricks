@@ -5,16 +5,19 @@ import { Attributes } from "../../../design/adapter/node";
 import {
   getFileExtensionFromLanguage,
   constructExtraFiles,
-  getExtensionFromFilePath,
 } from "../util";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
+  InFileComponentMeta,
+  InFileDataMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
+import { DataType, PropToPropBinding, propRegistryGlobalInstance } from "../../loop/component";
+import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -31,34 +34,23 @@ export class Generator {
     mainComponentName: string,
     isCssFileNeeded: boolean
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const [mainFileContent, importComponents] =
+    const mainFileContent =
       await this.htmlGenerator.generateHtml(node, option);
-    const importStatements: string[] = [];
 
-    if (isCssFileNeeded) {
-      importStatements.push(`import "./style.css"`);
-    }
+    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+
+    const importComponents = extraFileRegistryGlobalInstance.getImportComponentMeta();
 
     if (option.uiFramework === UiFramework.react) {
-      for (const importComponent of importComponents) {
-        const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (
-          extension === "png" &&
-          !isEmpty(importComponent.node.getChildren())
-        ) {
-          continue;
-        }
-
-        importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-        );
-      }
 
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
           mainComponentName,
-          importStatements
+          isCssFileNeeded,
+          [],
+          inFileData,
+          inFileComponents,
         ),
         importComponents,
       ];
@@ -101,6 +93,8 @@ export class Generator {
         path: `/style.css`,
       };
 
+      console.log("[mainFile, ...extraFiles]: ", [mainFile, cssFile, ...extraFiles]);
+
       return [mainFile, cssFile, ...extraFiles];
     }
 
@@ -124,88 +118,64 @@ export const buildCssFileContent = (fontUrl: string) => {
 const getProps = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
-            ...filterAttributes(node.getPositionalCssAttributes(), {
-              absolutePositioningOnly: true,
-            }),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getCssAttributes(),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.GROUP:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getPositionalCssAttributes(),
-            ...node.getCssAttributes(),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getPositionalCssAttributes(),
+          ...node.getCssAttributes(),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.VISIBLE:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
-            ...node.getPositionalCssAttributes(),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getCssAttributes(),
+          ...node.getPositionalCssAttributes(),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.IMAGE:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(
-            {
-              ...node.getPositionalCssAttributes(),
-            },
-            {
-              absolutePositioningOnly: true,
-            }
-          ),
-          option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(
+          {
+            ...node.getPositionalCssAttributes(),
+          },
+          {
+            absolutePositioningOnly: true,
+          }
         ),
-        option
+        option,
+        node.getId(),
       );
     case NodeType.VECTOR:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        option,
+        node.getId(),
       );
     case NodeType.VECTOR_GROUP:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        option,
+        node.getId(),
       );
   }
-};
-
-const constructStyleProp = (value: string, option: Option) => {
-  if (isEmpty(value)) {
-    return "";
-  }
-
-  if (option.uiFramework === UiFramework.react) {
-    return `style=${value}`;
-  }
-
-  return `style="${value}"`;
 };
 
 // styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}
@@ -229,15 +199,59 @@ const snakeCaseToCamelCase = (prop: string) => {
 // convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
-  option: Option
+  option: Option,
+  id: string,
 ) => {
+  let inlineStyle: string = "";
   if (option.uiFramework === UiFramework.react) {
+
+    let variableProps: string = "";
+    const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
+
+    const cssKeyConnectedToProps: Set<string> = new Set<string>();
+
+    if (!isEmpty(propBindings)) {
+      for (const propBinding of propBindings) {
+        for (const location of propBinding.locations) {
+          if (location.type === "css") {
+            cssKeyConnectedToProps.add(location.cssKey);
+            if (propBinding.dataType === DataType.boolean) {
+
+              if (isEmpty(propBinding.conditionalValue)) {
+                variableProps += ` ...(${propBinding.prop} && {${snakeCaseToCamelCase(location.cssKey)}: "${propBinding.defaultValue}"}),`;
+                continue;
+              }
+
+              variableProps += ` ${snakeCaseToCamelCase(location.cssKey)}: ${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}",`;
+              continue;
+            }
+
+            variableProps += `${snakeCaseToCamelCase(location.cssKey)}: ${propBinding.prop},`;
+          }
+        }
+      }
+    }
+
     const lines: string[] = [];
     Object.entries(attributes).forEach(([key, value]) => {
+      if (cssKeyConnectedToProps.has(key)) {
+        return;
+      }
+
       lines.push(`${snakeCaseToCamelCase(key)}: "${value}"`);
     });
 
-    return `{{${lines.join(",")}}}`;
+    if (isEmpty(variableProps)) {
+      return `style=${`{{${lines.join(",")}}}`}`;
+    }
+
+    if (isEmpty(lines)) {
+      return `style=${`{{${variableProps}}}`}`;
+    }
+
+    inlineStyle = `{{${lines.join(",") + "," + variableProps}}}`;
+
+    return `style=${inlineStyle}`;
   }
 
   const lines: string[] = [];
@@ -245,5 +259,7 @@ const convertCssClassesToInlineStyle = (
     lines.push(`${key}: ${value}`);
   });
 
-  return `${lines.join("; ")}`;
+  inlineStyle = `${lines.join("; ")}`;
+
+  return `style="${inlineStyle}"`;
 };

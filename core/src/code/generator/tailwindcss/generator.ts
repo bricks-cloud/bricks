@@ -17,9 +17,12 @@ import {
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
+  InFileComponentMeta,
+  InFileDataMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
+import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -35,30 +38,21 @@ export class Generator {
     option: Option,
     mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const [mainFileContent, importComponents] =
+    const mainFileContent =
       await this.htmlGenerator.generateHtml(node, option);
-    const importStatements: string[] = [`import "./style.css"`];
+
+    const importComponents: ImportedComponentMeta[] = extraFileRegistryGlobalInstance.getImportComponentMeta();
+    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
-      for (const importComponent of importComponents) {
-        const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (
-          extension === "png" &&
-          !isEmpty(importComponent.node.getChildren())
-        ) {
-          continue;
-        }
-
-        importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-        );
-      }
-
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
           mainComponentName,
-          importStatements
+          true,
+          [],
+          inFileData,
+          inFileComponents
         ),
         importComponents,
       ];
@@ -68,8 +62,6 @@ export class Generator {
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
-    instantiateFontsRegistryGlobalInstance(node);
-
     const mainComponentName = "GeneratedComponent";
     const mainFileExtension = getFileExtensionFromLanguage(option);
 
@@ -102,78 +94,67 @@ export class Generator {
 
 // getProps converts a single node to formated tailwindcss classes
 const getProps = (node: Node, option: Option): string => {
-  const classPropName =
-    option.uiFramework === UiFramework.react ? "className" : "class";
 
   switch (node.getType()) {
     case NodeType.TEXT:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses({
+      return convertCssClassesToTwcssClasses(
+        {
           ...node.getCssAttributes(),
           ...filterAttributes(node.getPositionalCssAttributes(), {
             absolutePositioningOnly: true,
-          }),
-        })
+          })
+        },
+        node.getId(),
+        option,
       );
     case NodeType.GROUP:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses({
+      return convertCssClassesToTwcssClasses(
+        {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        })
+        },
+        node.getId(),
+        option,
       );
     case NodeType.VISIBLE:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses({
+      return convertCssClassesToTwcssClasses(
+        {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
-        })
+        },
+        node.getId(),
+        option
       );
 
     case NodeType.IMAGE:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          })
-        )
+      return convertCssClassesToTwcssClasses(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        node.getId(),
+        option
       );
 
     case NodeType.VECTOR:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          })
-        )
+      return convertCssClassesToTwcssClasses(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        node.getId(),
+        option
       );
     case NodeType.VECTOR_GROUP:
-      return constructClassProp(
-        classPropName,
-        convertCssClassesToTwcssClasses(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          })
-        )
+      return convertCssClassesToTwcssClasses(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        node.getId(),
+        option
       );
 
     default:
       return "";
   }
-};
-
-// constructClassProp creates a compelete class property that can be used in html elements or React components
-const constructClassProp = (classPropName: string, value: string) => {
-  if (isEmpty(value)) {
-    return "";
-  }
-
-  return `${classPropName}="${value}"`;
 };
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.

@@ -17,18 +17,97 @@ import {
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
+import { DataType, PropToPropBinding, propRegistryGlobalInstance } from "../../loop/component";
+import { Option, UiFramework } from "../../code";
+
+type TwcssPropRenderingMeta = {
+  numberOfTwcssClasses: number,
+  filledClassIndexes: Set<number>,
+};
+
+type TwcssPropRenderingMap = {
+  [cssKey: string]: TwcssPropRenderingMeta;
+};
 
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
 export const convertCssClassesToTwcssClasses = (
-  attributes: Attributes
+  attributes: Attributes,
+  id: string,
+  option: Option,
 ): string => {
-  let content = "";
+  let classPropName: string = "class";
+  let variableProps: string = "";
+
+
+  const twcssPropRenderingMap: TwcssPropRenderingMap = {};
 
   Object.entries(attributes).forEach(([property, value]) => {
-    content = content + " " + getTwcssClass(property, value, attributes);
+    const twcssClasses: string[] = getTwcssClass(property, value, attributes).split(" ");
+    twcssPropRenderingMap[property] = {
+      numberOfTwcssClasses: twcssClasses.length,
+      filledClassIndexes: new Set<number>(),
+    };
   });
 
-  return content.trim();
+  if (option.uiFramework === UiFramework.react) {
+    classPropName = "className";
+    const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
+
+    if (!isEmpty(propBindings)) {
+      for (const propBinding of propBindings) {
+        for (const location of propBinding.locations) {
+          if (location.type === "css") {
+            // console.log("attributes: ", attributes);
+            // console.log("location.cssKey: ", location.cssKey);
+            const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[location.cssKey];
+            if (!isEmpty(twcssPropRenderingMeta)) {
+              twcssPropRenderingMeta.filledClassIndexes.add(propBinding.twcssClassIndex);
+            }
+
+            if (propBinding.dataType === DataType.boolean) {
+              if (isEmpty(propBinding.conditionalValue)) {
+                variableProps += ` \${${propBinding.prop} ? "${propBinding.defaultValue}" : ""}`;
+                continue;
+              }
+
+              variableProps += ` \${${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}"}`;
+              continue;
+            }
+
+            variableProps += ` \${${propBinding.prop}}`;
+          }
+        }
+      }
+    }
+  }
+
+  let content: string = "";
+  Object.entries(attributes).forEach(([property, value]) => {
+    const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[property];
+    if (twcssPropRenderingMeta.numberOfTwcssClasses === twcssPropRenderingMeta.filledClassIndexes.size) {
+      return;
+    }
+
+    for (let i = 0; i < twcssPropRenderingMeta.numberOfTwcssClasses; i++) {
+      const parts: string[] = getTwcssClass(property, value, attributes).split(" ");
+      if (twcssPropRenderingMeta.filledClassIndexes.has(i)) {
+        continue;
+      }
+      content = content + " " + parts[i];
+    }
+  });
+
+  content += variableProps;
+
+  if (isEmpty(content)) {
+    return "";
+  }
+
+  if (!isEmpty(variableProps)) {
+    return `${classPropName}={\`${content.trim()}\`}`;
+  }
+
+  return `${classPropName}="${content.trim()}"`;
 };
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
@@ -81,6 +160,7 @@ export const getImageFileNameFromUrl = (path: string) => {
 
 // findClosestTwcssColor finds the closest tailwindcss color to css color.
 const findClosestTwcssColor = (cssColor: string) => {
+  // console.log("cssColor: ", cssColor);
   if (cssColor === "inherit") {
     return "inherit";
   }
@@ -369,6 +449,10 @@ export const getTwcssClass = (
   cssValue: string,
   cssAttributes: Attributes
 ): string => {
+  if (isEmpty(cssValue)) {
+    return "";
+  }
+
   switch (cssProperty) {
     case "height":
       const heightNum = extractPixelNumberFromString(cssValue);

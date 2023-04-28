@@ -26,6 +26,29 @@ export const getExtensionFromFilePath = (path: string) => {
   return parts[parts.length - 1];
 };
 
+
+const isNumeric = (str: string): boolean => {
+  if (typeof str != "string") return false; // we only process strings!  
+  return !isNaN(parseFloat(str)); // ...and ensure strings of whitespace fail
+};
+
+
+export const cssStrToNum = (value: string): number => {
+  if (value.endsWith("px")) {
+    return parseInt(value.slice(0, -2));
+  }
+
+  if (value.endsWith("rem")) {
+    return parseInt(value.slice(0, -3));
+  }
+
+  if (isNumeric(value)) {
+    return parseInt(value);
+  }
+
+  return 0;
+};
+
 // constructExtraFiles creates extra files if they are imported in the main file
 export const constructExtraFiles = async (
   importedComponents: ImportedComponentMeta[]
