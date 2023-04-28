@@ -3,7 +3,12 @@ import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
 import { CssFramework, UiFramework, Language } from "../constants";
-import { EVENT_GENERATE_BUTTON_CLICK, EVENT_INSTALLATION_LINK_CLICK, EVENT_FAQ_LINK_CLICK } from "../analytics/amplitude";
+import {
+  EVENT_GENERATE_BUTTON_CLICK,
+  EVENT_INSTALLATION_LINK_CLICK,
+  EVENT_FAQ_LINK_CLICK,
+} from "../analytics/amplitude";
+import Button from "../components/Button";
 
 export interface Props {
   connectedToVSCode: boolean;
@@ -38,7 +43,7 @@ const Home = (props: PropsWithChildren<Props>) => {
           },
         },
       },
-      "*",
+      "*"
     );
     setIsGeneratingCode(true);
     setCurrentPage(PAGES.CODE_GENERATION);
@@ -55,7 +60,7 @@ const Home = (props: PropsWithChildren<Props>) => {
           },
         },
       },
-      "*",
+      "*"
     );
   };
 
@@ -76,10 +81,9 @@ const Home = (props: PropsWithChildren<Props>) => {
           },
         },
       },
-      "*",
+      "*"
     );
   };
-
 
   const handleFaqLinkClick = () => {
     parent.postMessage(
@@ -94,7 +98,7 @@ const Home = (props: PropsWithChildren<Props>) => {
           },
         },
       },
-      "*",
+      "*"
     );
   };
 
@@ -125,10 +129,27 @@ const Home = (props: PropsWithChildren<Props>) => {
           Activate Bricks VSCode extension to get started
         </p>
         <p className="font-vietnam text-black text-sm mb-1">
-          Install VSCode extension <a onClick={handleInstallationLinkClick} href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline"> here</a>
+          Install VSCode extension{" "}
+          <a
+            onClick={handleInstallationLinkClick}
+            href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode"
+            target="_top"
+            className="text-blue-600 dark:text-blue-500 hover:underline"
+          >
+            {" "}
+            here
+          </a>
         </p>
         <p className="font-vietnam text-black text-sm">
-          For any issues, check out our <a onClick={handleFaqLinkClick} href="https://github.com/bricks-cloud/bricks/tree/main/docs" target="_top" className="text-blue-600 dark:text-blue-500 hover:underline">FAQs</a>
+          For any issues, check out our{" "}
+          <a
+            onClick={handleFaqLinkClick}
+            href="https://github.com/bricks-cloud/bricks/tree/main/docs"
+            target="_top"
+            className="text-blue-600 dark:text-blue-500 hover:underline"
+          >
+            FAQs
+          </a>
         </p>
       </div>
     );
@@ -151,25 +172,17 @@ const Home = (props: PropsWithChildren<Props>) => {
       <div className="p-6">{getCenterContent(connectedToVSCode)}</div>
 
       <div className="h-36 w-full flex justify-center items-center">
-        <div className="h-36 w-full flex flex-col justify-center items-center">
-          <button
+        <div className="h-36 w-full flex flex-col justify-center items-center gap-4">
+          <Button
             onClick={handleGenerateCodeButtonClick}
             disabled={!isGenerateCodeButtonEnabled}
-            type="button"
-            className={
-              "mb-4 font-roboto text-white focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-base px-10 py-3 focus:outline-none" +
-              buttonColor
-            }
           >
             Generate Code
-          </button>
-          <button
-            onClick={handleOutputSettingButtonClick}
-            className="text-center inline-flex items-center text-sm text-blue-600"
-          >
+          </Button>
+          <Button onClick={handleOutputSettingButtonClick} secondary>
             <img className="h-4 mr-2" src={settingsLogo.default} />
             Output Setting
-          </button>
+          </Button>
         </div>
       </div>
     </div>
