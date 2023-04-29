@@ -243,19 +243,10 @@ const getVisibleChildrenRenderingBox = (children: Node[]): BoxCoordinates => {
   return boxCoordinates;
 };
 
-const computePositionalRelationship = (
+export const computePositionalRelationship = (
   currentCoordinates: BoxCoordinates,
   targetCoordinates: BoxCoordinates
 ): PostionalRelationship => {
-  if (
-    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
-    targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
-    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
-    targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y
-  ) {
-    return PostionalRelationship.INCLUDE;
-  }
-
   if (
     targetCoordinates.leftTop.y === currentCoordinates.leftTop.y &&
     targetCoordinates.leftTop.x === currentCoordinates.leftTop.x &&
@@ -263,6 +254,15 @@ const computePositionalRelationship = (
     targetCoordinates.rightBot.y === currentCoordinates.rightBot.y
   ) {
     return PostionalRelationship.COMPLETE_OVERLAP;
+  }
+
+  if (
+    targetCoordinates.leftTop.y >= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x >= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x <= currentCoordinates.rightBot.x &&
+    targetCoordinates.rightBot.y <= currentCoordinates.rightBot.y
+  ) {
+    return PostionalRelationship.INCLUDE;
   }
 
   if (doOverlap(currentCoordinates, targetCoordinates)) {
@@ -309,6 +309,13 @@ export class GroupNode extends BaseNode {
     }
 
     return this.getAbsRenderingBox();
+  }
+
+  getAbsBoundingBoxWidthAndHeights(): number[] {
+    const coordinates = this.getAbsBoundingBox();
+    const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
+    const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
+    return [width, height];
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
@@ -411,6 +418,13 @@ export class VisibleNode extends BaseNode {
 
   getAbsBoundingBox(): BoxCoordinates {
     return this.node.getAbsoluteBoundingBoxCoordinates();
+  }
+
+  getAbsBoundingBoxWidthAndHeights(): number[] {
+    const coordinates = this.node.getAbsoluteBoundingBoxCoordinates();
+    const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
+    const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
+    return [width, height];
   }
 
   getType(): NodeType {

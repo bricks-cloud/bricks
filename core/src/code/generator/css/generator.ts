@@ -5,16 +5,20 @@ import { Attributes } from "../../../design/adapter/node";
 import {
   getFileExtensionFromLanguage,
   constructExtraFiles,
-  getExtensionFromFilePath,
+  snakeCaseToCamelCase,
 } from "../util";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
+  InFileComponentMeta,
+  InFileDataMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
+import { getVariablePropForCss } from "../../../../ee/code/prop";
+import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -31,34 +35,23 @@ export class Generator {
     mainComponentName: string,
     isCssFileNeeded: boolean
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const [mainFileContent, importComponents] =
+    const mainFileContent =
       await this.htmlGenerator.generateHtml(node, option);
-    const importStatements: string[] = [];
 
-    if (isCssFileNeeded) {
-      importStatements.push(`import "./style.css"`);
-    }
+    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+
+    const importComponents = extraFileRegistryGlobalInstance.getImportComponentMeta();
 
     if (option.uiFramework === UiFramework.react) {
-      for (const importComponent of importComponents) {
-        const extension = getExtensionFromFilePath(importComponent.importPath);
-        if (
-          extension === "png" &&
-          !isEmpty(importComponent.node.getChildren())
-        ) {
-          continue;
-        }
-
-        importStatements.push(
-          `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-        );
-      }
 
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
           mainComponentName,
-          importStatements
+          isCssFileNeeded,
+          [],
+          inFileData,
+          inFileComponents,
         ),
         importComponents,
       ];
@@ -124,120 +117,95 @@ export const buildCssFileContent = (fontUrl: string) => {
 const getProps = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
-            ...filterAttributes(node.getPositionalCssAttributes(), {
-              absolutePositioningOnly: true,
-            }),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getCssAttributes(),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningOnly: true,
+          }),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.GROUP:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getPositionalCssAttributes(),
-            ...node.getCssAttributes(),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getPositionalCssAttributes(),
+          ...node.getCssAttributes(),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.VISIBLE:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          {
-            ...node.getCssAttributes(),
-            ...node.getPositionalCssAttributes(),
-          },
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getCssAttributes(),
+          ...node.getPositionalCssAttributes(),
+        },
+        option,
+        node.getId(),
       );
     case NodeType.IMAGE:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(
-            {
-              ...node.getPositionalCssAttributes(),
-            },
-            {
-              absolutePositioningOnly: true,
-            }
-          ),
-          option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(
+          {
+            ...node.getPositionalCssAttributes(),
+          },
+          {
+            absolutePositioningOnly: true,
+          }
         ),
-        option
+        option,
+        node.getId(),
       );
     case NodeType.VECTOR:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        option,
+        node.getId(),
       );
     case NodeType.VECTOR_GROUP:
-      return constructStyleProp(
-        convertCssClassesToInlineStyle(
-          filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
-          option
-        ),
-        option
+      return convertCssClassesToInlineStyle(
+        filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+        option,
+        node.getId(),
       );
   }
-};
-
-const constructStyleProp = (value: string, option: Option) => {
-  if (isEmpty(value)) {
-    return "";
-  }
-
-  if (option.uiFramework === UiFramework.react) {
-    return `style=${value}`;
-  }
-
-  return `style="${value}"`;
-};
-
-// styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}
-const snakeCaseToCamelCase = (prop: string) => {
-  const parts = prop.split("-");
-
-  const camel = [];
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    if (i === 0) {
-      camel.push(part);
-      continue;
-    }
-
-    camel.push(part.charAt(0).toUpperCase() + part.slice(1));
-  }
-
-  return camel.join("");
 };
 
 // convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
-  option: Option
+  option: Option,
+  id: string,
 ) => {
+  let inlineStyle: string = "";
   if (option.uiFramework === UiFramework.react) {
+    let [variableProps, cssKeyConnectedToProps]: [string, Set<string>] = getVariablePropForCss(id);
     const lines: string[] = [];
     Object.entries(attributes).forEach(([key, value]) => {
+      if (cssKeyConnectedToProps.has(key)) {
+        return;
+      }
+
       lines.push(`${snakeCaseToCamelCase(key)}: "${value}"`);
     });
 
-    return `{{${lines.join(",")}}}`;
+    if (isEmpty(variableProps)) {
+      return `style=${`{{${lines.join(",")}}}`}`;
+    }
+
+    if (isEmpty(lines)) {
+      return `style=${`{{${variableProps}}}`}`;
+    }
+
+    inlineStyle = `{{${lines.join(",") + "," + variableProps}}}`;
+
+    return `style=${inlineStyle}`;
   }
 
   const lines: string[] = [];
@@ -245,5 +213,7 @@ const convertCssClassesToInlineStyle = (
     lines.push(`${key}: ${value}`);
   });
 
-  return `${lines.join("; ")}`;
+  inlineStyle = `${lines.join("; ")}`;
+
+  return `style="${inlineStyle}"`;
 };

@@ -1,6 +1,6 @@
 import { convertToCode } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
-import { AMPLITUDE_API_KEY } from "./env";
+import { AMPLITUDE_API_KEY } from "../../env";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
 import { EVENT_ERROR } from "./analytics/amplitude";
 
