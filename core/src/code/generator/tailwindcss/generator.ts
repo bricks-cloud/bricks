@@ -11,7 +11,6 @@ import {
   getImageFileNameFromUrl,
 } from "./css-to-twcss";
 import {
-  instantiateFontsRegistryGlobalInstance,
   FontsRegistryGlobalInstance,
 } from "./fonts-registry";
 import {

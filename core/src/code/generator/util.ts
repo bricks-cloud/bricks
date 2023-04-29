@@ -78,3 +78,21 @@ export const constructExtraFiles = async (
 
   return files;
 };
+
+// styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}
+export const snakeCaseToCamelCase = (prop: string) => {
+  const parts = prop.split("-");
+
+  const camel = [];
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (i === 0) {
+      camel.push(part);
+      continue;
+    }
+
+    camel.push(part.charAt(0).toUpperCase() + part.slice(1));
+  }
+
+  return camel.join("");
+};

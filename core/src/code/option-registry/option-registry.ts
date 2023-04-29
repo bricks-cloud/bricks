@@ -1,7 +1,7 @@
 import { Option } from "../code";
 
 export let optionRegistryGlobalInstance: OptionRegistry;
-export const InstantiateOptionRegistryGlobalInstance = (option: Option) => {
+export const instantiateOptionRegistryGlobalInstance = (option: Option) => {
   optionRegistryGlobalInstance = new OptionRegistry(option);
 };
 

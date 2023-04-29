@@ -1,18 +1,21 @@
 
 import uuid from "react-native-uuid";
-import { Node, NodeType, TextNode } from "../../bricks/node";
-import { isEmpty } from "../../utils";
-import { Component, componentRegistryGlobalInstance, gatherPropsFromSimilarNodes, InstantiateComponentRegistryGlobalInstance, InstantiatePropRegistryGlobalInstance } from "./component";
-import { instantiateFontsRegistryGlobalInstance } from "../generator/tailwindcss/fonts-registry";
-import { optionRegistryGlobalInstance } from "../option-registry/option-registry";
-import { UiFramework } from "../code";
+import { Node, NodeType, TextNode } from "../../src/bricks/node";
+import { isEmpty } from "../../src/utils";
+import { Component, gatherPropsFromSimilarNodes } from "./component";
+import { instantiatePropRegistryGlobalInstance } from "./prop-registry";
+import { instantiateComponentRegistryGlobalInstance, componentRegistryGlobalInstance } from "./component-registry";
+import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
+import { UiFramework } from "../../src/code/code";
+import { instantiateCodeSampleRegistryGlobalInstance } from "./code-sample-registry";
+import { instantiateDataArrRegistryGlobalInstance } from "./data-array-registry";
 
 export const vectorGroupAnnotation: string = "vectorGroup";
 export const registerRepeatedComponents = (node: Node) => {
-  instantiateFontsRegistryGlobalInstance(node);
-  InstantiatePropRegistryGlobalInstance();
-  InstantiateComponentRegistryGlobalInstance();
-  InstantiateNameRegistryGlobalInstance();
+  instantiateCodeSampleRegistryGlobalInstance();
+  instantiateDataArrRegistryGlobalInstance();
+  instantiatePropRegistryGlobalInstance();
+  instantiateComponentRegistryGlobalInstance();
 
   if (optionRegistryGlobalInstance.getOption().uiFramework === UiFramework.react) {
     annotateVectorGroupNodes(node);
@@ -77,8 +80,6 @@ const registerComponentForConsecutiveNodes = (nodes: Node[]): boolean => {
 
   const [result, bindings] = gatherPropsFromSimilarNodes(nodes, instanceIds);
 
-  console.log("result: ", [result, bindings]);
-
   if (!result) {
     return false;
   }
@@ -111,13 +112,8 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
       continue;
     }
 
-    // console.log("node: ", node);
-    // console.log("currentNode: ", currentNode);
-    // console.log("modelNode: ", modelNode);
+    const [result, _]: [boolean, string] = areTwoNodesSimilar(currentNode, modelNode);
 
-    const [result, reason]: [boolean, string] = areTwoNodesSimilar(currentNode, modelNode);
-
-    // console.log("areTwoNodesSimilar(currentNode, modelNode): ", [result, reason]);
     if (!result) {
 
       modelNode = currentNode;
@@ -141,9 +137,6 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
     consecutiveNodes.push(currentNode);
   }
 
-  // console.log("consecutiveNodes: ", consecutiveNodes);
-
-
   if (consecutiveNodes.length > 2) {
     if (!registerComponentForConsecutiveNodes(consecutiveNodes)) {
       return;
@@ -165,7 +158,6 @@ export const areAllNodesSimilar = (nodes: Node[]): boolean => {
     }
 
     const [result, _]: [boolean, string] = areTwoNodesSimilar(prevNode, nodes[i]);
-    // console.log("[result, reason]: ", [result, reason]);
 
     if (!result) {
       return false;
@@ -285,172 +277,6 @@ const detectTextNodeSimilarities = (currentNode: TextNode, targetNode: TextNode)
   return [true, "similar text nodes"];;
 };
 
-type DataFieldToPropBinding = {
-  fieldName: string,
-  propName: string,
-};
-
-type DataArr = {
-  id: string,
-  name: string;
-  fieldToPropBindings: DataFieldToPropBinding[];
-  data: any[],
-};
-
-type IdToDataArrayMap = {
-  [id: string]: DataArr;
-};
-export let nameRegistryGlobalInstance: NameRegistry;
-export const InstantiateNameRegistryGlobalInstance = () => {
-  nameRegistryGlobalInstance = new NameRegistry();
-};
-
-type IdToNameMap = {
-  [id: string]: string,
-};
-
-class NameRegistry {
-  idToNameMap: IdToNameMap;
-  altIdToNameMap: IdToNameMap;
-  numberOfSvgs: number;
-  numberOfProps: number;
-  numberOfDataArr: number;
-  numberOfDataField: number;
-  numberOfImages: number;
-  numberOfComponents: number;
-
-  constructor() {
-    this.idToNameMap = {};
-    this.altIdToNameMap = {};
-    this.numberOfSvgs = 1;
-    this.numberOfProps = 1;
-    this.numberOfImages = 1;
-    this.numberOfDataArr = 1;
-    this.numberOfDataField = 1;
-    this.numberOfComponents = 1;
-  }
-
-  setIdToName(id: string, name: string) {
-    this.idToNameMap[id] = name;
-  }
-
-  getIdToNameMap(): IdToNameMap {
-    return this.idToNameMap;
-  }
-
-  getAltIdToNameMap(): IdToNameMap {
-    return this.altIdToNameMap;
-  }
-
-  getAltName(id: string): string {
-    return this.altIdToNameMap[id];
-  }
-
-  getDataFieldName(): string {
-    const name = "dataField" + this.numberOfDataField;
-    this.numberOfDataField++;
-    return name;
-  }
-
-  getComponentName(): string {
-    const name = "Component" + this.numberOfComponents;
-    this.numberOfComponents++;
-    return name;
-  }
-
-  getNumberOfSvgs(): number {
-    return this.numberOfSvgs;
-  }
-
-  getNumberOfImages(): number {
-    return this.numberOfImages;
-  }
-
-  getDataArrName(id: string): string {
-    let name: string = this.idToNameMap[id];
-    if (name) {
-      return name;
-    }
-
-    name = "dataArr" + this.numberOfDataArr;
-    this.idToNameMap[id] = name;
-    this.numberOfDataArr++;
-    return name;
-  }
-
-  getPropName(id: string): string {
-    let name: string = this.idToNameMap[id];
-    if (name) {
-      return name;
-    }
-
-    name = "prop" + this.numberOfProps;
-    this.idToNameMap[id] = name;
-    this.numberOfProps++;
-    return name;
-  }
-
-  getVectorName(id: string): string {
-    let name: string = this.idToNameMap[id];
-    if (name) {
-      let name: string = this.idToNameMap[id];
-      return name;
-    }
-
-    const altName: string = "Svg Asset " + this.numberOfSvgs;
-    this.altIdToNameMap[id] = altName;
-
-    name = "SvgAsset" + this.numberOfSvgs;
-    this.idToNameMap[id] = name;
-    this.numberOfSvgs++;
-    return name;
-  }
-
-  getImageName(id: string): string {
-    let name: string = this.idToNameMap[id];
-    if (name) {
-      return name;
-    }
-
-    const altName: string = "Image Asset " + this.numberOfImages;
-    this.altIdToNameMap[id] = altName;
-
-    name = "ImageAsset" + this.numberOfImages;
-    this.idToNameMap[id] = name;
-    this.numberOfImages++;
-    return name;
-  }
-}
-
-
-export let dataArrRegistryGlobalInstance: DataArrRegistry;
-
-export const InstantiateDataArrRegistryGlobalInstance = () => {
-  dataArrRegistryGlobalInstance = new DataArrRegistry();
-};
-
-class DataArrRegistry {
-  idToDataArrayMap: IdToDataArrayMap;
-
-  constructor() {
-    this.idToDataArrayMap = {};
-  }
-
-  getDataArray(id: string): DataArr {
-    return this.idToDataArrayMap[id];
-  }
-}
-
 export const extractDataFromRepeatedComponents = (nodes: Node[]): any => {
   return {};
-};
-
-export const generateProps = (propBindings: DataFieldToPropBinding[]): string => {
-  let props: string = "";
-
-  for (const binding of propBindings) {
-    props += ` ${binding.propName}={${binding.fieldName}}`;
-  }
-
-  return props.trim();
 };

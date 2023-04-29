@@ -1,11 +1,11 @@
 import { NodeType, VectorGroupNode, VectorNode, ImageNode, Node } from "../../bricks/node";
 import { File } from "../code";
 import { ExportFormat } from "../../design/adapter/node";
-import { nameRegistryGlobalInstance } from "../loop/loop";
+import { nameRegistryGlobalInstance } from "../name-registry/name-registry";
 import { ImportedComponentMeta } from "../generator/html/generator";
 
 export let extraFileRegistryGlobalInstance: ExtraFileRegistry;
-export const InstantiateExtraFileRegistryGlobalInstance = () => {
+export const instantiateExtraFileRegistryGlobalInstance = () => {
   extraFileRegistryGlobalInstance = new ExtraFileRegistry();
 };
 

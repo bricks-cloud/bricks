@@ -1,128 +1,12 @@
-import { Node, NodeType, TextNode } from "../../bricks/node";
-import { Attributes } from "../../design/adapter/node";
-import { isEmpty } from "../../utils";
-import { CssFramework } from "../code";
-import { getTwcssClass } from "../generator/tailwindcss/css-to-twcss";
-import { optionRegistryGlobalInstance } from "../option-registry/option-registry";
-import { areAllNodesSimilar, nameRegistryGlobalInstance, vectorGroupAnnotation } from "./loop";
+import { Node, NodeType, TextNode } from "../../src/bricks/node";
+import { isEmpty } from "../../src/utils";
+import { CssFramework } from "../../src/code/code";
+import { getTwcssClass } from "../../src/code/generator/tailwindcss/css-to-twcss";
+import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
+import { areAllNodesSimilar, vectorGroupAnnotation } from "./loop";
+import { nameRegistryGlobalInstance } from "../../src/code/name-registry/name-registry";
+import { IdToPropBindingMap, propRegistryGlobalInstance } from "./prop-registry";
 import uuid from "react-native-uuid";
-
-export const getWidthAndHeightProp = (node: Node): string => {
-  const id: string = node.getId();
-  const cssAttribtues: Attributes = node.getCssAttributes();
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-
-  let widthAndHeight: string = "";
-
-  if (!isEmpty(propBindings)) {
-    for (const propBinding of propBindings) {
-      for (const location of propBinding.locations) {
-        if (location.type === "css") {
-          if (location.cssKey === "width") {
-            if (propBinding.dataType === DataType.boolean) {
-              if (isEmpty(propBinding.conditionalValue)) {
-                continue;
-              }
-
-              widthAndHeight += ` width={${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}"}`;
-              continue;
-            }
-
-            widthAndHeight += ` width={${propBinding.prop}}`;
-          }
-
-          if (location.cssKey === "height") {
-            if (propBinding.dataType === DataType.boolean) {
-              if (isEmpty(propBinding.conditionalValue)) {
-                continue;
-              }
-
-              widthAndHeight += ` height={${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}"}`;
-              continue;
-            }
-
-            widthAndHeight += ` height={${propBinding.prop}}`;
-          }
-        }
-      }
-    }
-  }
-
-  if (isEmpty(widthAndHeight) && cssAttribtues["width"] && cssAttribtues["height"]) {
-    return `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
-  }
-
-  return widthAndHeight.trim();
-};
-
-export const getProp = (propBindings: PropToPropBinding[], locationType: string): string => {
-  if (!isEmpty(propBindings)) {
-    for (const propBinding of propBindings) {
-      for (const location of propBinding.locations) {
-        if (location.type === locationType) {
-          return propBinding.prop;
-        }
-      }
-    }
-  }
-
-  return "";
-};
-
-export const getSrcProp = (node: Node): string => {
-  const id: string = node.getId();
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-
-  let fileExtension: string = "svg";
-  let componentName: string = nameRegistryGlobalInstance.getVectorName(id);
-
-  if (node.getType() === NodeType.IMAGE) {
-    fileExtension = "png";
-    componentName = nameRegistryGlobalInstance.getImageName(id);
-  }
-
-  const prop: string = getProp(propBindings, "src");
-  if (!isEmpty(prop)) {
-    return `{${prop}}`;
-  }
-
-  return `"./assets/${componentName}.${fileExtension}"`;
-};
-
-export const getAltProp = (node: Node): string => {
-  const id: string = node.getId();
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-  const componentName: string = nameRegistryGlobalInstance.getAltName(id);
-
-  const prop: string = getProp(propBindings, "alt");
-  if (!isEmpty(prop)) {
-    return `{${prop}}`;
-  }
-
-
-  return `"${componentName}"`;
-};
-
-
-export const getTextProp = (node: Node): string => {
-  const textNode: TextNode = node as TextNode;
-  const id: string = node.getId();
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-
-  // console.log("node: ", node);
-  // console.log("propBindings: ", propBindings);
-  if (!isEmpty(propBindings)) {
-    for (const propBinding of propBindings) {
-      for (const location of propBinding.locations) {
-        if (location.type === "text") {
-          return `{${propBinding.prop}}`;
-        }
-      }
-    }
-  }
-
-  return textNode.getText();
-};
 
 type PropLocation = {
   type: string;
@@ -157,10 +41,6 @@ export type DataArr = {
   name: string;
   fieldToPropBindings: DataFieldToPropBinding[];
   data: any[],
-};
-
-type IdToPropBindingMap = {
-  [id: string]: PropToPropBinding[];
 };
 
 export enum DataType {
@@ -206,25 +86,6 @@ const getDefaultValue = (bindings: PropValueBinding[]): string[] => {
   return [firstValue, ""];
 };
 
-// const getDefaultValueForTwcss = (bindings: PropValueBinding[]): string[] => {
-//   if (isEmpty(bindings)) {
-//     return ["", ""];
-//   }
-
-//   let firstValue: string = "";
-//   for (const binding of bindings) {
-//     const twcssValue: string = getTwcssValue(binding.value, index);
-
-//     if (!isEmpty(firstValue) && firstValue !== twcssValue) {
-//       return [firstValue, twcssValue];
-//     }
-
-//     firstValue = twcssValue;
-//   }
-
-//   return [firstValue, ""];
-// };
-
 const getValue = (value: string, defaultValue: string): any => {
   if (isEmpty(defaultValue)) {
     return value;
@@ -268,14 +129,8 @@ export class Component {
   getData(nodes: Node[]): Data[] {
     let data: Data[] = [];
 
-    // console.log("instanceIdPropBindings: ", this.instanceIdToPropBindings);
-    // console.log("idToInstanceIdMapping: ", this.idToInstanceIdMapping);
-
     for (const node of nodes) {
-      // console.log("node: ", node);
-      // console.log("node.getId(): ", node.getId());
       const instanceId: string = this.idToInstanceIdMapping[node.getId()];
-      // console.log("instanceId: ", instanceId);
       data.push(this.instanceIdToDataBindings[instanceId]);
     }
 
@@ -321,30 +176,6 @@ export class Component {
         propName: binding.name,
       });
 
-      // let prevParts: string[] = [];
-      // let index: number = 0;
-
-      // for (let i = 0; i < binding.bindings.length; i++) {
-      //   const propValueBinding: PropValueBinding = binding.bindings[i];
-      //   const parts: string[] = propValueBinding.value.split("-");
-      //   if (parts.length === 1 || isEmpty(parts)) {
-      //     break;
-      //   }
-
-      //   if (i === 0) {
-      //     prevParts = parts;
-      //     continue;
-      //   }
-
-      //   for (let j = 0; j < parts.length; j++) {
-      //     if (parts[j] !== prevParts[j]) {
-      //       index = j;
-      //       break;
-      //     }
-      //   }
-      //   break;
-      // }
-
       let defaultValue: any = "";
       let conditionalValue: any = "";
       if (dataType === DataType.boolean) {
@@ -354,14 +185,6 @@ export class Component {
       for (const propValueBinding of binding.bindings) {
         const nodeIdPropBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(propValueBinding.nodeId);
         let value: string = propValueBinding.value;
-
-        // if (propValueBinding.type === "css") {
-        //   value = getTwcssValue(value, index);
-
-        //   // console.log("binding.cssKey: ", binding.cssKey);
-        //   // console.log("propValueBinding.value: ", propValueBinding.value);
-        //   // console.log("value: ", value);
-        // }
 
         const propToPropBinding: PropToPropBinding = {
           prop: binding.name,
@@ -391,14 +214,6 @@ export class Component {
         this.addIdtoInstanceIdMapping(propValueBinding.nodeId, propValueBinding.instanceId);
 
         let value: string = propValueBinding.value;
-        // if (propValueBinding.type === "css") {
-        //   value = getTwcssValue(value, index);
-
-        //   // console.log("binding.cssKey: ", binding.cssKey);
-        //   // console.log("propValueBinding.value: ", propValueBinding.value);
-        //   // console.log("value: ", value);
-        // }
-
         const propToPropBinding: PropToPropBinding = {
           prop: binding.name,
           fieldName,
@@ -456,12 +271,7 @@ export class Component {
       this.propNames.push(binding.name);
 
       const numberOfDifferentValues: number = findNumberOfDifferentValues(binding.bindings);
-
-      // console.log("binding.bindings: ", binding.bindings);
-
       let dataType: DataType = numberOfDifferentValues > 2 ? DataType.string : DataType.boolean;
-
-      // console.log("dataType: ", numberOfDifferentValues);
 
       const fieldName: string = nameRegistryGlobalInstance.getDataFieldName();
       dataArr.fieldToPropBindings.push({
@@ -558,65 +368,6 @@ export class Component {
   }
 }
 
-
-type IdToComponentsMap = {
-  [id: string]: Component;
-};
-
-export let propRegistryGlobalInstance: PropRegistry;
-
-export const InstantiatePropRegistryGlobalInstance = () => {
-  propRegistryGlobalInstance = new PropRegistry();
-};
-
-class PropRegistry {
-  idToPropBindings: IdToPropBindingMap;
-
-  constructor() {
-    this.idToPropBindings = {};
-  }
-
-  getPropToPropBindingByNodeId(nodeId: string): PropToPropBinding[] {
-    return this.idToPropBindings[nodeId];
-  }
-
-  addPropToPropBinding(nodeId: string, bindings: PropToPropBinding[]) {
-    this.idToPropBindings[nodeId] = bindings;
-  }
-}
-
-export let componentRegistryGlobalInstance: ComponentRegistry;
-
-export const InstantiateComponentRegistryGlobalInstance = () => {
-  componentRegistryGlobalInstance = new ComponentRegistry();
-};
-
-class ComponentRegistry {
-  idToComponentMap: IdToComponentsMap;
-  nodeIdToComponentIdMap: IdToComponentsMap;
-
-  constructor() {
-    this.idToComponentMap = {};
-    this.nodeIdToComponentIdMap = {};
-  }
-
-  addNodeIdToComponentMapping(nodeId: string, component: Component) {
-    this.nodeIdToComponentIdMap[nodeId] = component;
-  }
-
-  getComponentByNodeId(nodeId: string): Component {
-    return this.nodeIdToComponentIdMap[nodeId];
-  }
-
-  registerComponent(component: Component) {
-    this.idToComponentMap[component.id] = component;
-  }
-
-  getComponent(id: string): Component {
-    return this.idToComponentMap[id];
-  }
-}
-
 export type ComponentProperties = {
   [property: string]: Property,
 };
@@ -700,8 +451,6 @@ export const gatherPropsFromVectorNodes = (nodes: Node[], instanceIds: string[])
       return properties;
     }
   }
-
-  console.log("gatherPropsFromVectorNodes: ", nodes);
 
   const id: string = uuid.v1() as string;
   const prop: Property = {

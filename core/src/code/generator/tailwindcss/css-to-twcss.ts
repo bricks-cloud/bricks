@@ -17,15 +17,15 @@ import {
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
-import { DataType, PropToPropBinding, propRegistryGlobalInstance } from "../../loop/component";
 import { Option, UiFramework } from "../../code";
+import { getVariablePropForTwcss } from "../../../../ee/code/prop";
 
-type TwcssPropRenderingMeta = {
+export type TwcssPropRenderingMeta = {
   numberOfTwcssClasses: number,
   filledClassIndexes: Set<number>,
 };
 
-type TwcssPropRenderingMap = {
+export type TwcssPropRenderingMap = {
   [cssKey: string]: TwcssPropRenderingMeta;
 };
 
@@ -37,8 +37,6 @@ export const convertCssClassesToTwcssClasses = (
 ): string => {
   let classPropName: string = "class";
   let variableProps: string = "";
-
-
   const twcssPropRenderingMap: TwcssPropRenderingMap = {};
 
   Object.entries(attributes).forEach(([property, value]) => {
@@ -51,34 +49,7 @@ export const convertCssClassesToTwcssClasses = (
 
   if (option.uiFramework === UiFramework.react) {
     classPropName = "className";
-    const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-
-    if (!isEmpty(propBindings)) {
-      for (const propBinding of propBindings) {
-        for (const location of propBinding.locations) {
-          if (location.type === "css") {
-            // console.log("attributes: ", attributes);
-            // console.log("location.cssKey: ", location.cssKey);
-            const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[location.cssKey];
-            if (!isEmpty(twcssPropRenderingMeta)) {
-              twcssPropRenderingMeta.filledClassIndexes.add(propBinding.twcssClassIndex);
-            }
-
-            if (propBinding.dataType === DataType.boolean) {
-              if (isEmpty(propBinding.conditionalValue)) {
-                variableProps += ` \${${propBinding.prop} ? "${propBinding.defaultValue}" : ""}`;
-                continue;
-              }
-
-              variableProps += ` \${${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}"}`;
-              continue;
-            }
-
-            variableProps += ` \${${propBinding.prop}}`;
-          }
-        }
-      }
-    }
+    variableProps = getVariablePropForTwcss(id, twcssPropRenderingMap);
   }
 
   let content: string = "";
@@ -160,7 +131,6 @@ export const getImageFileNameFromUrl = (path: string) => {
 
 // findClosestTwcssColor finds the closest tailwindcss color to css color.
 const findClosestTwcssColor = (cssColor: string) => {
-  // console.log("cssColor: ", cssColor);
   if (cssColor === "inherit") {
     return "inherit";
   }

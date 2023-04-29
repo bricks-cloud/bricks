@@ -6,11 +6,15 @@ import {
   NodeType,
   VectorGroupNode,
   VectorNode,
+  TextNode,
 } from "../../../bricks/node";
 import { Attributes, ExportFormat } from "../../../design/adapter/node";
-import { generateProps, nameRegistryGlobalInstance } from "../../loop/loop";
-import { Component, Data, DataArr, componentRegistryGlobalInstance, getAltProp, getSrcProp, getTextProp, getWidthAndHeightProp } from "../../loop/component";
-import { promptRegistryGlobalInstance } from "../../prompt-registry.ts/prompt-registry";
+import { generateProps } from "../../../../ee/loop/data-array-registry";
+import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
+import { Component, Data, DataArr } from "../../../../ee/loop/component";
+import { getVariableProp, getTextVariableProp, getWidthAndHeightVariableProp } from "../../../../ee/code/prop";
+import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
+import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
 export type GetProps = (node: Node, option: Option) => string;
 
@@ -159,9 +163,7 @@ export class Generator {
 
       if (streak) {
         const repeatedComponentsCodeString: string = await this.generateCodeFromRepeatedComponents(repeatedComponents, option);
-
         childrenCodeStrings.push(repeatedComponentsCodeString);
-
         streak = false;
       }
 
@@ -170,12 +172,9 @@ export class Generator {
       childrenCodeStrings.push(codeString);
     }
 
-    // console.log("repeatedComponents: ", repeatedComponents);
-
     if (streak) {
       const repeatedComponentsCodeString: string = await this.generateCodeFromRepeatedComponents(repeatedComponents, option);
       childrenCodeStrings.push(repeatedComponentsCodeString);
-      // console.log("repeatedComponentsCodeString: ", repeatedComponentsCodeString);
     }
 
     return openingTag + childrenCodeStrings.join("") + closingTag;
@@ -247,8 +246,6 @@ export class Generator {
     option: Option
   ): string {
 
-    // console.log("renderNodeWithAbsolutePosition: ", node);
-
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
     if (positionalCssAttribtues["position"] === "absolute") {
@@ -269,12 +266,8 @@ export class Generator {
       renderInALoop = true;
     }
 
-    // console.log("data: ", data);
-
     const sample: object = data[0];
     const generatedComponent = await this.generateHtml(nodes[0], option);
-
-    // console.log("generatedComponent: ", generatedComponent);
 
     let componentCodeString: string = `const ${component.getName()} = ({
       ${component.getPropNames().join(",")}
@@ -301,7 +294,7 @@ export class Generator {
         dataCode: dataCodeStr,
       });
 
-      promptRegistryGlobalInstance.addPrompt(
+      codeSampleRegistryGlobalInstance.addCodeSample(
         createMiniReactFile(componentCodeString, dataCodeStr, arrCodeStr)
       );
 
@@ -317,7 +310,64 @@ export class Generator {
 }
 
 
-const createMiniReactFile = (componentCode: string, dataCode: string, arrCode: string) => {
+const getWidthAndHeightProp = (node: Node): string => {
+  const cssAttribtues: Attributes = node.getCssAttributes();
+  let widthAndHeight: string = getWidthAndHeightVariableProp(node.getId());
+
+  if (isEmpty(widthAndHeight) && cssAttribtues["width"] && cssAttribtues["height"]) {
+    return `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
+  }
+
+  return widthAndHeight;
+};
+
+export const getSrcProp = (node: Node): string => {
+  const id: string = node.getId();
+
+  let fileExtension: string = "svg";
+  let componentName: string = nameRegistryGlobalInstance.getVectorName(id);
+
+  if (node.getType() === NodeType.IMAGE) {
+    fileExtension = "png";
+    componentName = nameRegistryGlobalInstance.getImageName(id);
+  }
+
+  const prop: string = getVariableProp(id, "src");
+  if (!isEmpty(prop)) {
+    return `{${prop}}`;
+  }
+
+  return `"./assets/${componentName}.${fileExtension}"`;
+};
+
+
+export const getAltProp = (node: Node): string => {
+  const id: string = node.getId();
+  const componentName: string = nameRegistryGlobalInstance.getAltName(id);
+
+  const prop: string = getVariableProp(id, "alt");
+  if (!isEmpty(prop)) {
+    return `{${prop}}`;
+  }
+
+
+  return `"${componentName}"`;
+};
+
+
+export const getTextProp = (node: Node): string => {
+  const textNode: TextNode = node as TextNode;
+
+  const prop: string = getTextVariableProp(node.getId());
+  if (!isEmpty(prop)) {
+    return prop;
+  }
+
+  return textNode.getText();
+};
+
+
+export const createMiniReactFile = (componentCode: string, dataCode: string, arrCode: string) => {
   return `
   import React from "react"; 
   import "./style.css";

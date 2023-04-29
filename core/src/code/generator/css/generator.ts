@@ -5,6 +5,7 @@ import { Attributes } from "../../../design/adapter/node";
 import {
   getFileExtensionFromLanguage,
   constructExtraFiles,
+  snakeCaseToCamelCase,
 } from "../util";
 import {
   Generator as HtmlGenerator,
@@ -16,7 +17,7 @@ import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
-import { DataType, PropToPropBinding, propRegistryGlobalInstance } from "../../loop/component";
+import { getVariablePropForCss } from "../../../../ee/code/prop";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 
 export class Generator {
@@ -92,8 +93,6 @@ export class Generator {
         content: buildCssFileContent(googleFontUrl),
         path: `/style.css`,
       };
-
-      console.log("[mainFile, ...extraFiles]: ", [mainFile, cssFile, ...extraFiles]);
 
       return [mainFile, cssFile, ...extraFiles];
     }
@@ -178,24 +177,6 @@ const getProps = (node: Node, option: Option): string => {
   }
 };
 
-// styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}
-const snakeCaseToCamelCase = (prop: string) => {
-  const parts = prop.split("-");
-
-  const camel = [];
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
-    if (i === 0) {
-      camel.push(part);
-      continue;
-    }
-
-    camel.push(part.charAt(0).toUpperCase() + part.slice(1));
-  }
-
-  return camel.join("");
-};
-
 // convertCssClassesToInlineStyle converts attributes to formated css classes
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
@@ -204,34 +185,7 @@ const convertCssClassesToInlineStyle = (
 ) => {
   let inlineStyle: string = "";
   if (option.uiFramework === UiFramework.react) {
-
-    let variableProps: string = "";
-    const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(id);
-
-    const cssKeyConnectedToProps: Set<string> = new Set<string>();
-
-    if (!isEmpty(propBindings)) {
-      for (const propBinding of propBindings) {
-        for (const location of propBinding.locations) {
-          if (location.type === "css") {
-            cssKeyConnectedToProps.add(location.cssKey);
-            if (propBinding.dataType === DataType.boolean) {
-
-              if (isEmpty(propBinding.conditionalValue)) {
-                variableProps += ` ...(${propBinding.prop} && {${snakeCaseToCamelCase(location.cssKey)}: "${propBinding.defaultValue}"}),`;
-                continue;
-              }
-
-              variableProps += ` ${snakeCaseToCamelCase(location.cssKey)}: ${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}",`;
-              continue;
-            }
-
-            variableProps += `${snakeCaseToCamelCase(location.cssKey)}: ${propBinding.prop},`;
-          }
-        }
-      }
-    }
-
+    let [variableProps, cssKeyConnectedToProps]: [string, Set<string>] = getVariablePropForCss(id);
     const lines: string[] = [];
     Object.entries(attributes).forEach(([key, value]) => {
       if (cssKeyConnectedToProps.has(key)) {
