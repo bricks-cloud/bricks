@@ -17,18 +17,68 @@ import {
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
+import { Option, UiFramework } from "../../code";
+import { getVariablePropForTwcss } from "../../../../ee/code/prop";
+
+export type TwcssPropRenderingMeta = {
+  numberOfTwcssClasses: number,
+  filledClassIndexes: Set<number>,
+};
+
+export type TwcssPropRenderingMap = {
+  [cssKey: string]: TwcssPropRenderingMeta;
+};
 
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
 export const convertCssClassesToTwcssClasses = (
-  attributes: Attributes
+  attributes: Attributes,
+  id: string,
+  option: Option,
 ): string => {
-  let content = "";
+  let classPropName: string = "class";
+  let variableProps: string = "";
+  const twcssPropRenderingMap: TwcssPropRenderingMap = {};
 
   Object.entries(attributes).forEach(([property, value]) => {
-    content = content + " " + getTwcssClass(property, value, attributes);
+    const twcssClasses: string[] = getTwcssClass(property, value, attributes).split(" ");
+    twcssPropRenderingMap[property] = {
+      numberOfTwcssClasses: twcssClasses.length,
+      filledClassIndexes: new Set<number>(),
+    };
   });
 
-  return content.trim();
+  if (option.uiFramework === UiFramework.react) {
+    classPropName = "className";
+    variableProps = getVariablePropForTwcss(id, twcssPropRenderingMap);
+  }
+
+  let content: string = "";
+  Object.entries(attributes).forEach(([property, value]) => {
+    const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[property];
+    if (twcssPropRenderingMeta.numberOfTwcssClasses === twcssPropRenderingMeta.filledClassIndexes.size) {
+      return;
+    }
+
+    for (let i = 0; i < twcssPropRenderingMeta.numberOfTwcssClasses; i++) {
+      const parts: string[] = getTwcssClass(property, value, attributes).split(" ");
+      if (twcssPropRenderingMeta.filledClassIndexes.has(i)) {
+        continue;
+      }
+      content = content + " " + parts[i];
+    }
+  });
+
+  content += variableProps;
+
+  if (isEmpty(content)) {
+    return "";
+  }
+
+  if (!isEmpty(variableProps)) {
+    return `${classPropName}={\`${content.trim()}\`}`;
+  }
+
+  return `${classPropName}="${content.trim()}"`;
 };
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
@@ -369,6 +419,10 @@ export const getTwcssClass = (
   cssValue: string,
   cssAttributes: Attributes
 ): string => {
+  if (isEmpty(cssValue)) {
+    return "";
+  }
+
   switch (cssProperty) {
     case "height":
       const heightNum = extractPixelNumberFromString(cssValue);

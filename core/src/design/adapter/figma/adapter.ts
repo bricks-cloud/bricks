@@ -19,35 +19,6 @@ import {
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 
-const doTwoNodesHaveTheSameBoundingBox = (nodeA: Node, nodeB: Node) => {
-  let boxA: BoxCoordinates = nodeA.getAbsBoundingBox();
-  let boxB: BoxCoordinates = nodeB.getAbsBoundingBox();
-
-  if (boxA.leftBot.x !== boxB.leftBot.x || boxA.leftBot.y !== boxB.leftBot.y) {
-    return false;
-  }
-
-  if (
-    boxA.rightBot.x !== boxB.rightBot.x ||
-    boxA.rightBot.y !== boxB.rightBot.y
-  ) {
-    return false;
-  }
-
-  if (boxA.leftTop.x !== boxB.leftTop.x || boxA.leftTop.y !== boxB.leftTop.y) {
-    return false;
-  }
-
-  if (
-    boxA.rightTop.x !== boxB.rightTop.x ||
-    boxA.rightTop.y !== boxB.rightTop.y
-  ) {
-    return false;
-  }
-
-  return true;
-};
-
 enum NodeType {
   GROUP = "GROUP",
   TEXT = "TEXT",
@@ -77,9 +48,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -306,8 +276,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   if (figmaNode.type === NodeType.TEXT) {
     const fontFamily = (figmaNode.fontName as FontName).family;
 
-    // source = computeURL([figmaNode]);
-
     // font family
     if (figmaNode.fontName !== figma.mixed) {
       attributes[
@@ -344,7 +312,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
-        figmaNode.absoluteBoundingBox.width >
+      figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -762,16 +730,6 @@ export const convertFigmaNodesToBricksNodes = (
 
         result.areAllNodesExportable =
           feedbacks.areAllNodesExportable && result.areAllNodesExportable;
-
-        // merge parent and child if they have the same boundingbox
-        if (
-          feedbacks.nodes.length === 1 &&
-          doTwoNodesHaveTheSameBoundingBox(feedbacks.nodes[0], newNode)
-        ) {
-          feedbacks.nodes[0].addCssAttributes(newNode.getCssAttributes());
-          result.nodes = result.nodes.concat(feedbacks.nodes);
-          continue;
-        }
 
         newNode.setChildren(feedbacks.nodes);
       }

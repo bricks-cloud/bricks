@@ -1,6 +1,6 @@
 import { isEmpty } from "../utils";
 import * as rawData from "./google-fonts-metadata.json";
-import { FontMetadata } from "../code/generator/font";
+import { FontMetadataMap } from "../code/generator/font";
 
 const baseURL = "https://fonts.googleapis.com/css?family=";
 const regularFontSize = "400";
@@ -56,13 +56,15 @@ export class GoogleFonts {
 
 export const GoogleFontsInstance = new GoogleFonts();
 
-export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
+export const computeGoogleFontURL = (fontsMetadata: FontMetadataMap): string => {
   if (isEmpty(fontsMetadata)) {
     return "";
   }
 
   let googleFontFamily = "";
-  fontsMetadata.forEach(({ family, isItalic, weights }, index: number) => {
+
+  const fontMetadataEntries = Object.entries(fontsMetadata);
+  fontMetadataEntries.forEach(([family, { isItalic, weights }], index: number) => {
     let fontDetails = "";
 
     const familyName = family.replaceAll(" ", "+");
@@ -89,53 +91,8 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadata[]): string => {
 
     fontDetails += familyName + ":" + googleFontsVariants.join(",");
 
-    if (index !== fontsMetadata.length - 1) {
+    if (index !== fontMetadataEntries.length - 1) {
       fontDetails += "|";
-    }
-
-    googleFontFamily += fontDetails;
-  });
-
-  return baseURL + googleFontFamily;
-};
-
-export const computeURL = (fonts: TextNode[]) => {
-  let googleFontFamily = "";
-
-  fonts.forEach((textNode: TextNode, index: number) => {
-    let fontDetails = "";
-
-    const fontName = textNode.fontName as FontName;
-
-    const familyName = fontName.family.replaceAll(" ", "+");
-
-    let style = "";
-    const isItalic = fontName.style.toLowerCase().includes("italic");
-
-    const isRegular = textNode.fontWeight === 400;
-
-    if (isRegular) {
-      style += "regular";
-    } else {
-      style += textNode.fontWeight.toString();
-    }
-
-    if (isItalic) {
-      if (isRegular) {
-        style = "italic";
-      } else {
-        style += "italic";
-      }
-    }
-
-    if (style.length !== 0) {
-      style = ":" + style;
-    }
-
-    fontDetails += familyName + style;
-
-    if (index !== fonts.length - 1) {
-      fontDetails += fontDetails + "|";
     }
 
     googleFontFamily += fontDetails;
