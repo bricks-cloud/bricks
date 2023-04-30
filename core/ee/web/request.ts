@@ -15,6 +15,8 @@ export const getNameMap = async (): Promise<NameMap> => {
         codeSamples: codeSampleRegistryGlobalInstance.getCodeSamples(),
         uiFramework: codeSampleRegistryGlobalInstance.getUiFramework() as string,
         cssFramework: codeSampleRegistryGlobalInstance.getCssFramework() as string,
+        userId: figma.currentUser.id,
+        username: figma.currentUser.name,
       }),
     });
 
@@ -48,17 +50,24 @@ export const getNameMap = async (): Promise<NameMap> => {
 };
 
 const dedupNames = (nameMap: NameMap) => {
-  const duplicatedNames: Set<string> = new Set<string>();
+  const globalNonDuplicates: Set<string> = new Set<string>();
+  globalNonDuplicates.add("GeneratedComponent");
+
   let counter: number = 1;
 
   Object.entries(nameMap).forEach(([oldName, newName]) => {
-    if (duplicatedNames.has(newName)) {
+    if (globalNonDuplicates.has(newName)) {
       let dedupedName: string = newName + counter;
       nameMap[oldName] = dedupedName;
       counter++;
-      duplicatedNames.add(dedupedName);
+      globalNonDuplicates.add(dedupedName);
       return;
     }
-    duplicatedNames.add(newName);
+
+    if (oldName.startsWith("dataArr") || oldName.startsWith("Component")) {
+      globalNonDuplicates.add(newName);
+    }
+
+    return;
   });
 };
