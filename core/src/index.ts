@@ -6,6 +6,7 @@ import { addAdditionalCssAttributesToNodes } from "./bricks/additional-css";
 import { Node, GroupNode, NodeType } from "./bricks/node";
 import { traverseNodes } from "./utils";
 import { predictImages, predictTexts } from "./ml";
+import { ExportFormat } from "./design/adapter/node";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
@@ -29,14 +30,17 @@ export const convertToCode = async (
   const enableAi = true;
   if (enableAi) {
     try {
-      const nonTextNodesIds = [];
-      const idTextPairs: [string, string][] = [];
+      const idImageMap: Record<string, string> = {};
+      const idTextMap: Record<string, string> = {};
 
-      traverseNodes(startingNode, (node) => {
+      await traverseNodes(startingNode, async (node) => {
         const originalId = node?.node?.getOriginalId();
 
         if (originalId && node?.getType() !== NodeType.TEXT) {
-          nonTextNodesIds.push(originalId);
+          const base64image = await node?.node?.export(ExportFormat.JPG);
+          if (base64image) {
+            idImageMap[originalId] = base64image;
+          }
         }
 
         //@ts-ignore
@@ -46,31 +50,24 @@ export const convertToCode = async (
           node?.getType?.() === NodeType.TEXT &&
           text?.split(" ")?.length <= 5 // only check text nodes with 5 words or less
         ) {
-          idTextPairs.push([originalId, text]);
+          idTextMap[originalId] = text;
         }
 
         return node?.getType() !== NodeType.VECTOR_GROUP;
       });
 
-      console.log("nonTextNodesIds", nonTextNodesIds);
-      console.log("idTextPairs", idTextPairs);
+      console.log("idImageMap", idImageMap);
+      console.log("idTextMap", idTextMap);
 
       const [predictImagesResult, predictTextsResult] =
         await Promise.allSettled([
-          predictImages(nonTextNodesIds),
-          predictTexts(idTextPairs.map(([_, text]) => text)),
+          predictImages(idImageMap),
+          predictTexts(idTextMap),
         ]);
 
       const textPredictions =
         predictTextsResult.status === "fulfilled"
-          ? predictTextsResult.value.predictions.reduce(
-              (acc, prediction, index) => {
-                const id = idTextPairs[index][0];
-                acc[id] = prediction;
-                return acc;
-              },
-              {}
-            )
+          ? predictTextsResult.value
           : {};
 
       const imagePredictions =
@@ -78,26 +75,32 @@ export const convertToCode = async (
           ? predictImagesResult.value
           : {};
 
+      if (predictImagesResult.status === "rejected") {
+        console.error(
+          "Error with image prediction",
+          predictImagesResult.reason
+        );
+      }
+
+      if (predictTextsResult.status === "rejected") {
+        console.error("Error with image prediction", predictTextsResult.reason);
+      }
+
       console.log("imagePredictions", imagePredictions);
       console.log("textPredictions", textPredictions);
 
-      traverseNodes(startingNode, (node) => {
+      await traverseNodes(startingNode, async (node) => {
         if (node.node) {
           const originalId = node.node.getOriginalId();
-          const predictedHtmlTag = imagePredictions[originalId];
-          const isLink = textPredictions[originalId] === 1;
+          const predictedHtmlTag =
+            imagePredictions[originalId] || textPredictions[originalId];
 
           if (predictedHtmlTag) {
-            // only predicting <button> for now
             node.addAnnotations("htmlTag", predictedHtmlTag);
-            return false;
-          }
-
-          if (isLink) {
-            node.addAnnotations("htmlTag", "a");
-            return false;
+            return predictedHtmlTag !== "a" && predictedHtmlTag !== "button";
           }
         }
+
         return true;
       });
     } catch (e) {

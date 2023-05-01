@@ -9,17 +9,17 @@ export const isEmpty = (value: any): boolean => {
   );
 };
 
-export const traverseNodes = (
+export const traverseNodes = async (
   node: Node,
-  callback: (node: Node) => boolean
+  callback: (node: Node) => Promise<boolean>
 ) => {
-  const shouldContinue = callback(node);
+  const shouldContinue = await callback(node);
 
   if (!shouldContinue) {
     return;
   }
 
-  node.children.forEach((child) => {
-    traverseNodes(child, callback);
-  });
+  await Promise.all(
+    node.children.map((child) => traverseNodes(child, callback))
+  );
 };
