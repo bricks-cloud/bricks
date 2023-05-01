@@ -5,6 +5,7 @@ import { groupNodes } from "./bricks/grouping";
 import { addAdditionalCssAttributesToNodes } from "./bricks/additional-css";
 import { Node, GroupNode, NodeType } from "./bricks/node";
 import { traverseNodes } from "./utils";
+import { predictImages, predictTexts } from "./ml";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
@@ -28,47 +29,73 @@ export const convertToCode = async (
   const enableAi = true;
   if (enableAi) {
     try {
-      const originalIds = [];
+      const nonTextNodesIds = [];
+      const idTextPairs: [string, string][] = [];
 
-      // TODO: maybe don't get ALL ids?
       traverseNodes(startingNode, (node) => {
-        if (node.node) {
-          originalIds.push(node.node.getOriginalId());
+        const originalId = node?.node?.getOriginalId();
+
+        if (originalId && node?.getType() !== NodeType.TEXT) {
+          nonTextNodesIds.push(originalId);
         }
-        return node.getType() !== NodeType.VECTOR_GROUP;
+
+        //@ts-ignore
+        const text = node?.getText?.();
+        if (
+          originalId &&
+          node?.getType?.() === NodeType.TEXT &&
+          text?.split(" ")?.length <= 5 // only check text nodes with 5 words or less
+        ) {
+          idTextPairs.push([originalId, text]);
+        }
+
+        return node?.getType() !== NodeType.VECTOR_GROUP;
       });
 
-      const response = await fetch(
-        // "https://ml-backend-nfhyx3cm5q-uc.a.run.app/predict/universal",
-        "http://localhost:8080/predict/universal",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            // TODO: allow users to pass in their own API key
-            "X-API-KEY": process.env.ML_BACKEND_API_KEY,
-          },
-          body: JSON.stringify({
-            ids: originalIds,
+      console.log("nonTextNodesIds", nonTextNodesIds);
+      console.log("idTextPairs", idTextPairs);
 
-            // TODO: figure out workaround so users don't have to pass in figmatoken and filekey?
-            figmaToken: process.env.FIGMA_TOKEN,
-            fileKey: "6P3EluMjO1528T7OtthbI9",
-          }),
-        }
-      );
+      const [predictImagesResult, predictTextsResult] =
+        await Promise.allSettled([
+          predictImages(nonTextNodesIds),
+          predictTexts(idTextPairs.map(([_, text]) => text)),
+        ]);
 
-      const predictions = await response.json(); // { <figma_node_id>: <predicted_html_tag> }
+      const textPredictions =
+        predictTextsResult.status === "fulfilled"
+          ? predictTextsResult.value.predictions.reduce(
+              (acc, prediction, index) => {
+                const id = idTextPairs[index][0];
+                acc[id] = prediction;
+                return acc;
+              },
+              {}
+            )
+          : {};
+
+      const imagePredictions =
+        predictImagesResult.status === "fulfilled"
+          ? predictImagesResult.value
+          : {};
+
+      console.log("imagePredictions", imagePredictions);
+      console.log("textPredictions", textPredictions);
 
       traverseNodes(startingNode, (node) => {
         if (node.node) {
           const originalId = node.node.getOriginalId();
-          const predictedHtmlTag = predictions[originalId];
+          const predictedHtmlTag = imagePredictions[originalId];
+          const isLink = textPredictions[originalId] === 1;
 
           if (predictedHtmlTag) {
+            // only predicting <button> for now
             node.addAnnotations("htmlTag", predictedHtmlTag);
-            // stop traversing if tag is a or button because they cannot be nested
-            return predictedHtmlTag === "a" || predictedHtmlTag === "button";
+            return false;
+          }
+
+          if (isLink) {
+            node.addAnnotations("htmlTag", "a");
+            return false;
           }
         }
         return true;
