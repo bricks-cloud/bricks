@@ -10,6 +10,7 @@ export type Attributes = {
 export enum ExportFormat {
   SVG = "SVG",
   PNG = "PNG",
+  JPG = "JPG",
 }
 
 export type BoxCoordinates = {
@@ -25,6 +26,7 @@ export interface Node {
   getOriginalId(): string;
   getCssAttributes(): Attributes;
   getPositionalCssAttributes(): Attributes;
+  export(exportFormat: ExportFormat): Promise<string>;
 }
 
 export interface TextNode extends Node {
@@ -33,14 +35,8 @@ export interface TextNode extends Node {
   getFamilyName(): string;
 }
 
-export interface VectorNode extends Node {
-  export(exportFormat: ExportFormat): Promise<string>;
-}
+export interface VectorNode extends Node {}
 
-export interface VectorGroupNode extends Node {
-  export(exportFormat: ExportFormat): Promise<string>;
-}
+export interface VectorGroupNode extends Node {}
 
-export interface ImageNode extends Node {
-  export(exportFormat: ExportFormat): Promise<string>;
-}
+export interface ImageNode extends Node {}

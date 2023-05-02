@@ -33,6 +33,7 @@
     "color-parse": "^1.4.2",
     "create-file-webpack": "^1.0.2",
     "dotenv": "^16.0.3",
+    "dotenv-webpack": "^8.0.1",
     "html-loader": "^4.2.0",
     "html-webpack-inline-source-plugin": "^0.0.10",
     "postcss": "^8.4.19",
