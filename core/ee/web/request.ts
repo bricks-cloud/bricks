@@ -1,7 +1,43 @@
 import { isEmpty } from "../../src/utils";
 import { NameMap } from "../../src/code/code";
 import { codeSampleRegistryGlobalInstance } from "../loop/code-sample-registry";
-import { ML_BACKEND_API_ENDPOINT } from "../../../env";
+
+export const predictImage = async (idImageMap: Record<string, string>) => {
+  const response = await fetch(
+    process.env.ML_BACKEND_API_ENDPOINT + "/predict/image",
+    // "http://localhost:8080/predict/image",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // TODO: allow users to pass in their own API key
+        "X-API-KEY": process.env.ML_BACKEND_API_KEY,
+      },
+      body: JSON.stringify(idImageMap),
+    }
+  );
+
+  return response.json() as Promise<Record<string, string>>;
+};
+
+export const predictText = async (idTextMap: Record<string, string>) => {
+  const response = await fetch(
+    process.env.ML_BACKEND_API_ENDPOINT + "/predict/text",
+    // "http://localhost:8080/predict/text",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // TODO: allow users to pass in their own API key
+        "X-API-KEY": process.env.ML_BACKEND_API_KEY,
+      },
+      body: JSON.stringify(idTextMap),
+    }
+  );
+
+  return response.json() as Promise<Record<string, string>>;
+};
+
 
 export const getNameMap = async (): Promise<NameMap> => {
   if (isEmpty(codeSampleRegistryGlobalInstance) || isEmpty(codeSampleRegistryGlobalInstance.getCodeSamples())) {
@@ -9,7 +45,7 @@ export const getNameMap = async (): Promise<NameMap> => {
   }
 
   try {
-    const response: any = await fetch(ML_BACKEND_API_ENDPOINT, {
+    const response: any = await fetch(process.env.ML_BACKEND_API_ENDPOINT + "/generate/name", {
       method: 'POST',
       body: JSON.stringify({
         codeSamples: codeSampleRegistryGlobalInstance.getCodeSamples(),

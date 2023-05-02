@@ -1,5 +1,5 @@
 import { isEmpty } from "../../../utils";
-import { CssFramework, Option, UiFramework } from "../../code";
+import { Option, UiFramework } from "../../code";
 import {
   ImageNode,
   Node,
@@ -12,7 +12,11 @@ import { Attributes, ExportFormat } from "../../../design/adapter/node";
 import { generateProps } from "../../../../ee/loop/data-array-registry";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 import { Component, Data, DataArr } from "../../../../ee/loop/component";
-import { getVariableProp, getTextVariableProp, getWidthAndHeightVariableProp } from "../../../../ee/code/prop";
+import {
+  getVariableProp,
+  getTextVariableProp,
+  getWidthAndHeightVariableProp,
+} from "../../../../ee/code/prop";
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
@@ -23,7 +27,6 @@ export type ImportedComponentMeta = {
   importPath: string;
   componentName: string;
 };
-
 
 export type InFileComponentMeta = {
   componentCode: string;
@@ -45,82 +48,71 @@ export class Generator {
     this.inFileData = [];
   }
 
-  async generateHtml(
-    node: Node,
-    option: Option
-  ): Promise<string> {
+  async generateHtml(node: Node, option: Option): Promise<string> {
+    const importComponents: ImportedComponentMeta[] = [];
+    const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
       case NodeType.TEXT:
         const textNodeClassProps = this.getProps(node, option);
-        const tag =
-          option.cssFramework === CssFramework.tailwindcss ? "p" : "div";
-
-        const textProp: string = getTextProp(node);
-        return `<${tag}  ${textNodeClassProps}>${textProp}</${tag}>`;
+        const attributes = htmlTag === "a" ? 'href="#" ' : "";
+        const textProp = getTextProp(node);
+        return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
 
       case NodeType.GROUP:
         // this edge case should never happen
         if (isEmpty(node.getChildren())) {
-          return `<div></div>`;
+          return `<${htmlTag}></${htmlTag}>`;
         }
 
         const groupNodeClassProps = this.getProps(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
-          [`<div ${groupNodeClassProps}>`, "</div>"],
-          option,
+          [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
+          option
         );
 
       case NodeType.VISIBLE:
         const visibleNodeClassProps = this.getProps(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<div ${visibleNodeClassProps}> </div>`;
+          return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
         }
 
         return await this.generateHtmlFromNodes(
           node.getChildren(),
-          [`<div ${visibleNodeClassProps}>`, "</div>"],
-          option,
+          [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
+          option
         );
 
       case NodeType.VECTOR_GROUP:
         const vectorGroupNode = node as VectorGroupNode;
         const vectorGroupCodeString =
-          await this.generateHtmlElementForVectorNode(
-            vectorGroupNode,
-            option,
-          );
+          await this.generateHtmlElementForVectorNode(vectorGroupNode, option);
 
-        return (
-          this.renderNodeWithAbsolutePosition(
-            vectorGroupNode,
-            vectorGroupCodeString,
-            option
-          )
+        return this.renderNodeWithAbsolutePosition(
+          vectorGroupNode,
+          vectorGroupCodeString,
+          option
         );
 
       case NodeType.VECTOR:
         const vectorNode = node as VectorGroupNode;
-        const vectorCodeString =
-          await this.generateHtmlElementForVectorNode(
-            vectorNode,
-            option,
-          );
+        const vectorCodeString = await this.generateHtmlElementForVectorNode(
+          vectorNode,
+          option
+        );
 
-        return (
-          this.renderNodeWithAbsolutePosition(
-            vectorNode,
-            vectorCodeString,
-            option
-          )
+        return this.renderNodeWithAbsolutePosition(
+          vectorNode,
+          vectorCodeString,
+          option
         );
       case NodeType.IMAGE:
         const imageNode = node as ImageNode;
 
         const codeStrings = await this.generateHtmlElementForImageNode(
           imageNode,
-          option,
+          option
         );
 
         if (codeStrings.length === 1) {
@@ -130,15 +122,14 @@ export class Generator {
         const imageNodeCodeString = await this.generateHtmlFromNodes(
           node.getChildren(),
           codeStrings,
-          option,
+          option
         );
 
         return imageNodeCodeString;
     }
 
-    return `<div></div>`;
+    return `<${htmlTag}></${htmlTag}>`;
   }
-
 
   getExtraComponentsMetaData(): [InFileComponentMeta[], InFileDataMeta[]] {
     return [this.inFileComponents, this.inFileData];
@@ -147,14 +138,18 @@ export class Generator {
   private async generateHtmlFromNodes(
     nodes: Node[],
     [openingTag, closingTag]: string[],
-    option: Option,
+    option: Option
   ): Promise<string> {
     let childrenCodeStrings: string[] = [];
     let repeatedComponents: Node[] = [];
     let streak: boolean = false;
 
     for (const child of nodes) {
-      if (option.uiFramework === UiFramework.react && componentRegistryGlobalInstance.getComponentByNodeId(child.getId()) && nodes.length > 2) {
+      if (
+        option.uiFramework === UiFramework.react &&
+        componentRegistryGlobalInstance.getComponentByNodeId(child.getId()) &&
+        nodes.length > 2
+      ) {
         streak = true;
 
         repeatedComponents.push(child);
@@ -162,7 +157,11 @@ export class Generator {
       }
 
       if (streak) {
-        const repeatedComponentsCodeString: string = await this.generateCodeFromRepeatedComponents(repeatedComponents, option);
+        const repeatedComponentsCodeString: string =
+          await this.generateCodeFromRepeatedComponents(
+            repeatedComponents,
+            option
+          );
         childrenCodeStrings.push(repeatedComponentsCodeString);
         streak = false;
       }
@@ -173,7 +172,11 @@ export class Generator {
     }
 
     if (streak) {
-      const repeatedComponentsCodeString: string = await this.generateCodeFromRepeatedComponents(repeatedComponents, option);
+      const repeatedComponentsCodeString: string =
+        await this.generateCodeFromRepeatedComponents(
+          repeatedComponents,
+          option
+        );
       childrenCodeStrings.push(repeatedComponentsCodeString);
     }
 
@@ -182,7 +185,7 @@ export class Generator {
 
   private async generateHtmlElementForVectorNode(
     node: VectorNode | VectorGroupNode,
-    option: Option,
+    option: Option
   ): Promise<string> {
     const alt: string = getAltProp(node);
 
@@ -199,10 +202,11 @@ export class Generator {
 
   private async generateHtmlElementForImageNode(
     node: ImageNode,
-    option: Option,
+    option: Option
   ): Promise<string[]> {
     const id: string = node.getId();
-    const imageComponentName: string = nameRegistryGlobalInstance.getImageName(id);
+    const imageComponentName: string =
+      nameRegistryGlobalInstance.getImageName(id);
     const alt: string = getAltProp(node);
 
     if (isEmpty(node.getChildren())) {
@@ -245,7 +249,6 @@ export class Generator {
     inner: string,
     option: Option
   ): string {
-
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
     if (positionalCssAttribtues["position"] === "absolute") {
@@ -254,10 +257,13 @@ export class Generator {
     return inner;
   }
 
-  async generateCodeFromRepeatedComponents(nodes: Node[],
-    option: Option): Promise<string> {
+  async generateCodeFromRepeatedComponents(
+    nodes: Node[],
+    option: Option
+  ): Promise<string> {
     const id: string = nodes[0].getId();
-    const component: Component = componentRegistryGlobalInstance.getComponentByNodeId(id);
+    const component: Component =
+      componentRegistryGlobalInstance.getComponentByNodeId(id);
     const dataArr: DataArr = component.getDataArr();
     const data: Data[] = component.getData(nodes);
 
@@ -281,13 +287,16 @@ export class Generator {
 
     let codeStr: string = "";
     if (renderInALoop) {
-
-      let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(data)};`;
+      let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(
+        data
+      )};`;
 
       let arrCodeStr: string = `{
         ${dataArr.name}.map(({
       ${Object.keys(sample).join(",")}
-        }) => <${component.getName()} ${generateProps(dataArr.fieldToPropBindings)} />)
+        }) => <${component.getName()} ${generateProps(
+        dataArr.fieldToPropBindings
+      )} />)
       }`;
 
       this.inFileData.push({
@@ -309,12 +318,15 @@ export class Generator {
   }
 }
 
-
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();
   let widthAndHeight: string = getWidthAndHeightVariableProp(node.getId());
 
-  if (isEmpty(widthAndHeight) && cssAttribtues["width"] && cssAttribtues["height"]) {
+  if (
+    isEmpty(widthAndHeight) &&
+    cssAttribtues["width"] &&
+    cssAttribtues["height"]
+  ) {
     return `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
   }
 
@@ -340,7 +352,6 @@ export const getSrcProp = (node: Node): string => {
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
-
 export const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
@@ -350,10 +361,8 @@ export const getAltProp = (node: Node): string => {
     return `{${prop}}`;
   }
 
-
   return `"${componentName}"`;
 };
-
 
 export const getTextProp = (node: Node): string => {
   const textNode: TextNode = node as TextNode;
@@ -366,8 +375,11 @@ export const getTextProp = (node: Node): string => {
   return textNode.getText();
 };
 
-
-export const createMiniReactFile = (componentCode: string, dataCode: string, arrCode: string) => {
+export const createMiniReactFile = (
+  componentCode: string,
+  dataCode: string,
+  arrCode: string
+) => {
   return `
   import React from "react"; 
   import "./style.css";

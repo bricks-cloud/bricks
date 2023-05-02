@@ -5,7 +5,10 @@ module.exports = {
   //     pattern: /./, // the '.' means 'everything'
   //   },
   // ],
-  content: ["./src/**/*.{html,js,tsx}"],
+  content: [
+    "./src/**/*.{html,js,tsx}",
+    'node_modules/flowbite-react/**/*.{js,jsx,ts,tsx}'
+  ],
   theme: {
     backgroundImage: {
       "dark-mask": `url('../src/assets/dark-mask.png')`,
@@ -19,5 +22,7 @@ module.exports = {
     },
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    require('flowbite/plugin')
+  ],
 };

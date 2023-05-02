@@ -1,10 +1,9 @@
 import { convertToCode, convertToCodeWithAi, scanCodeForSimilarNodes } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
-import { AMPLITUDE_API_KEY } from "../../env";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
 import { EVENT_ERROR } from "./analytics/amplitude";
 
-init(AMPLITUDE_API_KEY, figma.currentUser.id, {
+init(process.env.AMPLITUDE_API_KEY, figma.currentUser.id, {
   defaultTracking: {
     sessions: true,
     pageViews: true,
@@ -102,7 +101,7 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "reset-limit") {
-    await figma.clientStorage.setAsync("limit", 8);
+    await figma.clientStorage.setAsync("limit", 6);
   }
 
   if (msg.type === "set-last-reset") {
@@ -138,9 +137,12 @@ figma.ui.onmessage = async (msg) => {
 };
 
 figma.on("selectionchange", async () => {
-  figma.ui.postMessage({
-    type: "scan-for-ai-start",
-  });
+  const limit: number = await figma.clientStorage.getAsync("limit");
+  if (limit > 0) {
+    figma.ui.postMessage({
+      type: "scan-for-ai-start",
+    });
+  }
 
 
   figma.ui.postMessage({
@@ -149,19 +151,21 @@ figma.on("selectionchange", async () => {
     selectedComponents: figma.currentPage.selection.map((x) => x.name),
   });
 
-  const settings = await figma.clientStorage.getAsync("settings");
-  const option = {
-    language: settings.language,
-    cssFramework: settings.cssFramework,
-    uiFramework: settings.uiFramework,
-  };
+  if (limit > 0) {
+    const settings = await figma.clientStorage.getAsync("settings");
+    const option = {
+      language: settings.language,
+      cssFramework: settings.cssFramework,
+      uiFramework: settings.uiFramework,
+    };
 
-  figma.ui.postMessage({
-    type: "should-generate-with-ai",
-    shouldGenerateWithAi: scanCodeForSimilarNodes(figma.currentPage.selection, option),
-  });
+    figma.ui.postMessage({
+      type: "should-generate-with-ai",
+      shouldGenerateWithAi: await scanCodeForSimilarNodes(figma.currentPage.selection, option),
+    });
 
-  figma.ui.postMessage({
-    type: "scan-for-ai-end",
-  });
+    figma.ui.postMessage({
+      type: "scan-for-ai-end",
+    });
+  }
 });

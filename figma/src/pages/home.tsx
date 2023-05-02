@@ -10,6 +10,7 @@ import {
   EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
 } from "../analytics/amplitude";
 import Button from "../components/Button";
+import { Tooltip } from "flowbite-react";
 
 export interface Props {
   connectedToVSCode: boolean;
@@ -146,7 +147,31 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
-  const isGenerateWithAiButtonEnabled = isGenerateCodeButtonEnabled && canGenerateWithAi && selectedUiFramework === UiFramework.react;
+  const isGenerateWithAiButtonEnabled = isGenerateCodeButtonEnabled && canGenerateWithAi && selectedUiFramework === UiFramework.react && !isScanningForAi && limit > 0;
+  const generateWithAiButton = limit > 0 ?
+    <Button
+      onClick={handleGenerateCodeWithAiButtonClick}
+      loading={isScanningForAi}
+      disabled={!isGenerateWithAiButtonEnabled}
+    >
+      Generate Code With AI Beta {'('}{limit}{')'}
+    </Button> :
+    <Tooltip
+      content={<p
+        className="w-40 text-center">
+        This beta feature has a daily limits of 6 times. Reach out to spike@bricks-tech.com if you want more.
+      </p>}
+      trigger="hover"
+      arrow={false}
+    >
+      <Button
+        onClick={handleGenerateCodeWithAiButtonClick}
+        loading={isScanningForAi}
+        disabled={!isGenerateWithAiButtonEnabled}
+      >
+        Generate Code With AI Beta {'('}{limit}{')'}
+      </Button>
+    </Tooltip>;
 
   const getCenterContent = (isConnectedToVSCode: boolean) => {
     if (isConnectedToVSCode) {
@@ -209,13 +234,7 @@ const Home = (props: PropsWithChildren<Props>) => {
 
       <div className="h-36 w-full flex justify-center items-center">
         <div className="h-36 w-full flex flex-col justify-center items-center gap-4">
-          <Button
-            onClick={handleGenerateCodeWithAiButtonClick}
-            loading={isScanningForAi}
-            disabled={!isGenerateWithAiButtonEnabled || isScanningForAi || limit <= 0}
-          >
-            Generate Code With AI {'('}{limit}{')'}
-          </Button>
+          {generateWithAiButton}
           <Button
             onClick={handleGenerateCodeButtonClick}
             disabled={!isGenerateCodeButtonEnabled}

@@ -103,7 +103,7 @@ const UI = () => {
       "*"
     );
 
-    setLimit(8);
+    setLimit(6);
   };
 
   onmessage = async (event: MessageEvent) => {
@@ -147,6 +147,7 @@ const UI = () => {
     }
 
     if (pluginMessage.type === "get-last-reset") {
+      // 86400000 is one day 
       if (!!pluginMessage.reset && Date.now() - pluginMessage.reset > 86400000) {
         resetLimit();
       }
@@ -176,7 +177,7 @@ const UI = () => {
           "*"
         );
       }
-
+      
       setIsGeneratingCode(false);
       setIsGeneratingCodeWithAi(false);
 

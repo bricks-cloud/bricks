@@ -547,6 +547,29 @@ export class FigmaNodeAdapter {
       },
     };
   }
+
+  async export(exportFormat: ExportFormat): Promise<string> {
+    try {
+      switch (exportFormat) {
+        case ExportFormat.JPG: {
+          const buf = await this.node.exportAsync({ format: ExportFormat.JPG });
+          return base64js.fromByteArray(buf);
+        }
+        case ExportFormat.SVG: {
+          const buf = await this.node.exportAsync({ format: ExportFormat.SVG });
+          return String.fromCharCode.apply(null, new Uint16Array(buf));
+        }
+        case ExportFormat.PNG:
+        default: {
+          const buf = await this.node.exportAsync({ format: ExportFormat.PNG });
+          return base64js.fromByteArray(buf);
+        }
+      }
+    } catch (e) {
+      console.error("Error exporting node:", this.getOriginalId(), e);
+      return "";
+    }
+  }
 }
 
 export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
@@ -555,59 +578,17 @@ export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
     super(node);
     this.node = node;
   }
-
-  async export(exportFormat: ExportFormat): Promise<string> {
-    let svg: string = "";
-    if (exportFormat === ExportFormat.SVG) {
-      try {
-        const buf = await this.node.exportAsync({ format: ExportFormat.SVG });
-        svg = String.fromCharCode.apply(null, new Uint16Array(buf));
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    return svg;
-  }
 }
 
 export class FigmaVectorGroupNodeAdapter extends FigmaNodeAdapter {
   constructor(node: SceneNode) {
     super(node);
   }
-
-  async export(exportFormat: ExportFormat): Promise<string> {
-    let svg: string = "";
-    if (exportFormat === ExportFormat.SVG) {
-      try {
-        const buf = await this.node.exportAsync({ format: ExportFormat.SVG });
-        svg = String.fromCharCode.apply(null, new Uint16Array(buf));
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    return svg;
-  }
 }
 
 export class FigmaImageNodeAdapter extends FigmaNodeAdapter {
   constructor(node: SceneNode) {
     super(node);
-  }
-
-  async export(exportFormat: ExportFormat): Promise<string> {
-    let img: string = "";
-    if (exportFormat === ExportFormat.PNG) {
-      try {
-        const buf = await this.node.exportAsync({ format: ExportFormat.PNG });
-        img = base64js.fromByteArray(buf);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-
-    return img;
   }
 }
 
