@@ -36,21 +36,27 @@ const UI = () => {
 
   const setCurrentPageWithAdjustedScreenSize = (page: string) => {
     if (page === PAGES.SETTING || page === PAGES.POST_CODE_GENERATION) {
-      parent.postMessage({
-        pluginMessage: {
-          type: "adjust-plugin-screen-size",
-          height: 550,
-          width: 350,
-        }
-      }, "*");
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 550,
+            width: 350,
+          },
+        },
+        "*"
+      );
     } else {
-      parent.postMessage({
-        pluginMessage: {
-          type: "adjust-plugin-screen-size",
-          height: 375,
-          width: 350,
-        }
-      }, "*");
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 375,
+            width: 350,
+          },
+        },
+        "*"
+      );
     }
 
     setCurrentPage(page);
@@ -81,7 +87,6 @@ const UI = () => {
       socket.off("pong");
     };
   }, []);
-
 
   const resetLimit = () => {
     console.log("called!!!");
@@ -147,8 +152,11 @@ const UI = () => {
     }
 
     if (pluginMessage.type === "get-last-reset") {
-      // 86400000 is one day 
-      if (!!pluginMessage.reset && Date.now() - pluginMessage.reset > 86400000) {
+      // 86400000 is one day
+      if (
+        !!pluginMessage.reset &&
+        Date.now() - pluginMessage.reset > 86400000
+      ) {
         resetLimit();
       }
     }
@@ -177,7 +185,7 @@ const UI = () => {
           "*"
         );
       }
-      
+
       setIsGeneratingCode(false);
       setIsGeneratingCodeWithAi(false);
 

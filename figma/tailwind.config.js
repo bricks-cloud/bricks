@@ -7,7 +7,7 @@ module.exports = {
   // ],
   content: [
     "./src/**/*.{html,js,tsx}",
-    'node_modules/flowbite-react/**/*.{js,jsx,ts,tsx}'
+    "node_modules/flowbite-react/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     backgroundImage: {
@@ -22,7 +22,5 @@ module.exports = {
     },
     extend: {},
   },
-  plugins: [
-    require('flowbite/plugin')
-  ],
+  plugins: [require("flowbite/plugin")],
 };

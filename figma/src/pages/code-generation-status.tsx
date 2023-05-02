@@ -18,7 +18,6 @@ const CodeGenerationStatus = ({
     }
   }, [isGeneratingCode, isGeneratingCodeWithAi]);
 
-
   const generatingCodeText = isGeneratingCodeWithAi ? (
     <p className="font-vietnam text-black font-bold text-lg text-center">
       Generating Code With AI. <br />
@@ -26,9 +25,7 @@ const CodeGenerationStatus = ({
       Please wait patiently.
     </p>
   ) : (
-    <p className="font-vietnam text-black font-bold text-lg">
-      Generating Code
-    </p>
+    <p className="font-vietnam text-black font-bold text-lg">Generating Code</p>
   );
 
   return (

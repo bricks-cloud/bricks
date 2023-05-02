@@ -1,4 +1,8 @@
-import { convertToCode, convertToCodeWithAi, scanCodeForSimilarNodes } from "bricks-core/src";
+import {
+  convertToCode,
+  convertToCodeWithAi,
+  scanCodeForSimilarNodes,
+} from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
 import { EVENT_ERROR } from "./analytics/amplitude";
@@ -84,7 +88,6 @@ figma.ui.onmessage = async (msg) => {
     const limit = await figma.clientStorage.getAsync("limit");
     await figma.clientStorage.setAsync("limit", limit - 1);
 
-
     figma.ui.postMessage({
       type: "decrease-limit",
       limit: limit - 1,
@@ -144,7 +147,6 @@ figma.on("selectionchange", async () => {
     });
   }
 
-
   figma.ui.postMessage({
     type: "selection-change",
     isComponentSelected: figma.currentPage.selection.length > 0,
@@ -161,7 +163,10 @@ figma.on("selectionchange", async () => {
 
     figma.ui.postMessage({
       type: "should-generate-with-ai",
-      shouldGenerateWithAi: await scanCodeForSimilarNodes(figma.currentPage.selection, option),
+      shouldGenerateWithAi: await scanCodeForSimilarNodes(
+        figma.currentPage.selection,
+        option
+      ),
     });
 
     figma.ui.postMessage({

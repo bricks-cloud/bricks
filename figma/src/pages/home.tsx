@@ -20,7 +20,7 @@ export interface Props {
   isComponentSelected: boolean;
   isScanningForAi: boolean;
   canGenerateWithAi: boolean;
-  limit: number,
+  limit: number;
   setIsGeneratingCodeWithAi: (value: boolean) => void;
   setIsGeneratingCode: (value: boolean) => void;
 }
@@ -147,31 +147,45 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
-  const isGenerateWithAiButtonEnabled = isGenerateCodeButtonEnabled && canGenerateWithAi && selectedUiFramework === UiFramework.react && !isScanningForAi && limit > 0;
-  const generateWithAiButton = limit > 0 ?
-    <Button
-      onClick={handleGenerateCodeWithAiButtonClick}
-      loading={isScanningForAi}
-      disabled={!isGenerateWithAiButtonEnabled}
-    >
-      Generate Code With AI Beta {'('}{limit}{')'}
-    </Button> :
-    <Tooltip
-      content={<p
-        className="w-40 text-center">
-        This beta feature has a daily limits of 6 times. Reach out to spike@bricks-tech.com if you want more.
-      </p>}
-      trigger="hover"
-      arrow={false}
-    >
+  const isGenerateWithAiButtonEnabled =
+    isGenerateCodeButtonEnabled &&
+    canGenerateWithAi &&
+    selectedUiFramework === UiFramework.react &&
+    !isScanningForAi &&
+    limit > 0;
+  const generateWithAiButton =
+    limit > 0 ? (
       <Button
         onClick={handleGenerateCodeWithAiButtonClick}
         loading={isScanningForAi}
         disabled={!isGenerateWithAiButtonEnabled}
       >
-        Generate Code With AI Beta {'('}{limit}{')'}
+        Generate Code With AI Beta {"("}
+        {limit}
+        {")"}
       </Button>
-    </Tooltip>;
+    ) : (
+      <Tooltip
+        content={
+          <p className="w-40 text-center">
+            This beta feature has a daily limits of 6 times. Reach out to
+            spike@bricks-tech.com if you want more.
+          </p>
+        }
+        trigger="hover"
+        arrow={false}
+      >
+        <Button
+          onClick={handleGenerateCodeWithAiButtonClick}
+          loading={isScanningForAi}
+          disabled={!isGenerateWithAiButtonEnabled}
+        >
+          Generate Code With AI Beta {"("}
+          {limit}
+          {")"}
+        </Button>
+      </Tooltip>
+    );
 
   const getCenterContent = (isConnectedToVSCode: boolean) => {
     if (isConnectedToVSCode) {
@@ -224,9 +238,7 @@ const Home = (props: PropsWithChildren<Props>) => {
   return (
     <div className="h-full w-full flex flex-col justify-between items-center pb-8">
       <div className="bg-gray-700 h-16 w-full p-6 flex items-center justify-between px-6 text-white">
-        <p className="font-vietnam font-bold text-xl mb-2 mt-2">
-          Bricks
-        </p>
+        <p className="font-vietnam font-bold text-xl mb-2 mt-2">Bricks</p>
         <img className="h-12" src={bricksLogo.default} />
       </div>
 
