@@ -158,7 +158,7 @@ const CodeOutputSetting: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="mt-6 mx-2 flex flex-col gap-8">
+        <div className="my-6 mx-2 flex flex-col gap-8">
           <RadioGroup
             value={selectedUiFramework}
             onChange={setSelectedUiFramework}
@@ -181,7 +181,7 @@ const CodeOutputSetting: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="h-36 w-full flex justify-center items-center">
+      <div className="h-36 w-full flex justify-center items-start">
         <Button type="button" onClick={handleSaveButtonClick}>
           Save
         </Button>

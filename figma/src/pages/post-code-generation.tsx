@@ -34,7 +34,7 @@ const PostCodeGeneration = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col justify-center items-center gap-12 pt-12">
+    <div className="h-full w-full flex flex-col justify-center items-center gap-6">
       <div className="max-w-xs mx-auto flex flex-col justify-between items-center">
         <p className="font-vietnam text-black font-bold text-lg mb-4 text-center">
           Your code is ready under <br /> "Bricks Generated Files"!
