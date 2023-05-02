@@ -84,6 +84,10 @@ figma.ui.onmessage = async (msg) => {
     figma.clientStorage.setAsync("settings", msg.settings);
   }
 
+  if (msg.type === "update-connection-status") {
+    figma.clientStorage.setAsync("connection-status", msg.connected);
+  }
+
   if (msg.type === "decrease-limit") {
     const limit = await figma.clientStorage.getAsync("limit");
     await figma.clientStorage.setAsync("limit", limit - 1);
@@ -141,7 +145,9 @@ figma.ui.onmessage = async (msg) => {
 
 figma.on("selectionchange", async () => {
   const limit: number = await figma.clientStorage.getAsync("limit");
-  if (limit > 0) {
+  const connected: boolean = await figma.clientStorage.getAsync("connection-status");
+
+  if (limit > 0 && connected) {
     figma.ui.postMessage({
       type: "scan-for-ai-start",
     });
@@ -153,7 +159,7 @@ figma.on("selectionchange", async () => {
     selectedComponents: figma.currentPage.selection.map((x) => x.name),
   });
 
-  if (limit > 0) {
+  if (limit > 0 && connected) {
     const settings = await figma.clientStorage.getAsync("settings");
     const option = {
       language: settings.language,

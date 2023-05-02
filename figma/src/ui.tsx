@@ -69,12 +69,29 @@ const UI = () => {
 
     socket.on("connect", () => {
       setConnectedToVSCode(true);
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "update-connection-status",
+            connected: true,
+          },
+        },
+        "*"
+      );
       console.log("connected!");
     });
 
     socket.on("disconnect", () => {
       setConnectedToVSCode(false);
-      console.log("disconnected!");
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "update-connection-status",
+            connected: false,
+          },
+        },
+        "*"
+      );
     });
 
     socket.on("pong", () => {

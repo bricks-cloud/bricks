@@ -154,8 +154,40 @@ const Home = (props: PropsWithChildren<Props>) => {
     !isScanningForAi &&
     limit > 0;
 
-  const generateWithAiButton =
-    limit > 0 ? (
+
+  const getGenerateWithAiButton = () => {
+    if (!isGenerateWithAiButtonEnabled) {
+      let tooltipContent: string = `This beta feature only applies to potential buttons and repeated components that can render in a for loop. It has a daily limit of 6 times.`;
+
+      if (limit === 0) {
+        tooltipContent = `This beta feature has a daily limits of 6 times. Reach out to
+        spike@bricks-tech.com if you want more.`;
+      }
+
+      return (
+        <Tooltip
+          content={
+            <p className="w-40 text-center">
+              {tooltipContent}
+            </p>
+          }
+          trigger="hover"
+          arrow={false}
+        >
+          <Button
+            onClick={handleGenerateCodeWithAiButtonClick}
+            loading={isScanningForAi}
+            disabled={!isGenerateWithAiButtonEnabled}
+          >
+            Generate Code With AI Beta {"("}
+            {limit}
+            {")"}
+          </Button>
+        </Tooltip>
+      );
+    }
+
+    return (
       <Button
         onClick={handleGenerateCodeWithAiButtonClick}
         loading={isScanningForAi}
@@ -165,28 +197,8 @@ const Home = (props: PropsWithChildren<Props>) => {
         {limit}
         {")"}
       </Button>
-    ) : (
-      <Tooltip
-        content={
-          <p className="w-40 text-center">
-            This beta feature has a daily limits of 6 times. Reach out to
-            spike@bricks-tech.com if you want more.
-          </p>
-        }
-        trigger="hover"
-        arrow={false}
-      >
-        <Button
-          onClick={handleGenerateCodeWithAiButtonClick}
-          loading={isScanningForAi}
-          disabled={!isGenerateWithAiButtonEnabled}
-        >
-          Generate Code With AI Beta {"("}
-          {limit}
-          {")"}
-        </Button>
-      </Tooltip>
     );
+  };
 
   const getCenterContent = (isConnectedToVSCode: boolean) => {
     if (isConnectedToVSCode) {
@@ -247,17 +259,17 @@ const Home = (props: PropsWithChildren<Props>) => {
 
       <div className="h-36 w-full flex justify-center items-center">
         <div className="h-36 w-full flex flex-col justify-center items-center gap-4">
-          {generateWithAiButton}
+          {getGenerateWithAiButton()}
           <Button
             onClick={handleGenerateCodeButtonClick}
             disabled={!isGenerateCodeButtonEnabled}
           >
             Generate Code
           </Button>
-          <Button onClick={handleOutputSettingButtonClick} secondary>
+          {connectedToVSCode ? <Button onClick={handleOutputSettingButtonClick} secondary>
             <img className="h-4 mr-2" src={settingsLogo.default} />
             Output Setting
-          </Button>
+          </Button> : null}
         </div>
       </div>
     </div >
