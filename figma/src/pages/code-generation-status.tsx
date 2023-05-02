@@ -3,25 +3,35 @@ import PageContext, { PAGES } from "../context/page-context";
 
 export interface Props {
   isGeneratingCode: boolean;
+  isGeneratingCodeWithAi: boolean;
 }
 
 const CodeGenerationStatus = ({
   isGeneratingCode,
+  isGeneratingCodeWithAi,
 }: PropsWithChildren<Props>) => {
   const { setCurrentPage } = useContext(PageContext);
 
   useEffect(() => {
-    if (!isGeneratingCode) {
+    if (!isGeneratingCode && !isGeneratingCodeWithAi) {
       setCurrentPage(PAGES.POST_CODE_GENERATION);
     }
-  }, [isGeneratingCode]);
+  }, [isGeneratingCode, isGeneratingCodeWithAi]);
+
+  const generatingCodeText = isGeneratingCodeWithAi ? (
+    <p className="font-vietnam text-black font-bold text-lg text-center">
+      Generating Code With AI. <br />
+      This could take up to 1 minute. <br />
+      Please wait patiently.
+    </p>
+  ) : (
+    <p className="font-vietnam text-black font-bold text-lg">Generating Code</p>
+  );
 
   return (
-    <div className="h-full w-full flex flex-col justify-between items-center">
-      <div className="mt-60 flex flex-col justify-between items-center">
-        <p className="font-vietnam text-black font-bold text-lg mb-6">
-          Generating Code
-        </p>
+    <div className="h-full w-full flex flex-col justify-center items-center">
+      <div className="flex flex-col justify-between items-center gap-6">
+        {generatingCodeText}
         <svg
           aria-hidden="true"
           className="w-12 h-12 text-blue-300 animate-spin fill-blue-600"
@@ -39,11 +49,10 @@ const CodeGenerationStatus = ({
           />
         </svg>
         <span className="sr-only">Loading...</span>
+        <p className="font-vietnam text-sm text-gray-400">
+          Analyzing your Figma frame...
+        </p>
       </div>
-
-      <p className="font-vietnam text-sm text-gray-400 mb-20">
-        Analyzing your Figma frame...
-      </p>
     </div>
   );
 };

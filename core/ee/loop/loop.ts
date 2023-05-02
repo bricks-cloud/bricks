@@ -3,24 +3,25 @@ import uuid from "react-native-uuid";
 import { Node, NodeType, TextNode } from "../../src/bricks/node";
 import { isEmpty } from "../../src/utils";
 import { Component, gatherPropsFromSimilarNodes } from "./component";
-import { instantiatePropRegistryGlobalInstance } from "./prop-registry";
-import { instantiateComponentRegistryGlobalInstance, componentRegistryGlobalInstance } from "./component-registry";
+import { componentRegistryGlobalInstance } from "./component-registry";
 import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
 import { UiFramework } from "../../src/code/code";
-import { instantiateCodeSampleRegistryGlobalInstance } from "./code-sample-registry";
-import { instantiateDataArrRegistryGlobalInstance } from "./data-array-registry";
 
 export const vectorGroupAnnotation: string = "vectorGroup";
 export const registerRepeatedComponents = (node: Node) => {
-  instantiateCodeSampleRegistryGlobalInstance();
-  instantiateDataArrRegistryGlobalInstance();
-  instantiatePropRegistryGlobalInstance();
-  instantiateComponentRegistryGlobalInstance();
-
   if (optionRegistryGlobalInstance.getOption().uiFramework === UiFramework.react) {
     annotateVectorGroupNodes(node);
     registerComponentFromNodes(node);
   }
+};
+
+export const detectWhetherSimilarNodesExist = (node: Node): boolean => {
+  if (optionRegistryGlobalInstance.getOption().uiFramework === UiFramework.react) {
+    annotateVectorGroupNodes(node);
+    return doSimilarNodesExist(node);
+  }
+
+  return false;
 };
 
 export const registerComponentFromNodes = (node: Node) => {
@@ -38,6 +39,26 @@ export const registerComponentFromNodes = (node: Node) => {
 
     registerComponentFromNodes(child);
   }
+};
+
+export const doSimilarNodesExist = (node: Node): boolean => {
+  if (node.getType() === NodeType.VECTOR_GROUP) {
+    return false;
+  }
+
+  const result: boolean = areChildrenSimilarNodes(node);
+  if (result) {
+    return result;
+  }
+
+  const children: Node[] = node.getChildren();
+  for (const child of children) {
+    if(doSimilarNodesExist(child)) {
+      return true;
+    };
+  }
+
+  return false;
 };
 
 export const annotateVectorGroupNodes = (node: Node): boolean => {
@@ -144,6 +165,59 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
   }
 
   return;
+};
+
+export const areChildrenSimilarNodes = (node: Node): boolean => {
+  const children = node.getChildren();
+  if (children.length === 0) {
+    return false;
+  }
+
+  if (children.length === 1) {
+    return false;
+  }
+
+  let modelNode: Node = children[0];
+  const consecutiveNodeIds: Set<string> = new Set<string>();
+  let consecutiveNodes: Node[] = [];
+  for (let i = 0; i < children.length; i++) {
+    const currentNode = children[i];
+    if (currentNode.getId() === modelNode.getId()) {
+      continue;
+    }
+
+    const [result, _]: [boolean, string] = areTwoNodesSimilar(currentNode, modelNode);
+
+    if (!result) {
+
+      modelNode = currentNode;
+
+      if (consecutiveNodes.length > 2) {
+        if (registerComponentForConsecutiveNodes(consecutiveNodes)) {
+          return true;
+        }
+      }
+
+      consecutiveNodes = [];
+      continue;
+    }
+
+    if (!consecutiveNodeIds.has(modelNode.getId())) {
+      consecutiveNodeIds.add(modelNode.getId());
+      consecutiveNodes.push(modelNode);
+    }
+
+    consecutiveNodeIds.add(currentNode.getId());
+    consecutiveNodes.push(currentNode);
+  }
+
+  if (consecutiveNodes.length > 2) {
+    if (registerComponentForConsecutiveNodes(consecutiveNodes)) {
+      return true;
+    }
+  }
+
+  return false;
 };
 
 export const areAllNodesSimilar = (nodes: Node[]): boolean => {

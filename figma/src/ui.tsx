@@ -20,6 +20,10 @@ const UI = () => {
   const [previousPage, setPreviousPage] = useState(PAGES.HOME);
   const [connectedToVSCode, setConnectedToVSCode] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [isGeneratingCodeWithAi, setIsGeneratingCodeWithAi] = useState(false);
+  const [canGenerateWithAi, setCanGenerateWithAi] = useState(false);
+  const [isScanningForAi, setisScanningForAi] = useState(false);
+  const [limit, setLimit] = useState(0);
 
   // User settings
   const [selectedLanguage, setSelectedLanguage] = useState(Language.javascript);
@@ -30,8 +34,38 @@ const UI = () => {
     CssFramework.tailwindcss
   );
 
+  const setCurrentPageWithAdjustedScreenSize = (page: string) => {
+    if (page === PAGES.SETTING || page === PAGES.POST_CODE_GENERATION) {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 550,
+            width: 350,
+          },
+        },
+        "*"
+      );
+    } else {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 375,
+            width: 350,
+          },
+        },
+        "*"
+      );
+    }
+
+    setCurrentPage(page);
+  };
+
   useEffect(() => {
     parent.postMessage({ pluginMessage: { type: "get-settings" } }, "*");
+    parent.postMessage({ pluginMessage: { type: "get-limit" } }, "*");
+    parent.postMessage({ pluginMessage: { type: "get-last-reset" } }, "*");
 
     socket.on("connect", () => {
       setConnectedToVSCode(true);
@@ -54,6 +88,29 @@ const UI = () => {
     };
   }, []);
 
+  const resetLimit = () => {
+    console.log("called!!!");
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "set-last-reset",
+        },
+      },
+      "*"
+    );
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "reset-limit",
+        },
+      },
+      "*"
+    );
+
+    setLimit(6);
+  };
+
   onmessage = async (event: MessageEvent) => {
     const pluginMessage = event.data.pluginMessage;
 
@@ -72,18 +129,69 @@ const UI = () => {
       setSelectedCssFramework(settings.cssFramework);
     }
 
+    if (pluginMessage.type === "scan-for-ai-start") {
+      setisScanningForAi(true);
+    }
+
+    if (pluginMessage.type === "scan-for-ai-end") {
+      setisScanningForAi(false);
+    }
+
+    if (pluginMessage.type === "get-limit") {
+      if (Number.isInteger(pluginMessage.limit) && pluginMessage.limit >= 0) {
+        setLimit(pluginMessage.limit);
+      } else {
+        resetLimit();
+      }
+    }
+
+    if (pluginMessage.type === "decrease-limit") {
+      if (Number.isInteger(pluginMessage.limit) && pluginMessage.limit >= 0) {
+        setLimit(pluginMessage.limit);
+      }
+    }
+
+    if (pluginMessage.type === "get-last-reset") {
+      // 86400000 is one day
+      if (
+        !!pluginMessage.reset &&
+        Date.now() - pluginMessage.reset > 86400000
+      ) {
+        resetLimit();
+      }
+    }
+
+    if (pluginMessage.type === "should-generate-with-ai") {
+      setCanGenerateWithAi(pluginMessage.shouldGenerateWithAi);
+    }
+
     if (pluginMessage.type === "selection-change") {
       setIsComponentSelected(pluginMessage.isComponentSelected);
       setPreviousPage(currentPage);
-      setCurrentPage(PAGES.HOME);
+
+      if (!isGeneratingCodeWithAi) {
+        setCurrentPageWithAdjustedScreenSize(PAGES.HOME);
+      }
     }
 
     if (pluginMessage.type === "generated-files") {
+      if (isGeneratingCodeWithAi) {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "decrease-limit",
+            },
+          },
+          "*"
+        );
+      }
+
       setIsGeneratingCode(false);
+      setIsGeneratingCodeWithAi(false);
 
       if (pluginMessage.error) {
         // Error from Bricks core
-        setCurrentPage(PAGES.ERROR);
+        setCurrentPageWithAdjustedScreenSize(PAGES.ERROR);
         return;
       }
 
@@ -110,7 +218,7 @@ const UI = () => {
                 "*"
               );
 
-              setCurrentPage(PAGES.ERROR);
+              setCurrentPageWithAdjustedScreenSize(PAGES.ERROR);
             }
           },
           () => {
@@ -130,7 +238,7 @@ const UI = () => {
               },
               "*"
             );
-            setCurrentPage(PAGES.ERROR);
+            setCurrentPageWithAdjustedScreenSize(PAGES.ERROR);
           },
           // set timeout
           TIMEOUT_SECONDS * 1000
@@ -146,7 +254,7 @@ const UI = () => {
         previousPage: previousPage,
         setCurrentPage: (page: string) => {
           setPreviousPage(currentPage);
-          setCurrentPage(page);
+          setCurrentPageWithAdjustedScreenSize(page);
         },
       }}
     >
@@ -155,9 +263,13 @@ const UI = () => {
           <Home
             connectedToVSCode={connectedToVSCode}
             isComponentSelected={isComponentSelected}
+            canGenerateWithAi={canGenerateWithAi}
+            isScanningForAi={isScanningForAi}
             selectedUiFramework={selectedUiFramework}
             selectedCssFramework={selectedCssFramework}
             selectedLanguage={selectedLanguage}
+            limit={limit}
+            setIsGeneratingCodeWithAi={setIsGeneratingCodeWithAi}
             setIsGeneratingCode={setIsGeneratingCode}
           />
         )}
@@ -172,7 +284,10 @@ const UI = () => {
           />
         )}
         {currentPage === PAGES.CODE_GENERATION && (
-          <CodeGenerationStatus isGeneratingCode={isGeneratingCode} />
+          <CodeGenerationStatus
+            isGeneratingCode={isGeneratingCode}
+            isGeneratingCodeWithAi={isGeneratingCodeWithAi}
+          />
         )}
         {currentPage === PAGES.POST_CODE_GENERATION && <PostCodeGeneration />}
         {currentPage === PAGES.ERROR && <Error />}

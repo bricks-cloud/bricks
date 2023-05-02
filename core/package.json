@@ -20,6 +20,7 @@
   "dependencies": {
     "@amplitude/analytics-browser": "^1.9.4",
     "base64-js": "^1.5.1",
+    "dotenv": "^16.0.3",
     "lodash": "^4.17.21",
     "prettier": "^2.8.4",
     "react-native-uuid": "^2.0.1"

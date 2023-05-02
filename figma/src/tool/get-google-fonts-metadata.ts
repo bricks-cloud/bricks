@@ -2,7 +2,6 @@ const https = require("https");
 const fs = require("fs");
 
 require("dotenv").config();
-
 const API_KEY = process.env.GOOGLE_FONTS_API_KEY;
 
 const options = {

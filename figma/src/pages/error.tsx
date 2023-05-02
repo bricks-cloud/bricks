@@ -12,10 +12,9 @@ const Error = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col justify-between items-center">
-      <img className="h-32 mt-36" src={errorIcon} />
-
-      <div className="p-6 mb-12 flex flex-col justify-between items-center">
+    <div className="h-full w-full flex flex-col justify-around items-center py-12">
+      <img className="h-32" src={errorIcon} />
+      <div className="p-6 flex flex-col justify-between items-center">
         <p className="font-vietnam text-black font-bold text-lg mb-4">
           Oh no! Something went wrong.
         </p>
@@ -31,7 +30,7 @@ const Error = () => {
         </p>
       </div>
 
-      <div className="h-36 w-full flex flex-col justify-center items-center mb-20">
+      <div className="h-36 w-full flex flex-col justify-center items-center">
         <Button onClick={handleDismissButtonClick} secondary>
           Dismiss
         </Button>

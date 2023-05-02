@@ -1,4 +1,4 @@
-import { useContext, PropsWithChildren } from "react";
+import { useContext, PropsWithChildren, useEffect } from "react";
 import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
@@ -7,8 +7,10 @@ import {
   EVENT_GENERATE_BUTTON_CLICK,
   EVENT_INSTALLATION_LINK_CLICK,
   EVENT_FAQ_LINK_CLICK,
+  EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
 } from "../analytics/amplitude";
 import Button from "../components/Button";
+import { Tooltip } from "flowbite-react";
 
 export interface Props {
   connectedToVSCode: boolean;
@@ -16,6 +18,10 @@ export interface Props {
   selectedCssFramework: CssFramework;
   selectedLanguage: Language;
   isComponentSelected: boolean;
+  isScanningForAi: boolean;
+  canGenerateWithAi: boolean;
+  limit: number;
+  setIsGeneratingCodeWithAi: (value: boolean) => void;
   setIsGeneratingCode: (value: boolean) => void;
 }
 
@@ -23,12 +29,15 @@ const Home = (props: PropsWithChildren<Props>) => {
   const {
     connectedToVSCode,
     isComponentSelected,
+    setIsGeneratingCodeWithAi,
+    isScanningForAi,
+    canGenerateWithAi,
+    limit,
     setIsGeneratingCode,
     selectedUiFramework,
     selectedCssFramework,
     selectedLanguage,
   } = props;
-
   const { setCurrentPage } = useContext(PageContext);
 
   const handleGenerateCodeButtonClick = () => {
@@ -53,6 +62,41 @@ const Home = (props: PropsWithChildren<Props>) => {
         pluginMessage: {
           type: "analytics",
           eventName: EVENT_GENERATE_BUTTON_CLICK,
+          eventProperties: {
+            language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+          },
+        },
+      },
+      "*"
+    );
+  };
+
+  const handleGenerateCodeWithAiButtonClick = () => {
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "generate-code-with-ai",
+          options: {
+            language: selectedLanguage,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+          },
+        },
+      },
+      "*"
+    );
+
+    setIsGeneratingCodeWithAi(true);
+    setIsGeneratingCode(true);
+    setCurrentPage(PAGES.CODE_GENERATION);
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "analytics",
+          eventName: EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
           eventProperties: {
             language: selectedLanguage,
             uiFramework: selectedUiFramework,
@@ -103,9 +147,45 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
-  const buttonColor = isGenerateCodeButtonEnabled
-    ? " bg-blue-700 hover:bg-blue-800"
-    : " bg-gray-300";
+  const isGenerateWithAiButtonEnabled =
+    isGenerateCodeButtonEnabled &&
+    canGenerateWithAi &&
+    selectedUiFramework === UiFramework.react &&
+    !isScanningForAi &&
+    limit > 0;
+  const generateWithAiButton =
+    limit > 0 ? (
+      <Button
+        onClick={handleGenerateCodeWithAiButtonClick}
+        loading={isScanningForAi}
+        disabled={!isGenerateWithAiButtonEnabled}
+      >
+        Generate Code With AI Beta {"("}
+        {limit}
+        {")"}
+      </Button>
+    ) : (
+      <Tooltip
+        content={
+          <p className="w-40 text-center">
+            This beta feature has a daily limits of 6 times. Reach out to
+            spike@bricks-tech.com if you want more.
+          </p>
+        }
+        trigger="hover"
+        arrow={false}
+      >
+        <Button
+          onClick={handleGenerateCodeWithAiButtonClick}
+          loading={isScanningForAi}
+          disabled={!isGenerateWithAiButtonEnabled}
+        >
+          Generate Code With AI Beta {"("}
+          {limit}
+          {")"}
+        </Button>
+      </Tooltip>
+    );
 
   const getCenterContent = (isConnectedToVSCode: boolean) => {
     if (isConnectedToVSCode) {
@@ -156,23 +236,17 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col justify-between items-center">
-      <div className="bg-dark-mask h-52 w-full bg-cover bg-right-bottom p-6 flex items-center justify-center text-white">
-        <div className="w-full mb-6 flex flex-col items-start justify-center">
-          <p className="font-vietnam font-bold text-2xl mb-4">
-            Welcome to Bricks
-          </p>
-          <p className="font-vietnam w-64 font-normal text-sm text-gray-300">
-            Auto transform Figma into code that can be used on the fly
-          </p>
-        </div>
-        <img className="h-16 mr-4" src={bricksLogo.default} />
+    <div className="h-full w-full flex flex-col justify-between items-center pb-8">
+      <div className="bg-gray-700 h-16 w-full p-6 flex items-center justify-between px-6 text-white">
+        <p className="font-vietnam font-bold text-xl mb-2 mt-2">Bricks</p>
+        <img className="h-12" src={bricksLogo.default} />
       </div>
 
       <div className="p-6">{getCenterContent(connectedToVSCode)}</div>
 
       <div className="h-36 w-full flex justify-center items-center">
         <div className="h-36 w-full flex flex-col justify-center items-center gap-4">
+          {generateWithAiButton}
           <Button
             onClick={handleGenerateCodeButtonClick}
             disabled={!isGenerateCodeButtonEnabled}
