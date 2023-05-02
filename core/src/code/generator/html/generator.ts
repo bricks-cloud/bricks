@@ -372,8 +372,29 @@ export const getTextProp = (node: Node): string => {
     return prop;
   }
 
-  return textNode.getText();
+  return escapeHtml(textNode.getText());
 };
+
+function escapeHtml(str: string) {
+  return str.replace(/[&<>"'{}]/g, function (match) {
+    switch (match) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&apos;";
+      case "{":
+        return "&#123;";
+      case "}":
+        return "&#125;";
+    }
+  });
+}
 
 export const createMiniReactFile = (
   componentCode: string,
