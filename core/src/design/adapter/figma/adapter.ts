@@ -16,8 +16,10 @@ import {
   rgbaToString,
   isFrameNodeTransparent,
   doesNodeContainsAnImage,
+  getMostCommonCssAttributeInString,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
+import { StyledTextSegment } from "../node";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -48,8 +50,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -288,6 +291,15 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // font size
     if (figmaNode.fontSize !== figma.mixed) {
       attributes["font-size"] = `${figmaNode.fontSize}px`;
+    } else {
+      const fontSizeWithLongestLength = getMostCommonCssAttributeInString(
+        figmaNode,
+        "fontSize"
+      );
+
+      if (fontSizeWithLongestLength) {
+        attributes["font-size"] = `${fontSizeWithLongestLength}px`;
+      }
     }
 
     // width and height
@@ -312,7 +324,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       Math.abs(
         figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
       ) /
-      figmaNode.absoluteBoundingBox.width >
+        figmaNode.absoluteBoundingBox.width >
       0.2
     ) {
       width = absoluteRenderBounds.width + 4;
@@ -622,6 +634,10 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
 
     // @ts-ignore
     return this.node.characters;
+  }
+
+  getStyledTextSegments(): StyledTextSegment[] {
+    return this.node.getStyledTextSegments(["fontSize"]);
   }
 }
 

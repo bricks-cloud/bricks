@@ -49,15 +49,15 @@ export class Generator {
   }
 
   async generateHtml(node: Node, option: Option): Promise<string> {
-    const importComponents: ImportedComponentMeta[] = [];
     const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
-      case NodeType.TEXT:
+      case NodeType.TEXT: {
         const textNodeClassProps = this.getProps(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
         const textProp = getTextProp(node);
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+      }
 
       case NodeType.GROUP:
         // this edge case should never happen
@@ -372,7 +372,24 @@ export const getTextProp = (node: Node): string => {
     return prop;
   }
 
-  return escapeHtml(textNode.getText());
+  const styledTextSegments = textNode.node.getStyledTextSegments();
+  console.log("styledTextSegments", styledTextSegments);
+  if (styledTextSegments.length > 0) {
+    // TODO: generate text from styled text segments
+    const defaultFontSize = textNode.getACssAttribute("font-size");
+    console.log("defaultFontSize", defaultFontSize);
+    return styledTextSegments
+      .map((styledTextSegment) =>
+        `${styledTextSegment.fontSize}px` === defaultFontSize
+          ? escapeHtml(styledTextSegment.characters)
+          : `<span style="font-size: ${
+              styledTextSegment.fontSize
+            }px">${escapeHtml(styledTextSegment.characters)}</span>`
+      )
+      .join("");
+  } else {
+    return escapeHtml(textNode.getText());
+  }
 };
 
 function escapeHtml(str: string) {
