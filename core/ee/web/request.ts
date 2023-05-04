@@ -45,16 +45,19 @@ export const getNameMap = async (): Promise<NameMap> => {
   }
 
   try {
-    const response: any = await fetch(process.env.ML_BACKEND_API_ENDPOINT + "/generate/name", {
-      method: 'POST',
-      body: JSON.stringify({
-        codeSamples: codeSampleRegistryGlobalInstance.getCodeSamples(),
-        uiFramework: codeSampleRegistryGlobalInstance.getUiFramework() as string,
-        cssFramework: codeSampleRegistryGlobalInstance.getCssFramework() as string,
-        userId: figma.currentUser.id,
-        username: figma.currentUser.name,
-      }),
-    });
+    const response: any = await fetch(
+      process.env.ML_BACKEND_API_ENDPOINT + "/generate/name", 
+      // "http://localhost:8080/generate/name",
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          codeSamples: codeSampleRegistryGlobalInstance.getCodeSamples(),
+          uiFramework: codeSampleRegistryGlobalInstance.getUiFramework() as string,
+          cssFramework: codeSampleRegistryGlobalInstance.getCssFramework() as string,
+          userId: figma.currentUser.id,
+          username: figma.currentUser.name,
+        }),
+      });
 
     const text: string = await response.text();
     const parsedArr: string[] = JSON.parse(text);

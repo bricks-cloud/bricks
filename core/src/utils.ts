@@ -1,3 +1,4 @@
+import { Identify, identify, track } from "@amplitude/analytics-browser";
 import { Node } from "./bricks/node";
 import { NameMap, File } from "./code/code";
 
@@ -9,6 +10,14 @@ export const isEmpty = (value: any): boolean => {
     (typeof value === "string" && value.trim().length === 0)
   );
 };
+
+export const trackEvent = (eventName: string, eventProperties: any) => {
+  const event = new Identify();
+  event.setOnce("username", figma.currentUser.name);
+  identify(event);
+  track(eventName, isEmpty(eventProperties) ? {} : eventProperties);
+};
+
 
 export const traverseNodes = async (
   node: Node,

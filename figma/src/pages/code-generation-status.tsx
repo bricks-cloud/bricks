@@ -1,19 +1,30 @@
 import { useEffect, useContext, PropsWithChildren } from "react";
 import PageContext, { PAGES } from "../context/page-context";
+import { GenerationMethod, UiFramework } from "../constants";
 
 export interface Props {
   isGeneratingCode: boolean;
   isGeneratingCodeWithAi: boolean;
+  selectedUiFramework: UiFramework;
+  limit: number,
+  selectedGenerationMethod: GenerationMethod;
 }
 
 const CodeGenerationStatus = ({
   isGeneratingCode,
   isGeneratingCodeWithAi,
+  selectedUiFramework,
+  limit,
+  selectedGenerationMethod,
 }: PropsWithChildren<Props>) => {
   const { setCurrentPage } = useContext(PageContext);
 
   useEffect(() => {
     if (!isGeneratingCode && !isGeneratingCodeWithAi) {
+      if (selectedGenerationMethod === GenerationMethod.withai && selectedUiFramework !== UiFramework.html && limit !== 0) {
+        setCurrentPage(PAGES.POST_CODE_GENERATION_AI);
+        return;
+      }
       setCurrentPage(PAGES.POST_CODE_GENERATION);
     }
   }, [isGeneratingCode, isGeneratingCodeWithAi]);

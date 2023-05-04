@@ -1,11 +1,10 @@
 import { Node, NodeType } from "../../src/bricks/node";
 import { ExportFormat } from "../../src/design/adapter/node";
 import { traverseNodes } from "../../src/utils";
+import { AiApplication, aiApplicationRegistryGlobalInstance } from "../ui/ai-application-registry";
 import { predictImage, predictText } from "../web/request";
 
-export const annotateNodeForHtmlTag = async (startingNode: Node): Promise<boolean> => {
-  let isAiUsed: boolean = false;
-
+export const annotateNodeForHtmlTag = async (startingNode: Node) => {
   try {
     const idImageMap: Record<string, string> = {};
     const idTextMap: Record<string, string> = {};
@@ -33,8 +32,8 @@ export const annotateNodeForHtmlTag = async (startingNode: Node): Promise<boolea
       return node?.getType() !== NodeType.VECTOR_GROUP;
     });
 
-    console.log("idImageMap", idImageMap);
-    console.log("idTextMap", idTextMap);
+    // console.log("idImageMap", idImageMap);
+    // console.log("idTextMap", idTextMap);
 
     const [predictImagesResult, predictTextsResult] = await Promise.allSettled([
       predictImage(idImageMap),
@@ -57,8 +56,8 @@ export const annotateNodeForHtmlTag = async (startingNode: Node): Promise<boolea
       console.error("Error with image prediction", predictTextsResult.reason);
     }
 
-    console.log("imagePredictions", imagePredictions);
-    console.log("textPredictions", textPredictions);
+    // console.log("imagePredictions", imagePredictions);
+    // console.log("textPredictions", textPredictions);
 
     await traverseNodes(startingNode, async (node) => {
       if (node.node) {
@@ -67,7 +66,7 @@ export const annotateNodeForHtmlTag = async (startingNode: Node): Promise<boolea
           imagePredictions[originalId] || textPredictions[originalId];
 
         if (predictedHtmlTag) {
-          isAiUsed = true;
+          aiApplicationRegistryGlobalInstance.addApplication(AiApplication.componentIdentification);
           node.addAnnotations("htmlTag", predictedHtmlTag);
           return predictedHtmlTag !== "a" && predictedHtmlTag !== "button";
         }
@@ -78,6 +77,4 @@ export const annotateNodeForHtmlTag = async (startingNode: Node): Promise<boolea
   } catch (e) {
     console.error("Error with image or text detection", e);
   }
-
-  return isAiUsed;
 };

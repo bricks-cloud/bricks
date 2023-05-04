@@ -1,11 +1,11 @@
 import {
   convertToCode,
   convertToCodeWithAi,
-  scanCodeForSimilarNodes,
 } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
-import { EVENT_ERROR } from "./analytics/amplitude";
+import { EVENT_ERROR } from "./analytic/amplitude";
+import { GenerationMethod } from "./constants";
 
 init(process.env.AMPLITUDE_API_KEY, figma.currentUser.id, {
   defaultTracking: {
@@ -16,14 +16,14 @@ init(process.env.AMPLITUDE_API_KEY, figma.currentUser.id, {
   },
 });
 
-function trackEvent(eventName: string, eventProperties: any) {
+export const trackEvent = (eventName: string, eventProperties: any) => {
   const event = new Identify();
   event.setOnce("username", figma.currentUser.name);
   identify(event);
   track(eventName, isEmpty(eventProperties) ? {} : eventProperties);
-}
+};
 
-figma.showUI(__html__, { height: 375, width: 350 });
+figma.showUI(__html__, { height: 300, width: 350 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "styled-bricks-nodes") {
@@ -55,7 +55,7 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "generate-code-with-ai") {
     try {
-      const files = await convertToCodeWithAi(figma.currentPage.selection, {
+      const [files, applications] = await convertToCodeWithAi(figma.currentPage.selection, {
         language: msg.options.language,
         cssFramework: msg.options.cssFramework,
         uiFramework: msg.options.uiFramework,
@@ -64,6 +64,7 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: "generated-files",
         files,
+        applications,
       });
     } catch (e) {
       console.error("Error from Figma core:\n", e.stack);
@@ -75,6 +76,7 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({
         type: "generated-files",
         files: [],
+        applications: [],
         error: true,
       });
     }
@@ -133,50 +135,29 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "get-settings") {
-    const settings = await figma.clientStorage.getAsync("settings");
+    let settings = await figma.clientStorage.getAsync("settings");
+
+    let generationMethod: GenerationMethod = GenerationMethod.withai;
+    if (settings.generationMethod) {
+      generationMethod = settings.generationMethod;
+    }
 
     figma.ui.postMessage({
       type: "settings",
       userId: figma.currentUser.id,
-      settings,
+      settings: {
+        ...settings,
+        generationMethod,
+      },
     });
   }
 };
 
 figma.on("selectionchange", async () => {
-  const limit: number = await figma.clientStorage.getAsync("limit");
-  const connected: boolean = await figma.clientStorage.getAsync("connection-status");
-
-  if (limit > 0 && connected) {
-    figma.ui.postMessage({
-      type: "scan-for-ai-start",
-    });
-  }
 
   figma.ui.postMessage({
     type: "selection-change",
     isComponentSelected: figma.currentPage.selection.length > 0,
     selectedComponents: figma.currentPage.selection.map((x) => x.name),
   });
-
-  if (limit > 0 && connected) {
-    const settings = await figma.clientStorage.getAsync("settings");
-    const option = {
-      language: settings.language,
-      cssFramework: settings.cssFramework,
-      uiFramework: settings.uiFramework,
-    };
-
-    figma.ui.postMessage({
-      type: "should-generate-with-ai",
-      shouldGenerateWithAi: await scanCodeForSimilarNodes(
-        figma.currentPage.selection,
-        option
-      ),
-    });
-
-    figma.ui.postMessage({
-      type: "scan-for-ai-end",
-    });
-  }
 });

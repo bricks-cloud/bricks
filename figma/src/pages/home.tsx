@@ -1,14 +1,13 @@
-import { useContext, PropsWithChildren, useEffect } from "react";
-import * as bricksLogo from "../assets/bricks-logo-without-bg.png";
+import { useContext, PropsWithChildren } from "react";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
-import { CssFramework, UiFramework, Language } from "../constants";
+import { CssFramework, UiFramework, Language, GenerationMethod } from "../constants";
 import {
   EVENT_GENERATE_BUTTON_CLICK,
   EVENT_INSTALLATION_LINK_CLICK,
   EVENT_FAQ_LINK_CLICK,
   EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
-} from "../analytics/amplitude";
+} from "../analytic/amplitude";
 import Button from "../components/Button";
 import { Tooltip } from "flowbite-react";
 
@@ -18,8 +17,7 @@ export interface Props {
   selectedCssFramework: CssFramework;
   selectedLanguage: Language;
   isComponentSelected: boolean;
-  isScanningForAi: boolean;
-  canGenerateWithAi: boolean;
+  selectedGenerationMethod: GenerationMethod;
   limit: number;
   setIsGeneratingCodeWithAi: (value: boolean) => void;
   setIsGeneratingCode: (value: boolean) => void;
@@ -30,12 +28,11 @@ const Home = (props: PropsWithChildren<Props>) => {
     connectedToVSCode,
     isComponentSelected,
     setIsGeneratingCodeWithAi,
-    isScanningForAi,
-    canGenerateWithAi,
     limit,
     setIsGeneratingCode,
     selectedUiFramework,
     selectedCssFramework,
+    selectedGenerationMethod,
     selectedLanguage,
   } = props;
   const { setCurrentPage } = useContext(PageContext);
@@ -147,55 +144,25 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
-  const isGenerateWithAiButtonEnabled =
-    isGenerateCodeButtonEnabled &&
-    canGenerateWithAi &&
-    selectedUiFramework === UiFramework.react &&
-    !isScanningForAi &&
-    limit > 0;
 
-
-  const getGenerateWithAiButton = () => {
-    if (!isGenerateWithAiButtonEnabled) {
-      let tooltipContent: string = `This beta feature only applies to potential buttons and repeated components that can render in a for loop. It has a daily limit of 6 times.`;
-
-      if (limit === 0) {
-        tooltipContent = `This beta feature has a daily limits of 6 times. Reach out to
-        spike@bricks-tech.com if you want more.`;
-      }
-
+  const getGenerateCodeButton = () => {
+    if (selectedGenerationMethod === GenerationMethod.withai && limit > 0 && selectedUiFramework !== UiFramework.html) {
       return (
-        <Tooltip
-          content={
-            <p className="w-40 text-center">
-              {tooltipContent}
-            </p>
-          }
-          trigger="hover"
-          arrow={false}
+        <Button
+          onClick={handleGenerateCodeWithAiButtonClick}
+          disabled={!isGenerateCodeButtonEnabled}
         >
-          <Button
-            onClick={handleGenerateCodeWithAiButtonClick}
-            loading={isScanningForAi}
-            disabled={!isGenerateWithAiButtonEnabled}
-          >
-            Generate Code With AI Beta {"("}
-            {limit}
-            {")"}
-          </Button>
-        </Tooltip>
+          Generate Code With AI
+        </Button>
       );
     }
 
     return (
       <Button
-        onClick={handleGenerateCodeWithAiButtonClick}
-        loading={isScanningForAi}
-        disabled={!isGenerateWithAiButtonEnabled}
+        onClick={handleGenerateCodeButtonClick}
+        disabled={!isGenerateCodeButtonEnabled}
       >
-        Generate Code With AI Beta {"("}
-        {limit}
-        {")"}
+        Generate Code
       </Button>
     );
   };
@@ -248,30 +215,39 @@ const Home = (props: PropsWithChildren<Props>) => {
     );
   };
 
+  const ranOutOfAiCredits = limit === 0 ? (
+    <div className="h-16 border-t-2 font-vietnam text-sm text-gray-400 w-full flex justify-center items-start pt-3">
+      Ran out of daily AI credits?<span>&nbsp;</span>
+      <Tooltip
+        content={
+          <p className="w-40 text-center">
+            spike@bricks-tech.com
+          </p>
+        }
+        trigger="hover"
+        arrow={false}
+      >
+        <div className="underline">
+          Contact us.
+        </div>
+
+      </Tooltip>
+    </div>
+  ) : null;
+
   return (
-    <div className="h-full w-full flex flex-col justify-between items-center pb-8">
-      <div className="bg-gray-700 h-16 w-full p-6 flex items-center justify-between px-6 text-white">
-        <p className="font-vietnam font-bold text-xl mb-2 mt-2">Bricks</p>
-        <img className="h-12" src={bricksLogo.default} />
-      </div >
-
+    <div className="h-full w-full flex flex-col justify-between items-center">
       <div className="p-6">{getCenterContent(connectedToVSCode)}</div>
-
-      <div className="h-36 w-full flex justify-center items-center">
-        <div className="h-36 w-full flex flex-col justify-center items-center gap-4">
-          {getGenerateWithAiButton()}
-          <Button
-            onClick={handleGenerateCodeButtonClick}
-            disabled={!isGenerateCodeButtonEnabled}
-          >
-            Generate Code
-          </Button>
+      <div className="h-28 w-full flex justify-center items-center">
+        <div className="h-28 w-full flex flex-col justify-center items-center gap-4 mb-2">
+          {getGenerateCodeButton()}
           {connectedToVSCode ? <Button onClick={handleOutputSettingButtonClick} secondary>
             <img className="h-4 mr-2" src={settingsLogo.default} />
-            Output Setting
+            Setting
           </Button> : null}
         </div>
       </div>
+      {ranOutOfAiCredits}
     </div >
   );
 };
