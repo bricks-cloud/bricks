@@ -70,7 +70,7 @@ export const convertToCodeWithAi = async (
   let startAnnotateHtmlTag: number = Date.now();
   await annotateNodeForHtmlTag(startingNode);
   registerRepeatedComponents(startingNode);
-  let endAnnotateHtmlTag: number = Date.now() - start;
+  let endAnnotateHtmlTag: number = Date.now();
   trackEvent(EVENT_AI_COMPONENT_IDENTIFICATION_SUCCESS, {
     duration: endAnnotateHtmlTag - startAnnotateHtmlTag,
   });
@@ -90,8 +90,7 @@ export const convertToCodeWithAi = async (
   }
   replaceVariableNameWithinFile(files, nameMap);
 
-  let end: number = Date.now() - start;
-
+  let end: number = Date.now();
   trackEvent(EVENT_AI_CODE_GEN_SUCCESS, {
     duration: end - start,
   });
