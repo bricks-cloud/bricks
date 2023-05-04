@@ -1,21 +1,29 @@
 import React, { useContext } from "react";
 import { RadioGroup as BaseRadioGroup } from "@headlessui/react";
 import PageContext, { PAGES } from "../context/page-context";
-import { CssFramework, Language, Settings, UiFramework } from "../constants";
+import { CssFramework, GenerationMethod, Language, Settings, UiFramework } from "../constants";
 import * as logo from "../assets/arrow.png";
 import htmlLogo from "../assets/html-logo.svg";
+import lightbulbLogo from "../assets/light-bulb.svg";
+import lightbulbDarkLogo from "../assets/light-bulb-dark.svg";
 import reactLogo from "../assets/react-logo.svg";
 import cssLogo from "../assets/css-logo.svg";
 import tailwindcssLogo from "../assets/tailwindcss-logo.svg";
 import javascriptLogo from "../assets/javascript-logo.svg";
 import typescriptLogo from "../assets/typescript-logo.svg";
 import Button from "../components/Button";
+import { EVENT_SAVE_SETTINGS } from "../analytic/amplitude";
 
 type Option<T> = {
   id: T;
   name: string;
   logo: string;
 };
+
+const GenerationMethods: Option<GenerationMethod>[] = [
+  { id: GenerationMethod.withai, name: "With AI", logo: lightbulbLogo },
+  { id: GenerationMethod.withoutai, name: "Without AI", logo: lightbulbDarkLogo },
+];
 
 const UiFrameworks: Option<UiFramework>[] = [
   { id: UiFramework.html, name: "HTML", logo: htmlLogo },
@@ -39,7 +47,8 @@ function classNames(...classes) {
 function updateSettings(
   uiFramework: string,
   cssFramework: string,
-  language: string
+  language: string,
+  generationMethod: string,
 ) {
   parent.postMessage(
     {
@@ -49,6 +58,7 @@ function updateSettings(
           uiFramework,
           cssFramework,
           language,
+          generationMethod,
         } as Settings,
       },
     },
@@ -88,7 +98,7 @@ const RadioGroup = ({
   value: string;
   onChange: (value: string) => void;
   label: string;
-  options: Option<Language | UiFramework | CssFramework>[];
+  options: Option<Language | UiFramework | CssFramework | GenerationMethod>[];
   disabled?: boolean;
 }) => (
   <BaseRadioGroup value={value} onChange={onChange} disabled={disabled}>
@@ -120,6 +130,9 @@ interface Props {
   setSelectedCssFramework: (value: CssFramework) => void;
   selectedLanguage: Language;
   setSelectedLanguage: (value: Language) => void;
+  selectedGenerationMethod: GenerationMethod;
+  limit: number;
+  setSelectedGenerationMethod: (value: GenerationMethod) => void;
 }
 
 const CodeOutputSetting: React.FC<Props> = ({
@@ -128,7 +141,10 @@ const CodeOutputSetting: React.FC<Props> = ({
   selectedCssFramework,
   setSelectedCssFramework,
   selectedLanguage,
+  limit,
   setSelectedLanguage,
+  selectedGenerationMethod,
+  setSelectedGenerationMethod
 }) => {
   const { previousPage, setCurrentPage } = useContext(PageContext);
 
@@ -137,8 +153,24 @@ const CodeOutputSetting: React.FC<Props> = ({
   };
 
   const handleSaveButtonClick = () => {
-    updateSettings(selectedUiFramework, selectedCssFramework, selectedLanguage);
+    updateSettings(selectedUiFramework, selectedCssFramework, selectedLanguage, selectedGenerationMethod);
     setCurrentPage(PAGES.HOME);
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "analytics",
+          eventName: EVENT_SAVE_SETTINGS,
+          eventProperties: {
+              uiFramework: selectedUiFramework,
+              cssFramework: selectedCssFramework,
+              language: selectedLanguage,
+              generationMethod: selectedGenerationMethod,
+          },
+        },
+      },
+      "*"
+    );
   };
 
   return (
@@ -159,6 +191,13 @@ const CodeOutputSetting: React.FC<Props> = ({
         </div>
 
         <div className="my-6 mx-2 flex flex-col gap-8">
+          <RadioGroup
+            value={selectedGenerationMethod}
+            onChange={setSelectedGenerationMethod}
+            label="Generation Method"
+            disabled={limit === 0 || selectedUiFramework === UiFramework.html}
+            options={GenerationMethods}
+          />
           <RadioGroup
             value={selectedUiFramework}
             onChange={setSelectedUiFramework}

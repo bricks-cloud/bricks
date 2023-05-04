@@ -3,7 +3,7 @@ import { useContext, useState } from "react";
 import demo from "../assets/bricks-demo.gif";
 import PageContext, { PAGES } from "../context/page-context";
 import Button from "../components/Button";
-import { EVENT_FEEDBACK } from "../analytics/amplitude";
+import { EVENT_FEEDBACK } from "../analytic/amplitude";
 
 const PostCodeGeneration = () => {
   const { setCurrentPage } = useContext(PageContext);

@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import "./style.css";
 import Home from "./pages/home";
+import PostCodeGenerationAi from "./pages/post-code-generation-ai";
 import PostCodeGeneration from "./pages/post-code-generation";
 import CodeGenerationStatus from "./pages/code-generation-status";
 import CodeOutputSetting from "./pages/code-output-setting";
 import Error from "./pages/error";
 import PageContext, { PAGES } from "./context/page-context";
 import { io } from "socket.io-client";
-import { CssFramework, Language, UiFramework } from "./constants";
+import { AiApplication, CssFramework, GenerationMethod, Language, UiFramework } from "./constants";
 import { withTimeout } from "./utils";
-import { EVENT_ERROR } from "./analytics/amplitude";
+import { EVENT_ERROR } from "./analytic/amplitude";
+import { isEmpty } from "bricks-core/src/utils";
 
 const socket = io("ws://localhost:32044");
 
@@ -21,8 +23,7 @@ const UI = () => {
   const [connectedToVSCode, setConnectedToVSCode] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingCodeWithAi, setIsGeneratingCodeWithAi] = useState(false);
-  const [canGenerateWithAi, setCanGenerateWithAi] = useState(false);
-  const [isScanningForAi, setisScanningForAi] = useState(false);
+  const [aiApplications, setAiApplications] = useState([AiApplication.componentIdentification, AiApplication.autoNaming]);
   const [limit, setLimit] = useState(0);
 
   // User settings
@@ -30,17 +31,53 @@ const UI = () => {
   const [selectedUiFramework, setSelectedUiFramework] = useState(
     UiFramework.react
   );
+  const [selectedGenerationMethod, setSelectedGenerationMethod] = useState(
+    GenerationMethod.withai
+  );
   const [selectedCssFramework, setSelectedCssFramework] = useState(
     CssFramework.tailwindcss
   );
 
   const setCurrentPageWithAdjustedScreenSize = (page: string) => {
-    if (page === PAGES.SETTING || page === PAGES.POST_CODE_GENERATION) {
+    if (page === PAGES.POST_CODE_GENERATION) {
       parent.postMessage(
         {
           pluginMessage: {
             type: "adjust-plugin-screen-size",
             height: 550,
+            width: 350,
+          },
+        },
+        "*"
+      );
+    } else if (page === PAGES.POST_CODE_GENERATION_AI) {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 300,
+            width: 350,
+          },
+        },
+        "*"
+      );
+    } else if (page === PAGES.SETTING) {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 680,
+            width: 350,
+          },
+        },
+        "*"
+      );
+    } else if (page === PAGES.HOME) {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "adjust-plugin-screen-size",
+            height: 300,
             width: 350,
           },
         },
@@ -141,20 +178,19 @@ const UI = () => {
         clearInterval(intervalId);
       }, 1000);
 
+      if (settings) {
+
+      }
+
       setSelectedLanguage(settings.language);
       setSelectedUiFramework(settings.uiFramework);
       setSelectedCssFramework(settings.cssFramework);
-    }
-
-    if (pluginMessage.type === "scan-for-ai-start") {
-      setisScanningForAi(true);
-    }
-
-    if (pluginMessage.type === "scan-for-ai-end") {
-      setisScanningForAi(false);
+      setSelectedGenerationMethod(settings.generationMethod);
     }
 
     if (pluginMessage.type === "get-limit") {
+      // resetLimit();
+
       if (Number.isInteger(pluginMessage.limit) && pluginMessage.limit >= 0) {
         setLimit(pluginMessage.limit);
       } else {
@@ -178,10 +214,6 @@ const UI = () => {
       }
     }
 
-    if (pluginMessage.type === "should-generate-with-ai") {
-      setCanGenerateWithAi(pluginMessage.shouldGenerateWithAi);
-    }
-
     if (pluginMessage.type === "selection-change") {
       setIsComponentSelected(pluginMessage.isComponentSelected);
       setPreviousPage(currentPage);
@@ -193,6 +225,10 @@ const UI = () => {
 
     if (pluginMessage.type === "generated-files") {
       if (isGeneratingCodeWithAi) {
+        setAiApplications(pluginMessage.applications);
+      }
+
+      if (!isEmpty(pluginMessage.applications)) {
         parent.postMessage(
           {
             pluginMessage: {
@@ -280,12 +316,11 @@ const UI = () => {
           <Home
             connectedToVSCode={connectedToVSCode}
             isComponentSelected={isComponentSelected}
-            canGenerateWithAi={canGenerateWithAi}
-            isScanningForAi={isScanningForAi}
             selectedUiFramework={selectedUiFramework}
             selectedCssFramework={selectedCssFramework}
             selectedLanguage={selectedLanguage}
             limit={limit}
+            selectedGenerationMethod={selectedGenerationMethod}
             setIsGeneratingCodeWithAi={setIsGeneratingCodeWithAi}
             setIsGeneratingCode={setIsGeneratingCode}
           />
@@ -297,16 +332,23 @@ const UI = () => {
             selectedCssFramework={selectedCssFramework}
             setSelectedCssFramework={setSelectedCssFramework}
             selectedLanguage={selectedLanguage}
+            limit={limit}
             setSelectedLanguage={setSelectedLanguage}
+            selectedGenerationMethod={selectedGenerationMethod}
+            setSelectedGenerationMethod={setSelectedGenerationMethod}
           />
         )}
         {currentPage === PAGES.CODE_GENERATION && (
           <CodeGenerationStatus
+            selectedGenerationMethod={selectedGenerationMethod}
+            selectedUiFramework={selectedUiFramework}
             isGeneratingCode={isGeneratingCode}
+            limit={limit}
             isGeneratingCodeWithAi={isGeneratingCodeWithAi}
           />
         )}
         {currentPage === PAGES.POST_CODE_GENERATION && <PostCodeGeneration />}
+        {currentPage === PAGES.POST_CODE_GENERATION_AI && <PostCodeGenerationAi limit={limit} aiApplications={aiApplications} />}
         {currentPage === PAGES.ERROR && <Error />}
       </div>
     </PageContext.Provider>
