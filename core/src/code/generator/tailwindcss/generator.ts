@@ -219,11 +219,11 @@ export const buildTwcssCssFileContent = () => {
     fontImportStatements = `@import url("${googleFontUrl}");`;
   }
 
-  const file = `@tailwind base;
+  const file = `${fontImportStatements}
+  @tailwind base;
   @tailwind components;
   @tailwind utilities;
-  ${fontImportStatements}
-  `;
+`;
 
   return file;
 };
