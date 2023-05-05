@@ -655,11 +655,24 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   }
 
   getStyledTextSegments(): StyledTextSegment[] {
-    return this.node.getStyledTextSegments([
+    const styledTextSegments = this.node.getStyledTextSegments([
       "fontSize",
       "fontName",
       "fontWeight",
+      "textDecoration",
     ]);
+
+    // for converting figma textDecoration to css textDecoration
+    const figmaToCssTextDecorationMap = {
+      STRIKETHROUGH: "line-through",
+      UNDERLINE: "underline",
+      NONE: "normal",
+    } as const;
+
+    return styledTextSegments.map((segment) => ({
+      ...segment,
+      textDecoration: figmaToCssTextDecorationMap[segment.textDecoration],
+    }));
   }
 }
 

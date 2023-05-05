@@ -360,6 +360,11 @@ export class Generator {
             overridingAttributes["font-weight"] = fontWeight;
           }
 
+          const textDecoration = styledTextSegment.textDecoration;
+          if (textDecoration !== "normal") {
+            overridingAttributes["text-decoration"] = textDecoration;
+          }
+
           const text = escapeHtml(styledTextSegment.characters);
           if (Object.keys(overridingAttributes).length === 0) {
             return text;

@@ -39,6 +39,7 @@ export interface StyledTextSegment {
     style: string;
   };
   fontWeight: number;
+  textDecoration: "normal" | "line-through" | "underline";
 }
 
 export interface TextNode extends Node {
