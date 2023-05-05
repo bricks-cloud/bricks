@@ -34,6 +34,11 @@ export interface StyledTextSegment {
   start: number;
   end: number;
   fontSize: number;
+  fontName: {
+    family: string;
+    style: string;
+  };
+  fontWeight: number;
 }
 
 export interface TextNode extends Node {

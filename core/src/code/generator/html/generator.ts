@@ -338,18 +338,34 @@ export class Generator {
 
     if (styledTextSegments.length > 0) {
       const defaultFontSize = textNode.getACssAttribute("font-size");
+      const defaultFontFamily = textNode.getACssAttribute("font-family");
+      const defaultFontWeight = textNode.getACssAttribute("font-weight");
 
       return styledTextSegments
         .map((styledTextSegment) => {
-          const text = escapeHtml(styledTextSegment.characters);
-          const fontSize = `${styledTextSegment.fontSize}px`;
+          const overridingAttributes: Attributes = {};
 
-          if (fontSize === defaultFontSize) {
-            return text;
+          const fontSize = `${styledTextSegment.fontSize}px`;
+          if (fontSize !== defaultFontSize) {
+            overridingAttributes["font-size"] = fontSize;
           }
 
+          const fontFamily = styledTextSegment.fontName.family;
+          if (fontFamily !== defaultFontFamily) {
+            overridingAttributes["font-family"] = fontFamily;
+          }
+
+          const fontWeight = styledTextSegment.fontWeight.toString();
+          if (fontWeight !== defaultFontWeight) {
+            overridingAttributes["font-weight"] = fontWeight;
+          }
+
+          const text = escapeHtml(styledTextSegment.characters);
+          if (Object.keys(overridingAttributes).length === 0) {
+            return text;
+          }
           const textNodeClassProps = this.getPropsFromAttributes(
-            { "font-size": fontSize },
+            overridingAttributes,
             option
           );
           return `<span ${textNodeClassProps}>${text}</span>`;

@@ -60,7 +60,7 @@ export const doesNodeContainsAnImage = (
   return false;
 };
 
-export function getMostCommonCssAttributeInString<
+export function getMostCommonFieldInString<
   T extends keyof Omit<StyledTextSegment, "characters" | "start" | "end">
 >(figmaTextNode: TextNode, field: T) {
   const styledTextSegments = figmaTextNode.getStyledTextSegments([field]);

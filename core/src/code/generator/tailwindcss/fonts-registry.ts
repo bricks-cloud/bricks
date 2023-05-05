@@ -13,11 +13,10 @@ export const buildFontMetadataMapWithTwcssAliases = (
     const alias = family.replaceAll(" ", "-");
     twcssMetadataMap[family] = {
       familyCss,
-      weights,
+      weights: weights.map((weight) => weight.toString()),
       isItalic,
       alias: alias.toLowerCase(),
     };
-
   });
 
   return twcssMetadataMap;
@@ -42,7 +41,8 @@ export class FontsRegistry {
   constructor(node: Node) {
     const fontMetadataMap = getFontsMetadata(node);
     this.googleFontUrl = computeGoogleFontURL(fontMetadataMap);
-    this.fontMetadataMap = buildFontMetadataMapWithTwcssAliases(fontMetadataMap);
+    this.fontMetadataMap =
+      buildFontMetadataMapWithTwcssAliases(fontMetadataMap);
   }
 
   getFontMetadataInArray(): TwcssFontMetadataWithAlias[] {

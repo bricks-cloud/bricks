@@ -16,7 +16,7 @@ import {
   rgbaToString,
   isFrameNodeTransparent,
   doesNodeContainsAnImage,
-  getMostCommonCssAttributeInString,
+  getMostCommonFieldInString,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { StyledTextSegment } from "../node";
@@ -286,13 +286,22 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
         fontFamily
       )}`;
+    } else {
+      const mostCommonFontName = getMostCommonFieldInString(
+        figmaNode,
+        "fontName"
+      );
+
+      if (mostCommonFontName) {
+        attributes["font-family"] = mostCommonFontName.family;
+      }
     }
 
     // font size
     if (figmaNode.fontSize !== figma.mixed) {
       attributes["font-size"] = `${figmaNode.fontSize}px`;
     } else {
-      const fontSizeWithLongestLength = getMostCommonCssAttributeInString(
+      const fontSizeWithLongestLength = getMostCommonFieldInString(
         figmaNode,
         "fontSize"
       );
@@ -467,6 +476,15 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // font weight
     if (figmaNode.fontWeight !== figma.mixed) {
       attributes["font-weight"] = figmaNode.fontWeight.toString();
+    } else {
+      const mostCommonFontWeight = getMostCommonFieldInString(
+        figmaNode,
+        "fontWeight"
+      );
+
+      if (mostCommonFontWeight) {
+        attributes["font-weight"] = mostCommonFontWeight.toString();
+      }
     }
 
     // font style
@@ -637,7 +655,11 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
   }
 
   getStyledTextSegments(): StyledTextSegment[] {
-    return this.node.getStyledTextSegments(["fontSize"]);
+    return this.node.getStyledTextSegments([
+      "fontSize",
+      "fontName",
+      "fontWeight",
+    ]);
   }
 }
 
