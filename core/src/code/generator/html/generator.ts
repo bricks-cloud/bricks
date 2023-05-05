@@ -20,7 +20,11 @@ import {
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
-export type GetProps = (node: Node, option: Option) => string;
+type GetPropsFromNode = (node: Node, option: Option) => string;
+type GetPropsFromAttributes = (
+  attributes: Attributes,
+  option: Option
+) => string;
 
 export type ImportedComponentMeta = {
   node: VectorGroupNode | VectorNode | ImageNode;
@@ -37,27 +41,32 @@ export type InFileDataMeta = {
 };
 
 export class Generator {
-  getProps: GetProps;
+  getPropsFromNode: GetPropsFromNode;
+  getPropsFromAttributes: GetPropsFromAttributes;
   inFileComponents: InFileComponentMeta[];
   inFileData: InFileDataMeta[];
 
-  constructor(getProps: GetProps) {
-    this.getProps = getProps;
+  constructor(
+    getPropsFromNode: GetPropsFromNode,
+    getPropsFromAttributes: GetPropsFromAttributes
+  ) {
+    this.getPropsFromNode = getPropsFromNode;
+    this.getPropsFromAttributes = getPropsFromAttributes;
 
     this.inFileComponents = [];
     this.inFileData = [];
   }
 
   async generateHtml(node: Node, option: Option): Promise<string> {
-    const importComponents: ImportedComponentMeta[] = [];
     const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
-      case NodeType.TEXT:
-        const textNodeClassProps = this.getProps(node, option);
+      case NodeType.TEXT: {
+        const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
-        const textProp = getTextProp(node);
+        const textProp = this.getText(node, option);
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+      }
 
       case NodeType.GROUP:
         // this edge case should never happen
@@ -65,7 +74,7 @@ export class Generator {
           return `<${htmlTag}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getProps(node, option);
+        const groupNodeClassProps = this.getPropsFromNode(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
           [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
@@ -73,7 +82,7 @@ export class Generator {
         );
 
       case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getProps(node, option);
+        const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
           return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
         }
@@ -241,7 +250,7 @@ export class Generator {
       "background-image": `url('./assets/${imageComponentName}.png')`,
     });
 
-    return [`<div ${this.getProps(node, option)}>`, `</div>`];
+    return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
   renderNodeWithAbsolutePosition(
@@ -252,7 +261,7 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
     if (positionalCssAttribtues["position"] === "absolute") {
-      return `<div ${this.getProps(node, option)}>` + inner + `</div>`;
+      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
     return inner;
   }
@@ -316,6 +325,56 @@ export class Generator {
 
     return codeStr;
   }
+
+  getText(node: Node, option: Option): string {
+    const textNode: TextNode = node as TextNode;
+
+    const prop: string = getTextVariableProp(node.getId());
+    if (!isEmpty(prop)) {
+      return prop;
+    }
+
+    const styledTextSegments = textNode.node.getStyledTextSegments();
+
+    if (styledTextSegments.length > 0) {
+      const defaultFontSize = textNode.getACssAttribute("font-size");
+      const defaultFontFamily = textNode.getACssAttribute("font-family");
+      const defaultFontWeight = textNode.getACssAttribute("font-weight");
+
+      return styledTextSegments
+        .map((styledTextSegment) => {
+          const overridingAttributes: Attributes = {};
+
+          const fontSize = `${styledTextSegment.fontSize}px`;
+          if (fontSize !== defaultFontSize) {
+            overridingAttributes["font-size"] = fontSize;
+          }
+
+          const fontFamily = styledTextSegment.fontName.family;
+          if (fontFamily !== defaultFontFamily) {
+            overridingAttributes["font-family"] = fontFamily;
+          }
+
+          const fontWeight = styledTextSegment.fontWeight.toString();
+          if (fontWeight !== defaultFontWeight) {
+            overridingAttributes["font-weight"] = fontWeight;
+          }
+
+          const text = escapeHtml(styledTextSegment.characters);
+          if (Object.keys(overridingAttributes).length === 0) {
+            return text;
+          }
+          const textNodeClassProps = this.getPropsFromAttributes(
+            overridingAttributes,
+            option
+          );
+          return `<span ${textNodeClassProps}>${text}</span>`;
+        })
+        .join("");
+    } else {
+      return escapeHtml(textNode.getText());
+    }
+  }
 }
 
 const getWidthAndHeightProp = (node: Node): string => {
@@ -333,7 +392,7 @@ const getWidthAndHeightProp = (node: Node): string => {
   return widthAndHeight;
 };
 
-export const getSrcProp = (node: Node): string => {
+const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
   let fileExtension: string = "svg";
@@ -352,7 +411,7 @@ export const getSrcProp = (node: Node): string => {
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
-export const getAltProp = (node: Node): string => {
+const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
 
@@ -364,18 +423,7 @@ export const getAltProp = (node: Node): string => {
   return `"${componentName}"`;
 };
 
-export const getTextProp = (node: Node): string => {
-  const textNode: TextNode = node as TextNode;
-
-  const prop: string = getTextVariableProp(node.getId());
-  if (!isEmpty(prop)) {
-    return prop;
-  }
-
-  return escapeHtml(textNode.getText());
-};
-
-function escapeHtml(str: string) {
+const escapeHtml = (str: string) => {
   return str.replace(/[&<>"'{}]/g, function (match) {
     switch (match) {
       case "&":
@@ -394,9 +442,9 @@ function escapeHtml(str: string) {
         return "&#125;";
     }
   });
-}
+};
 
-export const createMiniReactFile = (
+const createMiniReactFile = (
   componentCode: string,
   dataCode: string,
   arrCode: string

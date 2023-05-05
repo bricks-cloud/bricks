@@ -29,10 +29,23 @@ export interface Node {
   export(exportFormat: ExportFormat): Promise<string>;
 }
 
+export interface StyledTextSegment {
+  characters: string;
+  start: number;
+  end: number;
+  fontSize: number;
+  fontName: {
+    family: string;
+    style: string;
+  };
+  fontWeight: number;
+}
+
 export interface TextNode extends Node {
   getText(): string;
   isItalic(): boolean;
   getFamilyName(): string;
+  getStyledTextSegments(): StyledTextSegment[];
 }
 
 export interface VectorNode extends Node {}

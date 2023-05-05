@@ -10,9 +10,7 @@ import {
   convertCssClassesToTwcssClasses,
   getImageFileNameFromUrl,
 } from "./css-to-twcss";
-import {
-  FontsRegistryGlobalInstance,
-} from "./fonts-registry";
+import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -28,7 +26,10 @@ export class Generator {
   reactGenerator: ReactGenerator;
 
   constructor() {
-    this.htmlGenerator = new HtmlGenerator(getProps);
+    this.htmlGenerator = new HtmlGenerator(
+      getPropsFromNode,
+      convertCssClassesToTwcssClasses
+    );
     this.reactGenerator = new ReactGenerator();
   }
 
@@ -37,11 +38,14 @@ export class Generator {
     option: Option,
     mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const mainFileContent =
-      await this.htmlGenerator.generateHtml(node, option);
+    const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const importComponents: ImportedComponentMeta[] = extraFileRegistryGlobalInstance.getImportComponentMeta();
-    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+    const importComponents: ImportedComponentMeta[] =
+      extraFileRegistryGlobalInstance.getImportComponentMeta();
+    const [inFileComponents, inFileData]: [
+      InFileComponentMeta[],
+      InFileDataMeta[]
+    ] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
       return [
@@ -92,8 +96,7 @@ export class Generator {
 }
 
 // getProps converts a single node to formated tailwindcss classes
-const getProps = (node: Node, option: Option): string => {
-
+const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
       return convertCssClassesToTwcssClasses(
@@ -101,10 +104,10 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
           ...filterAttributes(node.getPositionalCssAttributes(), {
             absolutePositioningOnly: true,
-          })
+          }),
         },
-        node.getId(),
         option,
+        node.getId()
       );
     case NodeType.GROUP:
       return convertCssClassesToTwcssClasses(
@@ -112,8 +115,8 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
         option,
+        node.getId()
       );
     case NodeType.VISIBLE:
       return convertCssClassesToTwcssClasses(
@@ -121,8 +124,8 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
 
     case NodeType.IMAGE:
@@ -130,8 +133,8 @@ const getProps = (node: Node, option: Option): string => {
         filterAttributes(node.getPositionalCssAttributes(), {
           absolutePositioningOnly: true,
         }),
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
 
     case NodeType.VECTOR:
@@ -139,16 +142,16 @@ const getProps = (node: Node, option: Option): string => {
         filterAttributes(node.getPositionalCssAttributes(), {
           absolutePositioningOnly: true,
         }),
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
     case NodeType.VECTOR_GROUP:
       return convertCssClassesToTwcssClasses(
         filterAttributes(node.getPositionalCssAttributes(), {
           absolutePositioningOnly: true,
         }),
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
 
     default:
@@ -216,11 +219,11 @@ export const buildTwcssCssFileContent = () => {
     fontImportStatements = `@import url("${googleFontUrl}");`;
   }
 
-  const file = `@tailwind base;
+  const file = `${fontImportStatements}
+  @tailwind base;
   @tailwind components;
   @tailwind utilities;
-  ${fontImportStatements}
-  `;
+`;
 
   return file;
 };

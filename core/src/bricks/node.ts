@@ -470,7 +470,6 @@ export class VisibleNode extends BaseNode {
 }
 
 export class TextNode extends VisibleNode {
-  fontSource: string;
   node: AdaptedTextNode;
   constructor(node: AdaptedTextNode) {
     super(node);
@@ -487,14 +486,6 @@ export class TextNode extends VisibleNode {
 
   getAbsBoundingBox(): BoxCoordinates {
     return this.node.getAbsoluteBoundingBoxCoordinates();
-  }
-
-  getFontSource() {
-    return this.fontSource;
-  }
-
-  setFontSource(source: string) {
-    this.fontSource = source;
   }
 
   getText(): string {
