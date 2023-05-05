@@ -660,18 +660,29 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "fontName",
       "fontWeight",
       "textDecoration",
+      "textCase",
     ]);
 
     // for converting figma textDecoration to css textDecoration
-    const figmaToCssTextDecorationMap = {
+    const figmaTextDecorationToCssMap = {
       STRIKETHROUGH: "line-through",
       UNDERLINE: "underline",
       NONE: "normal",
     } as const;
 
+    const figmaTextCaseToCssTextTransformMap = {
+      ORIGINAL: "none",
+      SMALL_CAPS: "none", // TODO: support CSS font-variant-caps property
+      SMALL_CAPS_FORCED: "none", // TODO: support CSS font-variant-caps property
+      UPPER: "uppercase",
+      LOWER: "lowercase",
+      TITLE: "capitalize",
+    } as const;
+
     return styledTextSegments.map((segment) => ({
       ...segment,
-      textDecoration: figmaToCssTextDecorationMap[segment.textDecoration],
+      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
+      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
     }));
   }
 }

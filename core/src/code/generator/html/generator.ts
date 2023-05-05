@@ -365,6 +365,11 @@ export class Generator {
             overridingAttributes["text-decoration"] = textDecoration;
           }
 
+          const textTransform = styledTextSegment.textTransform;
+          if (textTransform !== "none") {
+            overridingAttributes["text-transform"] = textTransform;
+          }
+
           const text = escapeHtml(styledTextSegment.characters);
           if (Object.keys(overridingAttributes).length === 0) {
             return text;

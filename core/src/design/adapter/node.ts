@@ -40,6 +40,7 @@ export interface StyledTextSegment {
   };
   fontWeight: number;
   textDecoration: "normal" | "line-through" | "underline";
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
 }
 
 export interface TextNode extends Node {
