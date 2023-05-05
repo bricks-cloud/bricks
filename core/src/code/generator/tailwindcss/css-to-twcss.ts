@@ -21,8 +21,8 @@ import { Option, UiFramework } from "../../code";
 import { getVariablePropForTwcss } from "../../../../ee/code/prop";
 
 export type TwcssPropRenderingMeta = {
-  numberOfTwcssClasses: number,
-  filledClassIndexes: Set<number>,
+  numberOfTwcssClasses: number;
+  filledClassIndexes: Set<number>;
 };
 
 export type TwcssPropRenderingMap = {
@@ -32,15 +32,19 @@ export type TwcssPropRenderingMap = {
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
 export const convertCssClassesToTwcssClasses = (
   attributes: Attributes,
-  id: string,
   option: Option,
+  id?: string
 ): string => {
   let classPropName: string = "class";
   let variableProps: string = "";
   const twcssPropRenderingMap: TwcssPropRenderingMap = {};
 
   Object.entries(attributes).forEach(([property, value]) => {
-    const twcssClasses: string[] = getTwcssClass(property, value, attributes).split(" ");
+    const twcssClasses: string[] = getTwcssClass(
+      property,
+      value,
+      attributes
+    ).split(" ");
     twcssPropRenderingMap[property] = {
       numberOfTwcssClasses: twcssClasses.length,
       filledClassIndexes: new Set<number>(),
@@ -54,13 +58,19 @@ export const convertCssClassesToTwcssClasses = (
 
   let content: string = "";
   Object.entries(attributes).forEach(([property, value]) => {
-    const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[property];
-    if (twcssPropRenderingMeta.numberOfTwcssClasses === twcssPropRenderingMeta.filledClassIndexes.size) {
+    const twcssPropRenderingMeta: TwcssPropRenderingMeta =
+      twcssPropRenderingMap[property];
+    if (
+      twcssPropRenderingMeta.numberOfTwcssClasses ===
+      twcssPropRenderingMeta.filledClassIndexes.size
+    ) {
       return;
     }
 
     for (let i = 0; i < twcssPropRenderingMeta.numberOfTwcssClasses; i++) {
-      const parts: string[] = getTwcssClass(property, value, attributes).split(" ");
+      const parts: string[] = getTwcssClass(property, value, attributes).split(
+        " "
+      );
       if (twcssPropRenderingMeta.filledClassIndexes.has(i)) {
         continue;
       }

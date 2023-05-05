@@ -20,7 +20,11 @@ import {
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
-export type GetProps = (node: Node, option: Option) => string;
+type GetPropsFromNode = (node: Node, option: Option) => string;
+type GetPropsFromAttributes = (
+  attributes: Attributes,
+  option: Option
+) => string;
 
 export type ImportedComponentMeta = {
   node: VectorGroupNode | VectorNode | ImageNode;
@@ -37,12 +41,17 @@ export type InFileDataMeta = {
 };
 
 export class Generator {
-  getProps: GetProps;
+  getPropsFromNode: GetPropsFromNode;
+  getPropsFromAttributes: GetPropsFromAttributes;
   inFileComponents: InFileComponentMeta[];
   inFileData: InFileDataMeta[];
 
-  constructor(getProps: GetProps) {
-    this.getProps = getProps;
+  constructor(
+    getPropsFromNode: GetPropsFromNode,
+    getPropsFromAttributes: GetPropsFromAttributes
+  ) {
+    this.getPropsFromNode = getPropsFromNode;
+    this.getPropsFromAttributes = getPropsFromAttributes;
 
     this.inFileComponents = [];
     this.inFileData = [];
@@ -53,9 +62,9 @@ export class Generator {
 
     switch (node.getType()) {
       case NodeType.TEXT: {
-        const textNodeClassProps = this.getProps(node, option);
+        const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
-        const textProp = getTextProp(node);
+        const textProp = this.getText(node, option);
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
       }
 
@@ -65,7 +74,7 @@ export class Generator {
           return `<${htmlTag}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getProps(node, option);
+        const groupNodeClassProps = this.getPropsFromNode(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
           [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
@@ -73,7 +82,7 @@ export class Generator {
         );
 
       case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getProps(node, option);
+        const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
           return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
         }
@@ -241,7 +250,7 @@ export class Generator {
       "background-image": `url('./assets/${imageComponentName}.png')`,
     });
 
-    return [`<div ${this.getProps(node, option)}>`, `</div>`];
+    return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
   renderNodeWithAbsolutePosition(
@@ -252,7 +261,7 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
     if (positionalCssAttribtues["position"] === "absolute") {
-      return `<div ${this.getProps(node, option)}>` + inner + `</div>`;
+      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
     return inner;
   }
@@ -316,6 +325,40 @@ export class Generator {
 
     return codeStr;
   }
+
+  getText(node: Node, option: Option): string {
+    const textNode: TextNode = node as TextNode;
+
+    const prop: string = getTextVariableProp(node.getId());
+    if (!isEmpty(prop)) {
+      return prop;
+    }
+
+    const styledTextSegments = textNode.node.getStyledTextSegments();
+
+    if (styledTextSegments.length > 0) {
+      const defaultFontSize = textNode.getACssAttribute("font-size");
+
+      return styledTextSegments
+        .map((styledTextSegment) => {
+          const text = escapeHtml(styledTextSegment.characters);
+          const fontSize = `${styledTextSegment.fontSize}px`;
+
+          if (fontSize === defaultFontSize) {
+            return text;
+          }
+
+          const textNodeClassProps = this.getPropsFromAttributes(
+            { "font-size": fontSize },
+            option
+          );
+          return `<span ${textNodeClassProps}>${text}</span>`;
+        })
+        .join("");
+    } else {
+      return escapeHtml(textNode.getText());
+    }
+  }
 }
 
 const getWidthAndHeightProp = (node: Node): string => {
@@ -333,7 +376,7 @@ const getWidthAndHeightProp = (node: Node): string => {
   return widthAndHeight;
 };
 
-export const getSrcProp = (node: Node): string => {
+const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
   let fileExtension: string = "svg";
@@ -352,7 +395,7 @@ export const getSrcProp = (node: Node): string => {
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
-export const getAltProp = (node: Node): string => {
+const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
 
@@ -364,35 +407,7 @@ export const getAltProp = (node: Node): string => {
   return `"${componentName}"`;
 };
 
-export const getTextProp = (node: Node): string => {
-  const textNode: TextNode = node as TextNode;
-
-  const prop: string = getTextVariableProp(node.getId());
-  if (!isEmpty(prop)) {
-    return prop;
-  }
-
-  const styledTextSegments = textNode.node.getStyledTextSegments();
-  console.log("styledTextSegments", styledTextSegments);
-  if (styledTextSegments.length > 0) {
-    // TODO: generate text from styled text segments
-    const defaultFontSize = textNode.getACssAttribute("font-size");
-    console.log("defaultFontSize", defaultFontSize);
-    return styledTextSegments
-      .map((styledTextSegment) =>
-        `${styledTextSegment.fontSize}px` === defaultFontSize
-          ? escapeHtml(styledTextSegment.characters)
-          : `<span style="font-size: ${
-              styledTextSegment.fontSize
-            }px">${escapeHtml(styledTextSegment.characters)}</span>`
-      )
-      .join("");
-  } else {
-    return escapeHtml(textNode.getText());
-  }
-};
-
-function escapeHtml(str: string) {
+const escapeHtml = (str: string) => {
   return str.replace(/[&<>"'{}]/g, function (match) {
     switch (match) {
       case "&":
@@ -411,9 +426,9 @@ function escapeHtml(str: string) {
         return "&#125;";
     }
   });
-}
+};
 
-export const createMiniReactFile = (
+const createMiniReactFile = (
   componentCode: string,
   dataCode: string,
   arrCode: string

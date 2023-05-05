@@ -25,7 +25,10 @@ export class Generator {
   reactGenerator: ReactGenerator;
 
   constructor() {
-    this.htmlGenerator = new HtmlGenerator(getProps);
+    this.htmlGenerator = new HtmlGenerator(
+      getPropsFromNode,
+      convertCssClassesToInlineStyle
+    );
     this.reactGenerator = new ReactGenerator();
   }
 
@@ -35,15 +38,17 @@ export class Generator {
     mainComponentName: string,
     isCssFileNeeded: boolean
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const mainFileContent =
-      await this.htmlGenerator.generateHtml(node, option);
+    const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+    const [inFileComponents, inFileData]: [
+      InFileComponentMeta[],
+      InFileDataMeta[]
+    ] = this.htmlGenerator.getExtraComponentsMetaData();
 
-    const importComponents = extraFileRegistryGlobalInstance.getImportComponentMeta();
+    const importComponents =
+      extraFileRegistryGlobalInstance.getImportComponentMeta();
 
     if (option.uiFramework === UiFramework.react) {
-
       return [
         this.reactGenerator.generateReactFileContent(
           mainFileContent,
@@ -51,7 +56,7 @@ export class Generator {
           isCssFileNeeded,
           [],
           inFileData,
-          inFileComponents,
+          inFileComponents
         ),
         importComponents,
       ];
@@ -114,7 +119,7 @@ export const buildCssFileContent = (fontUrl: string) => {
 };
 
 // getProps retrieves formated css classes such as style="justify-content: center;" from a single node
-const getProps = (node: Node, option: Option): string => {
+const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT:
       return convertCssClassesToInlineStyle(
@@ -125,7 +130,7 @@ const getProps = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId(),
+        node.getId()
       );
     case NodeType.GROUP:
       return convertCssClassesToInlineStyle(
@@ -134,7 +139,7 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         },
         option,
-        node.getId(),
+        node.getId()
       );
     case NodeType.VISIBLE:
       return convertCssClassesToInlineStyle(
@@ -143,7 +148,7 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
         },
         option,
-        node.getId(),
+        node.getId()
       );
     case NodeType.IMAGE:
       return convertCssClassesToInlineStyle(
@@ -156,7 +161,7 @@ const getProps = (node: Node, option: Option): string => {
           }
         ),
         option,
-        node.getId(),
+        node.getId()
       );
     case NodeType.VECTOR:
       return convertCssClassesToInlineStyle(
@@ -164,7 +169,7 @@ const getProps = (node: Node, option: Option): string => {
           absolutePositioningOnly: true,
         }),
         option,
-        node.getId(),
+        node.getId()
       );
     case NodeType.VECTOR_GROUP:
       return convertCssClassesToInlineStyle(
@@ -172,7 +177,7 @@ const getProps = (node: Node, option: Option): string => {
           absolutePositioningOnly: true,
         }),
         option,
-        node.getId(),
+        node.getId()
       );
   }
 };
@@ -181,11 +186,12 @@ const getProps = (node: Node, option: Option): string => {
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
   option: Option,
-  id: string,
+  id?: string
 ) => {
   let inlineStyle: string = "";
   if (option.uiFramework === UiFramework.react) {
-    let [variableProps, cssKeyConnectedToProps]: [string, Set<string>] = getVariablePropForCss(id);
+    let [variableProps, cssKeyConnectedToProps]: [string, Set<string>] =
+      getVariablePropForCss(id);
     const lines: string[] = [];
     Object.entries(attributes).forEach(([key, value]) => {
       if (cssKeyConnectedToProps.has(key)) {
