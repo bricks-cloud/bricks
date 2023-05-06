@@ -17,7 +17,7 @@ import {
   isFrameNodeTransparent,
   doesNodeContainsAnImage,
   getMostCommonFieldInString,
-  getFinalRgbaColor,
+  getRgbaFromPaints,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { StyledTextSegment } from "../node";
@@ -387,16 +387,22 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       ) as SolidPaint[];
 
       if (solidPaints.length > 0) {
-        const colors = solidPaints.map(({ color, opacity }) => ({
-          r: color.r,
-          g: color.g,
-          b: color.b,
-          a: opacity,
-        }));
-
-        const finalColor = getFinalRgbaColor(colors);
+        const finalColor = getRgbaFromPaints(solidPaints);
         attributes["color"] = rgbaToString(finalColor);
       }
+    } else if (paints === figma.mixed) {
+      const mostCommonPaints = getMostCommonFieldInString(figmaNode, "fills", {
+        areVariationsEqual: (paint1, paint2) =>
+          JSON.stringify(paint1) === JSON.stringify(paint2),
+        variationModifier: (paint) => {
+          // don't consider non-solid paints for now
+          const solidPaints = paint.filter((p) => p.type === "SOLID");
+          return solidPaints.length > 0 ? solidPaints : null;
+        },
+      }) as SolidPaint[];
+
+      const finalColor = getRgbaFromPaints(mostCommonPaints);
+      attributes["color"] = rgbaToString(finalColor);
     }
 
     const textContainingOnlyOneWord =
@@ -669,6 +675,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "fontWeight",
       "textDecoration",
       "textCase",
+      "fills",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -691,6 +698,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       ...segment,
       textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
       textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
+      color: rgbaToString(getRgbaFromPaints(segment.fills)),
     }));
   }
 }

@@ -60,38 +60,85 @@ export const doesNodeContainsAnImage = (
   return false;
 };
 
+type Variation<
+  T extends keyof Omit<StyledTextSegment, "characters" | "start" | "end">
+> = Pick<StyledTextSegment, T | "characters" | "start" | "end">[T];
+
+/**
+ *
+ * @param figmaTextNode
+ * @param field
+ * @param options
+ * @returns
+ */
 export function getMostCommonFieldInString<
   T extends keyof Omit<StyledTextSegment, "characters" | "start" | "end">
->(figmaTextNode: TextNode, field: T) {
+>(
+  figmaTextNode: TextNode,
+  field: T,
+  options: {
+    /**
+     * areVariationsEqual is an optional function that returns if two variations are equal are not.
+     * @returns true if variations are equal, false otherwise
+     */
+    areVariationsEqual?: (
+      variation1: Variation<T>,
+      variation2: Variation<T>
+    ) => boolean;
+    /**
+     * variationModifier is an optional function used to modify a variation before it's used to count the number of characters.
+     * Return null if you don't want the variation to be considered.
+     * @returns modified variation or null
+     */
+    variationModifier?: (variation: Variation<T>) => Variation<T> | null;
+  } = {}
+): Variation<T> {
+  const { areVariationsEqual, variationModifier } = options;
   const styledTextSegments = figmaTextNode.getStyledTextSegments([field]);
-
-  type Variation = Pick<
-    StyledTextSegment,
-    T | "characters" | "start" | "end"
-  >[T];
 
   // Count the number of characters that has each variation of "field".
   // For example, if field is "fontSize", variations are the different font sizes (12, 14, etc.)
-  // Pick<StyledTextSegment, T | "characters" | "start" | "end">[T]
-  const fieldNumOfChars = new Map<Variation, number>();
+  const fieldNumOfChars = new Map<Variation<T>, number>();
   styledTextSegments.forEach((segment) => {
-    const variation = segment[field];
-    if (!fieldNumOfChars.has(variation)) {
-      fieldNumOfChars.set(variation, 0);
+    const variation = variationModifier
+      ? variationModifier(segment[field])
+      : segment[field];
+
+    if (variation === null) {
+      return;
     }
 
-    fieldNumOfChars.set(
-      variation,
-      fieldNumOfChars.get(variation) + segment.characters.length
-    );
+    const segmentLength = segment.characters.length;
+    if (areVariationsEqual) {
+      for (const [existingVariation, sum] of fieldNumOfChars) {
+        // if variation already exists, add to current sum
+        if (areVariationsEqual(variation, existingVariation)) {
+          fieldNumOfChars.set(existingVariation, sum + segmentLength);
+          return;
+        }
+      }
+      // if variation does not exist, intialize it
+      fieldNumOfChars.set(variation, segmentLength);
+    } else {
+      // if variation already exists, add to current sum
+      if (fieldNumOfChars.has(variation)) {
+        fieldNumOfChars.set(
+          variation,
+          fieldNumOfChars.get(variation) + segmentLength
+        );
+      } else {
+        // if variation does not exist, intialize it
+        fieldNumOfChars.set(variation, segmentLength);
+      }
+    }
   });
 
-  let variationWithLongestLength: Variation;
+  let variationWithLongestLength: Variation<T>;
   let currentLongestLength = -Infinity;
-  for (const [key, value] of fieldNumOfChars) {
-    if (value > currentLongestLength) {
-      currentLongestLength = value;
-      variationWithLongestLength = key;
+  for (const [variation, sum] of fieldNumOfChars) {
+    if (sum > currentLongestLength) {
+      currentLongestLength = sum;
+      variationWithLongestLength = variation;
     }
   }
 
@@ -116,12 +163,24 @@ function blendColors(color1: RGBA, color2: RGBA) {
   return { r, g, b, a } as RGBA;
 }
 
-export function getFinalRgbaColor(colors: RGBA[]) {
-  if (colors.length === 0) {
-    throw new Error("At least one color is required");
+export function getRgbaFromPaints(paints: Paint[]) {
+  // TODO: support GradientPaint
+  const solidPaints = paints.filter(
+    (paint) => paint.type === "SOLID"
+  ) as SolidPaint[];
+
+  if (solidPaints.length === 0) {
+    throw new Error("No solid paints found");
   }
+
+  const colors = solidPaints.map(({ color, opacity }) => ({
+    r: color.r,
+    g: color.g,
+    b: color.b,
+    a: opacity,
+  }));
 
   return colors.reduce((finalColor, currentColor) => {
     return blendColors(finalColor, currentColor);
-  });
+  }) as RGBA;
 }

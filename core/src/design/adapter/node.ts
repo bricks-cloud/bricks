@@ -41,6 +41,7 @@ export interface StyledTextSegment {
   fontWeight: number;
   textDecoration: "normal" | "line-through" | "underline";
   textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+  color: string;
 }
 
 export interface TextNode extends Node {

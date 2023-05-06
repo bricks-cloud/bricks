@@ -340,6 +340,7 @@ export class Generator {
       const defaultFontSize = textNode.getACssAttribute("font-size");
       const defaultFontFamily = textNode.getACssAttribute("font-family");
       const defaultFontWeight = textNode.getACssAttribute("font-weight");
+      const defaultColor = textNode.getACssAttribute("color");
 
       return styledTextSegments
         .map((styledTextSegment) => {
@@ -368,6 +369,11 @@ export class Generator {
           const textTransform = styledTextSegment.textTransform;
           if (textTransform !== "none") {
             overridingAttributes["text-transform"] = textTransform;
+          }
+
+          const color = styledTextSegment.color;
+          if (color !== defaultColor) {
+            overridingAttributes["color"] = color;
           }
 
           const text = escapeHtml(styledTextSegment.characters);
