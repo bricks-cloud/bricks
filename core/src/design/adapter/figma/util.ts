@@ -103,3 +103,25 @@ export function getMostCommonFieldInString<
   );
   return variationWithLongestLength;
 }
+
+// calculating fills
+function blendColors(color1: RGBA, color2: RGBA) {
+  const a = 1 - (1 - color2.a) * (1 - color1.a);
+  const r =
+    (color2.r * color2.a) / a + (color1.r * color1.a * (1 - color2.a)) / a;
+  const g =
+    (color2.g * color2.a) / a + (color1.g * color1.a * (1 - color2.a)) / a;
+  const b =
+    (color2.b * color2.a) / a + (color1.b * color1.a * (1 - color2.a)) / a;
+  return { r, g, b, a } as RGBA;
+}
+
+export function getFinalRgbaColor(colors: RGBA[]) {
+  if (colors.length === 0) {
+    throw new Error("At least one color is required");
+  }
+
+  return colors.reduce((finalColor, currentColor) => {
+    return blendColors(finalColor, currentColor);
+  });
+}

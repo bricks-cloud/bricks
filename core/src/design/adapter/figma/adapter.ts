@@ -17,6 +17,7 @@ import {
   isFrameNodeTransparent,
   doesNodeContainsAnImage,
   getMostCommonFieldInString,
+  getFinalRgbaColor,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { StyledTextSegment } from "../node";
@@ -379,16 +380,23 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     // font color
-    const colors = figmaNode.fills;
-    if (
-      colors !== figma.mixed &&
-      colors.length > 0 &&
-      colors[0].type === "SOLID"
-    ) {
-      attributes["color"] = colorToStringWithOpacity(
-        colors[0].color,
-        colors[0].opacity
-      );
+    const paints = figmaNode.fills;
+    if (paints !== figma.mixed && paints.length > 0) {
+      const solidPaints = paints.filter(
+        (paint) => paint.type === "SOLID"
+      ) as SolidPaint[];
+
+      if (solidPaints.length > 0) {
+        const colors = solidPaints.map(({ color, opacity }) => ({
+          r: color.r,
+          g: color.g,
+          b: color.b,
+          a: opacity,
+        }));
+
+        const finalColor = getFinalRgbaColor(colors);
+        attributes["color"] = rgbaToString(finalColor);
+      }
     }
 
     const textContainingOnlyOneWord =
