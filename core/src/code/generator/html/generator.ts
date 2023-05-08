@@ -336,77 +336,140 @@ export class Generator {
 
     const styledTextSegments = textNode.node.getStyledTextSegments();
 
-    // list
-    if (styledTextSegments.length > 0) {
-      const defaultFontSize = textNode.getACssAttribute("font-size");
-      const defaultFontFamily = textNode.getACssAttribute("font-family");
-      const defaultFontWeight = textNode.getACssAttribute("font-weight");
-      const defaultColor = textNode.getACssAttribute("color");
+    const defaultFontSize = textNode.getACssAttribute("font-size");
+    const defaultFontFamily = textNode.getACssAttribute("font-family");
+    const defaultFontWeight = textNode.getACssAttribute("font-weight");
+    const defaultColor = textNode.getACssAttribute("color");
 
-      return styledTextSegments
-        .map((styledTextSegment) => {
-          const overridingAttributes: Attributes = {};
+    const cssAttributesSegments = styledTextSegments.map(
+      (styledTextSegment) => {
+        // here we only keep attributes if they are different from the default attribute
+        const cssAttributes: Attributes = {};
 
-          const fontSize = `${styledTextSegment.fontSize}px`;
-          if (fontSize !== defaultFontSize) {
-            overridingAttributes["font-size"] = fontSize;
-          }
+        const fontSize = `${styledTextSegment.fontSize}px`;
+        if (fontSize !== defaultFontSize) {
+          cssAttributes["font-size"] = fontSize;
+        }
 
-          const fontFamily = styledTextSegment.fontName.family;
-          if (fontFamily !== defaultFontFamily) {
-            overridingAttributes["font-family"] = fontFamily;
-          }
+        const fontFamily = styledTextSegment.fontName.family;
+        if (fontFamily !== defaultFontFamily) {
+          cssAttributes["font-family"] = fontFamily;
+        }
 
-          const fontWeight = styledTextSegment.fontWeight.toString();
-          if (fontWeight !== defaultFontWeight) {
-            overridingAttributes["font-weight"] = fontWeight;
-          }
+        const fontWeight = styledTextSegment.fontWeight.toString();
+        if (fontWeight !== defaultFontWeight) {
+          cssAttributes["font-weight"] = fontWeight;
+        }
 
-          const textDecoration = styledTextSegment.textDecoration;
-          if (textDecoration !== "normal") {
-            overridingAttributes["text-decoration"] = textDecoration;
-          }
+        const textDecoration = styledTextSegment.textDecoration;
+        if (textDecoration !== "normal") {
+          cssAttributes["text-decoration"] = textDecoration;
+        }
 
-          const textTransform = styledTextSegment.textTransform;
-          if (textTransform !== "none") {
-            overridingAttributes["text-transform"] = textTransform;
-          }
+        const textTransform = styledTextSegment.textTransform;
+        if (textTransform !== "none") {
+          cssAttributes["text-transform"] = textTransform;
+        }
 
-          const color = styledTextSegment.color;
-          if (color !== defaultColor) {
-            overridingAttributes["color"] = color;
-          }
+        const color = styledTextSegment.color;
+        if (color !== defaultColor) {
+          cssAttributes["color"] = color;
+        }
 
-          const hasOverridingAttributes =
-            Object.keys(overridingAttributes).length > 0;
-          const textNodeClassProps = hasOverridingAttributes
-            ? ` ${this.getPropsFromAttributes(overridingAttributes, option)}`
-            : "";
+        return {
+          start: styledTextSegment.start,
+          end: styledTextSegment.end,
+          cssAttributes,
+        };
+      }
+    );
 
-          const text = escapeHtml(styledTextSegment.characters);
+    // Here are handle lists in text, where:
+    // - A "list segment" is a segment of text that is an ordered list, an unordered list, or not a list at all
+    // - A "list item" is text inside a list segment, separated by a new line character.
+    //
+    // For example:
+    // <ul> <- this is a "list segment"
+    //   <li>item 1</li> <- this is a "list item"
+    //   <li>item 2</li> <- this is another "list item"
+    // </ul>
+    return textNode.node
+      .getListSegments()
+      .map((listSegment) => {
+        const listTag = listSegment.listType;
 
-          if (styledTextSegment.listType !== "none") {
-            const listTag = styledTextSegment.listType;
-            const listContent = text
-              .split("\n")
-              .filter((line) => line !== "")
-              .map((line) => `<li>${line}</li>`)
+        const listItems = splitByNewLine(listSegment.characters);
+
+        // for keeping track of where we are in listSegment.characters
+        let currentIndex = listSegment.start;
+
+        const listContent = listItems
+          .map((listItemText) => {
+            const itemStartIndex = currentIndex;
+            const itemEndIndex = currentIndex + listItemText.length - 1;
+
+            const cssAttributesSegmentsInListItem =
+              cssAttributesSegments.filter(
+                (segment) =>
+                  !(
+                    segment.end < itemStartIndex || segment.start > itemEndIndex
+                  )
+              );
+
+            let result = cssAttributesSegmentsInListItem
+              .map((segment) => {
+                let text = escapeHtml(
+                  listItemText.substring(
+                    segment.start - itemStartIndex,
+                    segment.end - itemStartIndex
+                  )
+                );
+
+                if (!isEmpty(segment.cssAttributes)) {
+                  const textProps = this.getPropsFromAttributes(
+                    segment.cssAttributes,
+                    option
+                  );
+                  const htmlTag =
+                    listItemText.length === segment.end - segment.start
+                      ? "li"
+                      : "span";
+
+                  text = `<${htmlTag} ${textProps}>${text}</${htmlTag}>`;
+                }
+
+                return text;
+              })
               .join("");
-            return `<${listTag}${textNodeClassProps}>${listContent}</${listTag}>`;
-          }
 
-          if (!hasOverridingAttributes) {
-            return text;
-          }
+            if (listTag !== "none" && !result.startsWith("<li")) {
+              result = `<li>${result}</li>`;
+            }
 
-          return `<span${textNodeClassProps}>${text}</span>`;
-        })
-        .join("");
-    } else {
-      return escapeHtml(textNode.getText());
-    }
+            currentIndex = itemEndIndex + 1;
+            return result;
+          })
+          .join("");
+
+        if (listTag === "none") {
+          return listContent;
+        } else {
+          return `<${listTag}>${listContent}</${listTag}>`;
+        }
+      })
+      .join("");
   }
 }
+
+const splitByNewLine = (text: string) => {
+  const listItems = text.split("\n").map((line) => line + "\n");
+
+  if (listItems[listItems.length - 1] === "\n") {
+    listItems.pop();
+  }
+
+  return listItems;
+};
 
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();

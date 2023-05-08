@@ -9,7 +9,7 @@ import {
   VisibleNode,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
-import { BoxCoordinates, Attributes, ExportFormat } from "../node";
+import { BoxCoordinates, Attributes, ExportFormat, ListSegment } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -676,7 +676,6 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "textDecoration",
       "textCase",
       "fills",
-      "listOptions",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -695,17 +694,25 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       TITLE: "capitalize",
     } as const;
 
+    return styledTextSegments.map((segment) => ({
+      ...segment,
+      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
+      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
+      color: rgbaToString(getRgbaFromPaints(segment.fills)),
+    }));
+  }
+
+  getListSegments(): ListSegment[] {
     const figmaListOptionsToHtmlTagMap = {
       NONE: "none",
       UNORDERED: "ul",
       ORDERED: "ol",
     } as const;
 
-    return styledTextSegments.map((segment) => ({
+    const listSegments = this.node.getStyledTextSegments(["listOptions"]);
+
+    return listSegments.map((segment) => ({
       ...segment,
-      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
-      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
-      color: rgbaToString(getRgbaFromPaints(segment.fills)),
       listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
     }));
   }
