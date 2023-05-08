@@ -65,6 +65,14 @@ export class Generator {
         const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
         const textProp = this.getText(node, option);
+
+        //@ts-ignore
+        const listSegments = node.node.getListSegments();
+        const listType = listSegments[0].listType;
+        if (listSegments.length === 1 && listType !== "none") {
+          return `<${listType} ${attributes}${textNodeClassProps}>${textProp}</${listType}>`;
+        }
+
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
       }
 
@@ -395,7 +403,7 @@ export class Generator {
     // </ul>
     return textNode.node
       .getListSegments()
-      .map((listSegment) => {
+      .map((listSegment, _, listSegments) => {
         const listTag = listSegment.listType;
 
         const listItems = splitByNewLine(listSegment.characters);
@@ -451,7 +459,11 @@ export class Generator {
           })
           .join("");
 
-        if (listTag === "none") {
+        if (
+          listTag === "none" ||
+          // if there is only one list, we don't wrap the list items in a <ul> or <ol> tag because we're doing it outside
+          listSegments.length === 1
+        ) {
           return listContent;
         } else {
           return `<${listTag}>${listContent}</${listTag}>`;

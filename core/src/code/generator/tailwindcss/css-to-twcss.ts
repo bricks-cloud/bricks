@@ -913,6 +913,15 @@ export const getTwcssClass = (
       return findClosestTwcssFontWeight(cssValue);
     }
 
+    case "list-style-type": {
+      if (cssValue === "disc") {
+        return "list-disc";
+      }
+      if (cssValue === "decimal") {
+        return "list-decimal";
+      }
+    }
+
     default:
       return "";
   }

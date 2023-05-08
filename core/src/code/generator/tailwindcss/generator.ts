@@ -20,6 +20,7 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { Attributes } from "../../../design/adapter/node";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -98,17 +99,28 @@ export class Generator {
 // getProps converts a single node to formated tailwindcss classes
 const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
-    case NodeType.TEXT:
-      return convertCssClassesToTwcssClasses(
-        {
-          ...node.getCssAttributes(),
-          ...filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
-        },
-        option,
-        node.getId()
-      );
+    case NodeType.TEXT: {
+      const attributes: Attributes = {
+        ...node.getCssAttributes(),
+        ...filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningOnly: true,
+        }),
+      };
+
+      //@ts-ignore
+      const listSegments = node.node.getListSegments();
+      // Extra classes needed for lists due to Tailwind's CSS reset
+      const listType = listSegments[0].listType;
+      if (listSegments.length === 1 && listType === "ul") {
+        attributes["list-style-type"] = "disc";
+      }
+
+      if (listSegments.length === 1 && listType === "ol") {
+        attributes["list-style-type"] = "decimal";
+      }
+
+      return convertCssClassesToTwcssClasses(attributes, option, node.getId());
+    }
     case NodeType.GROUP:
       return convertCssClassesToTwcssClasses(
         {
