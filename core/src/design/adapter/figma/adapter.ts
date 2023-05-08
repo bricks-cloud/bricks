@@ -676,6 +676,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "textDecoration",
       "textCase",
       "fills",
+      "listOptions",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -694,11 +695,18 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       TITLE: "capitalize",
     } as const;
 
+    const figmaListOptionsToHtmlTagMap = {
+      NONE: "none",
+      UNORDERED: "ul",
+      ORDERED: "ol",
+    } as const;
+
     return styledTextSegments.map((segment) => ({
       ...segment,
       textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
       textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
       color: rgbaToString(getRgbaFromPaints(segment.fills)),
+      listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
     }));
   }
 }

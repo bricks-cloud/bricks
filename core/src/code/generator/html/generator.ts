@@ -336,6 +336,7 @@ export class Generator {
 
     const styledTextSegments = textNode.node.getStyledTextSegments();
 
+    // list
     if (styledTextSegments.length > 0) {
       const defaultFontSize = textNode.getACssAttribute("font-size");
       const defaultFontFamily = textNode.getACssAttribute("font-family");
@@ -376,15 +377,29 @@ export class Generator {
             overridingAttributes["color"] = color;
           }
 
+          const hasOverridingAttributes =
+            Object.keys(overridingAttributes).length > 0;
+          const textNodeClassProps = hasOverridingAttributes
+            ? ` ${this.getPropsFromAttributes(overridingAttributes, option)}`
+            : "";
+
           const text = escapeHtml(styledTextSegment.characters);
-          if (Object.keys(overridingAttributes).length === 0) {
+
+          if (styledTextSegment.listType !== "none") {
+            const listTag = styledTextSegment.listType;
+            const listContent = text
+              .split("\n")
+              .filter((line) => line !== "")
+              .map((line) => `<li>${line}</li>`)
+              .join("");
+            return `<${listTag}${textNodeClassProps}>${listContent}</${listTag}>`;
+          }
+
+          if (!hasOverridingAttributes) {
             return text;
           }
-          const textNodeClassProps = this.getPropsFromAttributes(
-            overridingAttributes,
-            option
-          );
-          return `<span ${textNodeClassProps}>${text}</span>`;
+
+          return `<span${textNodeClassProps}>${text}</span>`;
         })
         .join("");
     } else {
