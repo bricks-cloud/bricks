@@ -1,3 +1,4 @@
+import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { isEmpty } from "../../../utils";
 
 const round = Math.round;
@@ -209,4 +210,11 @@ export const figmaLetterSpacingToCssString = (letterSpacing: LetterSpacing) => {
     case "PIXELS":
       return `${letterSpacing.value}px`;
   }
+};
+
+export const figmaFontNameToCssString = (fontName: FontName) => {
+  const fontFamily = fontName.family;
+  return `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
+    fontFamily
+  )}`;
 };

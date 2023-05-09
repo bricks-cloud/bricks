@@ -378,7 +378,7 @@ export class Generator {
           cssAttributes["font-size"] = fontSize;
         }
 
-        const fontFamily = styledTextSegment.fontName.family;
+        const fontFamily = styledTextSegment.fontFamily;
         if (fontFamily !== defaultFontFamily) {
           cssAttributes["font-family"] = fontFamily;
         }

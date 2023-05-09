@@ -20,8 +20,8 @@ import {
   getRgbaFromPaints,
   figmaLineHeightToCssString,
   figmaLetterSpacingToCssString,
+  figmaFontNameToCssString,
 } from "./util";
-import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { PostionalRelationship } from "../../../bricks/node";
 import { getLineBasedOnDirection } from "../../../bricks/line";
 import { Direction } from "../../../bricks/direction";
@@ -39,12 +39,20 @@ enum NodeType {
   STAR = "STAR",
   SLICE = "SLICE",
   COMPONENT = "COMPONENT",
-  BOOLEAN_OPERATION = "BOOLEAN_OPERATION"
+  BOOLEAN_OPERATION = "BOOLEAN_OPERATION",
 }
 
-
-const safelySetWidthAndHeight = (nodeType: string, figmaNode: SceneNode, attributes: Attributes) => {
-  if (nodeType === NodeType.FRAME || nodeType === NodeType.IMAGE || nodeType === NodeType.GROUP || nodeType === NodeType.INSTANCE) {
+const safelySetWidthAndHeight = (
+  nodeType: string,
+  figmaNode: SceneNode,
+  attributes: Attributes
+) => {
+  if (
+    nodeType === NodeType.FRAME ||
+    nodeType === NodeType.IMAGE ||
+    nodeType === NodeType.GROUP ||
+    nodeType === NodeType.INSTANCE
+  ) {
     if (!isEmpty(figmaNode.absoluteBoundingBox)) {
       attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
       attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
@@ -69,7 +77,6 @@ const safelySetWidthAndHeight = (nodeType: string, figmaNode: SceneNode, attribu
     attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
     attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
   }
-
 };
 
 const addDropShadowCssProperty = (
@@ -90,8 +97,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -320,23 +328,26 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   }
 
   if (figmaNode.type === NodeType.TEXT) {
-    const fontFamily = (figmaNode.fontName as FontName).family;
-
     // font family
     if (figmaNode.fontName !== figma.mixed) {
-      attributes[
-        "font-family"
-      ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
-        fontFamily
-      )}`;
+      attributes["font-family"] = figmaFontNameToCssString(figmaNode.fontName);
     } else {
       const mostCommonFontName = getMostCommonFieldInString(
         figmaNode,
-        "fontName"
+        "fontName",
+        {
+          areVariationsEqual: (fontName1, fontName2) => {
+            return (
+              fontName1.family === fontName2.family &&
+              fontName1.style === fontName2.style
+            );
+          },
+        }
       );
 
       if (mostCommonFontName) {
-        attributes["font-family"] = mostCommonFontName.family;
+        attributes["font-family"] =
+          figmaFontNameToCssString(mostCommonFontName);
       }
     }
 
@@ -357,8 +368,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // width and height
     const { absoluteRenderBounds, absoluteBoundingBox } = figmaNode;
 
-    let width: number = absoluteRenderBounds ? absoluteRenderBounds.width + 2 : absoluteBoundingBox.width;
-    let height: number = absoluteRenderBounds ? absoluteRenderBounds.height : absoluteBoundingBox.height;
+    let width: number = absoluteRenderBounds
+      ? absoluteRenderBounds.width + 2
+      : absoluteBoundingBox.width;
+    let height: number = absoluteRenderBounds
+      ? absoluteRenderBounds.height
+      : absoluteBoundingBox.height;
 
     let moreThanOneRow: boolean = false;
     if (absoluteRenderBounds) {
@@ -380,7 +395,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // If bounding box and rendering box are similar in size, horizontal text alignment doesn't have any
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
-        Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth > 0.1 ||
+        Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
+          0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -398,10 +414,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       }
 
       if (
-        Math.abs(
-          absoluteBoundingBox.width - absoluteRenderBounds.width
-        ) /
-        absoluteBoundingBox.width >
+        Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
+          absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 4;
@@ -777,6 +791,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
 
     return styledTextSegments.map((segment) => ({
       ...segment,
+      fontFamily: figmaFontNameToCssString(segment.fontName),
       textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
       textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
       color: rgbaToString(getRgbaFromPaints(segment.fills)),
@@ -839,11 +854,21 @@ export const convertFigmaNodesToBricksNodes = (
       let wrappedNodeA: Node = new VisibleNode(new FigmaNodeAdapter(a));
       let wrappedNodeB: Node = new VisibleNode(new FigmaNodeAdapter(b));
 
-      if (computePositionalRelationship(wrappedNodeA.getAbsRenderingBox(), wrappedNodeB.getAbsRenderingBox()) === PostionalRelationship.INCLUDE) {
+      if (
+        computePositionalRelationship(
+          wrappedNodeA.getAbsRenderingBox(),
+          wrappedNodeB.getAbsRenderingBox()
+        ) === PostionalRelationship.INCLUDE
+      ) {
         return 1;
       }
 
-      if (computePositionalRelationship(wrappedNodeB.getAbsRenderingBox(), wrappedNodeA.getAbsRenderingBox()) === PostionalRelationship.INCLUDE) {
+      if (
+        computePositionalRelationship(
+          wrappedNodeB.getAbsRenderingBox(),
+          wrappedNodeA.getAbsRenderingBox()
+        ) === PostionalRelationship.INCLUDE
+      ) {
         return -1;
       }
 
@@ -932,11 +957,11 @@ export const convertFigmaNodesToBricksNodes = (
             isExportableNode = true;
             if (feedback.doNodesContainImage) {
               newNode = new ImageNode(
-                new FigmaVectorGroupNodeAdapter(figmaNode),
+                new FigmaVectorGroupNodeAdapter(figmaNode)
               );
             } else {
               newNode = new BricksVector(
-                new FigmaVectorGroupNodeAdapter(figmaNode),
+                new FigmaVectorGroupNodeAdapter(figmaNode)
               );
             }
           }
@@ -957,9 +982,16 @@ export const convertFigmaNodesToBricksNodes = (
     }
   }
 
-  let horizontalOverlap: boolean = areNodesOverlappingByDirection(result.nodes, Direction.HORIZONTAL);
-  let verticalOverlap: boolean = areNodesOverlappingByDirection(result.nodes, Direction.VERTICAL);
-  result.doNodesHaveNonOverlappingChildren = !horizontalOverlap || !verticalOverlap;
+  let horizontalOverlap: boolean = areNodesOverlappingByDirection(
+    result.nodes,
+    Direction.HORIZONTAL
+  );
+  let verticalOverlap: boolean = areNodesOverlappingByDirection(
+    result.nodes,
+    Direction.VERTICAL
+  );
+  result.doNodesHaveNonOverlappingChildren =
+    !horizontalOverlap || !verticalOverlap;
 
   if (allNodesAreOfVectorNodeTypes) {
     result.doNodesHaveNonOverlappingChildren = false;
@@ -974,7 +1006,10 @@ export const convertFigmaNodesToBricksNodes = (
   return result;
 };
 
-const areNodesOverlappingByDirection = (nodes: Node[], direction: Direction): boolean => {
+const areNodesOverlappingByDirection = (
+  nodes: Node[],
+  direction: Direction
+): boolean => {
   let overlap: boolean = false;
   for (let i = 0; i < nodes.length; i++) {
     const currentNode: Node = nodes[i];

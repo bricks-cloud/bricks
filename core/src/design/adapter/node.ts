@@ -33,11 +33,13 @@ export interface StyledTextSegment {
   characters: string;
   start: number;
   end: number;
-  fontSize: number;
   fontName: {
     family: string;
     style: string;
   };
+  // CSS strings
+  fontSize: number;
+  fontFamily: string;
   fontWeight: number;
   textDecoration: "normal" | "line-through" | "underline";
   textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
