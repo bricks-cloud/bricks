@@ -20,7 +20,11 @@ import {
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
-export type GetProps = (node: Node, option: Option) => string;
+type GetPropsFromNode = (node: Node, option: Option) => string;
+type GetPropsFromAttributes = (
+  attributes: Attributes,
+  option: Option
+) => string;
 
 export type ImportedComponentMeta = {
   node: VectorGroupNode | VectorNode | ImageNode;
@@ -37,12 +41,17 @@ export type InFileDataMeta = {
 };
 
 export class Generator {
-  getProps: GetProps;
+  getPropsFromNode: GetPropsFromNode;
+  getPropsFromAttributes: GetPropsFromAttributes;
   inFileComponents: InFileComponentMeta[];
   inFileData: InFileDataMeta[];
 
-  constructor(getProps: GetProps) {
-    this.getProps = getProps;
+  constructor(
+    getPropsFromNode: GetPropsFromNode,
+    getPropsFromAttributes: GetPropsFromAttributes
+  ) {
+    this.getPropsFromNode = getPropsFromNode;
+    this.getPropsFromAttributes = getPropsFromAttributes;
 
     this.inFileComponents = [];
     this.inFileData = [];
@@ -52,11 +61,20 @@ export class Generator {
     const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
-      case NodeType.TEXT:
-        const textNodeClassProps = this.getProps(node, option);
+      case NodeType.TEXT: {
+        const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
-        const textProp = getTextProp(node);
+        const textProp = this.getText(node, option);
+
+        //@ts-ignore
+        const listSegments = node.node.getListSegments();
+        const listType = listSegments[0].listType;
+        if (listSegments.length === 1 && listType !== "none") {
+          return `<${listType} ${attributes}${textNodeClassProps}>${textProp}</${listType}>`;
+        }
+
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+      }
 
       case NodeType.GROUP:
         // this edge case should never happen
@@ -64,7 +82,7 @@ export class Generator {
           return `<${htmlTag}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getProps(node, option);
+        const groupNodeClassProps = this.getPropsFromNode(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
           [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
@@ -72,7 +90,7 @@ export class Generator {
         );
 
       case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getProps(node, option);
+        const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
           return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
         }
@@ -110,7 +128,7 @@ export class Generator {
           );
         }
 
-        const vectorNodeClassProps = this.getProps(node, option);
+        const vectorNodeClassProps = this.getPropsFromNode(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
           [`<div ${vectorNodeClassProps}>`, `</div>`],
@@ -250,7 +268,7 @@ export class Generator {
       "background-image": `url('./assets/${imageComponentName}.png')`,
     });
 
-    return [`<div ${this.getProps(node, option)}>`, `</div>`];
+    return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
   renderNodeWithPositionalAttributes(
@@ -266,7 +284,7 @@ export class Generator {
       positionalCssAttribtues["margin-right"] ||
       positionalCssAttribtues["margin-top"] ||
       positionalCssAttribtues["margin-bottom"]) {
-      return `<div ${this.getProps(node, option)}>` + inner + `</div>`;
+      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
 
     return inner;
@@ -331,7 +349,155 @@ export class Generator {
 
     return codeStr;
   }
+
+  getText(node: Node, option: Option): string {
+    const textNode: TextNode = node as TextNode;
+
+    const prop: string = getTextVariableProp(node.getId());
+    if (!isEmpty(prop)) {
+      return prop;
+    }
+
+    const styledTextSegments = textNode.node.getStyledTextSegments();
+
+    const defaultFontSize = textNode.getACssAttribute("font-size");
+    const defaultFontFamily = textNode.getACssAttribute("font-family");
+    const defaultFontWeight = textNode.getACssAttribute("font-weight");
+    const defaultColor = textNode.getACssAttribute("color");
+
+    const cssAttributesSegments = styledTextSegments.map(
+      (styledTextSegment) => {
+        // here we only keep attributes if they are different from the default attribute
+        const cssAttributes: Attributes = {};
+
+        const fontSize = `${styledTextSegment.fontSize}px`;
+        if (fontSize !== defaultFontSize) {
+          cssAttributes["font-size"] = fontSize;
+        }
+
+        const fontFamily = styledTextSegment.fontName.family;
+        if (fontFamily !== defaultFontFamily) {
+          cssAttributes["font-family"] = fontFamily;
+        }
+
+        const fontWeight = styledTextSegment.fontWeight.toString();
+        if (fontWeight !== defaultFontWeight) {
+          cssAttributes["font-weight"] = fontWeight;
+        }
+
+        const textDecoration = styledTextSegment.textDecoration;
+        if (textDecoration !== "normal") {
+          cssAttributes["text-decoration"] = textDecoration;
+        }
+
+        const textTransform = styledTextSegment.textTransform;
+        if (textTransform !== "none") {
+          cssAttributes["text-transform"] = textTransform;
+        }
+
+        const color = styledTextSegment.color;
+        if (color !== defaultColor) {
+          cssAttributes["color"] = color;
+        }
+
+        return {
+          start: styledTextSegment.start,
+          end: styledTextSegment.end,
+          cssAttributes,
+        };
+      }
+    );
+
+    // Here are handle lists in text, where:
+    // - A "list segment" is a segment of text that is an ordered list, an unordered list, or not a list at all
+    // - A "list item" is text inside a list segment, separated by a new line character.
+    //
+    // For example:
+    // <ul> <- this is a "list segment"
+    //   <li>item 1</li> <- this is a "list item"
+    //   <li>item 2</li> <- this is another "list item"
+    // </ul>
+    return textNode.node
+      .getListSegments()
+      .map((listSegment, _, listSegments) => {
+        const listTag = listSegment.listType;
+
+        const listItems = splitByNewLine(listSegment.characters);
+
+        // for keeping track of where we are in listSegment.characters
+        let currentIndex = listSegment.start;
+
+        const listContent = listItems
+          .map((listItemText) => {
+            const itemStartIndex = currentIndex;
+            const itemEndIndex = currentIndex + listItemText.length - 1;
+
+            const cssAttributesSegmentsInListItem =
+              cssAttributesSegments.filter(
+                (segment) =>
+                  !(
+                    segment.end < itemStartIndex || segment.start > itemEndIndex
+                  )
+              );
+
+            let result = cssAttributesSegmentsInListItem
+              .map((segment) => {
+                let text = escapeHtml(
+                  listItemText.substring(
+                    segment.start - itemStartIndex,
+                    segment.end - itemStartIndex
+                  )
+                );
+
+                if (!isEmpty(segment.cssAttributes)) {
+                  const textProps = this.getPropsFromAttributes(
+                    segment.cssAttributes,
+                    option
+                  );
+                  const htmlTag =
+                    listItemText.length === segment.end - segment.start
+                      ? "li"
+                      : "span";
+
+                  text = `<${htmlTag} ${textProps}>${text}</${htmlTag}>`;
+                }
+
+                return text;
+              })
+              .join("");
+
+            if (listTag !== "none" && !result.startsWith("<li")) {
+              result = `<li>${result}</li>`;
+            }
+
+            currentIndex = itemEndIndex + 1;
+            return result;
+          })
+          .join("");
+
+        if (
+          listTag === "none" ||
+          // if there is only one list, we don't wrap the list items in a <ul> or <ol> tag because we're doing it outside
+          listSegments.length === 1
+        ) {
+          return listContent;
+        } else {
+          return `<${listTag}>${listContent}</${listTag}>`;
+        }
+      })
+      .join("");
+  }
 }
+
+const splitByNewLine = (text: string) => {
+  const listItems = text.split("\n").map((line) => line + "\n");
+
+  if (listItems[listItems.length - 1] === "\n") {
+    listItems.pop();
+  }
+
+  return listItems;
+};
 
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();
@@ -348,7 +514,7 @@ const getWidthAndHeightProp = (node: Node): string => {
   return widthAndHeight;
 };
 
-export const getSrcProp = (node: Node): string => {
+const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
   let fileExtension: string = "svg";
@@ -367,7 +533,7 @@ export const getSrcProp = (node: Node): string => {
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
-export const getAltProp = (node: Node): string => {
+const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
 
@@ -379,18 +545,7 @@ export const getAltProp = (node: Node): string => {
   return `"${componentName}"`;
 };
 
-export const getTextProp = (node: Node): string => {
-  const textNode: TextNode = node as TextNode;
-
-  const prop: string = getTextVariableProp(node.getId());
-  if (!isEmpty(prop)) {
-    return prop;
-  }
-
-  return escapeHtml(textNode.getText());
-};
-
-function escapeHtml(str: string) {
+const escapeHtml = (str: string) => {
   return str.replace(/[&<>"'{}]/g, function (match) {
     switch (match) {
       case "&":
@@ -409,9 +564,9 @@ function escapeHtml(str: string) {
         return "&#125;";
     }
   });
-}
+};
 
-export const createMiniReactFile = (
+const createMiniReactFile = (
   componentCode: string,
   dataCode: string,
   arrCode: string

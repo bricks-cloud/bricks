@@ -9,18 +9,21 @@ import {
   computePositionalRelationship,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
-import { BoxCoordinates, Attributes, ExportFormat } from "../node";
+import { BoxCoordinates, Attributes, ExportFormat, ListSegment } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
   rgbaToString,
   isFrameNodeTransparent,
   doesNodeContainsAnImage,
+  getMostCommonFieldInString,
+  getRgbaFromPaints,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { PostionalRelationship } from "../../../bricks/node";
 import { getLineBasedOnDirection } from "../../../bricks/line";
 import { Direction } from "../../../bricks/direction";
+import { StyledTextSegment } from "../node";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -324,11 +327,29 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       ] = `'${fontFamily}', ${GoogleFontsInstance.getGenericFontFamily(
         fontFamily
       )}`;
+    } else {
+      const mostCommonFontName = getMostCommonFieldInString(
+        figmaNode,
+        "fontName"
+      );
+
+      if (mostCommonFontName) {
+        attributes["font-family"] = mostCommonFontName.family;
+      }
     }
 
     // font size
     if (figmaNode.fontSize !== figma.mixed) {
       attributes["font-size"] = `${figmaNode.fontSize}px`;
+    } else {
+      const fontSizeWithLongestLength = getMostCommonFieldInString(
+        figmaNode,
+        "fontSize"
+      );
+
+      if (fontSizeWithLongestLength) {
+        attributes["font-size"] = `${fontSizeWithLongestLength}px`;
+      }
     }
 
     // width and height
@@ -446,16 +467,29 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     // font color
-    const colors = figmaNode.fills;
-    if (
-      colors !== figma.mixed &&
-      colors.length > 0 &&
-      colors[0].type === "SOLID"
-    ) {
-      attributes["color"] = colorToStringWithOpacity(
-        colors[0].color,
-        colors[0].opacity
-      );
+    const paints = figmaNode.fills;
+    if (paints !== figma.mixed && paints.length > 0) {
+      const solidPaints = paints.filter(
+        (paint) => paint.type === "SOLID"
+      ) as SolidPaint[];
+
+      if (solidPaints.length > 0) {
+        const finalColor = getRgbaFromPaints(solidPaints);
+        attributes["color"] = rgbaToString(finalColor);
+      }
+    } else if (paints === figma.mixed) {
+      const mostCommonPaints = getMostCommonFieldInString(figmaNode, "fills", {
+        areVariationsEqual: (paint1, paint2) =>
+          JSON.stringify(paint1) === JSON.stringify(paint2),
+        variationModifier: (paint) => {
+          // don't consider non-solid paints for now
+          const solidPaints = paint.filter((p) => p.type === "SOLID");
+          return solidPaints.length > 0 ? solidPaints : null;
+        },
+      }) as SolidPaint[];
+
+      const finalColor = getRgbaFromPaints(mostCommonPaints);
+      attributes["color"] = rgbaToString(finalColor);
     }
 
     const textContainingOnlyOneWord =
@@ -523,6 +557,15 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // font weight
     if (figmaNode.fontWeight !== figma.mixed) {
       attributes["font-weight"] = figmaNode.fontWeight.toString();
+    } else {
+      const mostCommonFontWeight = getMostCommonFieldInString(
+        figmaNode,
+        "fontWeight"
+      );
+
+      if (mostCommonFontWeight) {
+        attributes["font-weight"] = mostCommonFontWeight.toString();
+      }
     }
 
     // font style
@@ -691,6 +734,55 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
 
     // @ts-ignore
     return this.node.characters;
+  }
+
+  getStyledTextSegments(): StyledTextSegment[] {
+    const styledTextSegments = this.node.getStyledTextSegments([
+      "fontSize",
+      "fontName",
+      "fontWeight",
+      "textDecoration",
+      "textCase",
+      "fills",
+    ]);
+
+    // for converting figma textDecoration to css textDecoration
+    const figmaTextDecorationToCssMap = {
+      STRIKETHROUGH: "line-through",
+      UNDERLINE: "underline",
+      NONE: "normal",
+    } as const;
+
+    const figmaTextCaseToCssTextTransformMap = {
+      ORIGINAL: "none",
+      SMALL_CAPS: "none", // TODO: support CSS font-variant-caps property
+      SMALL_CAPS_FORCED: "none", // TODO: support CSS font-variant-caps property
+      UPPER: "uppercase",
+      LOWER: "lowercase",
+      TITLE: "capitalize",
+    } as const;
+
+    return styledTextSegments.map((segment) => ({
+      ...segment,
+      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
+      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
+      color: rgbaToString(getRgbaFromPaints(segment.fills)),
+    }));
+  }
+
+  getListSegments(): ListSegment[] {
+    const figmaListOptionsToHtmlTagMap = {
+      NONE: "none",
+      UNORDERED: "ul",
+      ORDERED: "ol",
+    } as const;
+
+    const listSegments = this.node.getStyledTextSegments(["listOptions"]);
+
+    return listSegments.map((segment) => ({
+      ...segment,
+      listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
+    }));
   }
 }
 

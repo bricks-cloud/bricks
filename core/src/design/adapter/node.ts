@@ -29,10 +29,34 @@ export interface Node {
   export(exportFormat: ExportFormat): Promise<string>;
 }
 
+export interface StyledTextSegment {
+  characters: string;
+  start: number;
+  end: number;
+  fontSize: number;
+  fontName: {
+    family: string;
+    style: string;
+  };
+  fontWeight: number;
+  textDecoration: "normal" | "line-through" | "underline";
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+  color: string;
+}
+
+export interface ListSegment {
+  characters: string;
+  start: number;
+  end: number;
+  listType: "none" | "ul" | "ol";
+}
+
 export interface TextNode extends Node {
   getText(): string;
   isItalic(): boolean;
   getFamilyName(): string;
+  getStyledTextSegments(): StyledTextSegment[];
+  getListSegments(): ListSegment[];
 }
 
 export interface VectorNode extends Node {}

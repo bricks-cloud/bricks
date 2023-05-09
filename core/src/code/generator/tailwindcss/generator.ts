@@ -10,9 +10,7 @@ import {
   convertCssClassesToTwcssClasses,
   getImageFileNameFromUrl,
 } from "./css-to-twcss";
-import {
-  FontsRegistryGlobalInstance,
-} from "./fonts-registry";
+import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -24,13 +22,17 @@ import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 import { shouldUseAsBackgroundImage } from "../util";
+import { Attributes } from "../../../design/adapter/node";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
   reactGenerator: ReactGenerator;
 
   constructor() {
-    this.htmlGenerator = new HtmlGenerator(getProps);
+    this.htmlGenerator = new HtmlGenerator(
+      getPropsFromNode,
+      convertCssClassesToTwcssClasses
+    );
     this.reactGenerator = new ReactGenerator();
   }
 
@@ -39,11 +41,14 @@ export class Generator {
     option: Option,
     mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const mainFileContent =
-      await this.htmlGenerator.generateHtml(node, option);
+    const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const importComponents: ImportedComponentMeta[] = extraFileRegistryGlobalInstance.getImportComponentMeta();
-    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+    const importComponents: ImportedComponentMeta[] =
+      extraFileRegistryGlobalInstance.getImportComponentMeta();
+    const [inFileComponents, inFileData]: [
+      InFileComponentMeta[],
+      InFileDataMeta[]
+    ] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
       return [
@@ -94,25 +99,36 @@ export class Generator {
 }
 
 // getProps converts a single node to formated tailwindcss classes
-const getProps = (node: Node, option: Option): string => {
+const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
-    case NodeType.TEXT:
-      return convertCssClassesToTwcssClasses(
-        {
-          ...node.getCssAttributes(),
-          ...node.getPositionalCssAttributes(),
-        },
-        node.getId(),
-        option,
-      );
+    case NodeType.TEXT: {
+      const attributes: Attributes = {
+        ...node.getCssAttributes(),
+        ...node.getPositionalCssAttributes(),
+      };
+
+      //@ts-ignore
+      const listSegments = node.node.getListSegments();
+      // Extra classes needed for lists due to Tailwind's CSS reset
+      const listType = listSegments[0].listType;
+      if (listSegments.length === 1 && listType === "ul") {
+        attributes["list-style-type"] = "disc";
+      }
+
+      if (listSegments.length === 1 && listType === "ol") {
+        attributes["list-style-type"] = "decimal";
+      }
+
+      return convertCssClassesToTwcssClasses(attributes, option, node.getId());
+    }
     case NodeType.GROUP:
       return convertCssClassesToTwcssClasses(
         {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
         option,
+        node.getId()
       );
     case NodeType.VISIBLE:
       return convertCssClassesToTwcssClasses(
@@ -120,8 +136,8 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
 
     case NodeType.IMAGE:
@@ -145,8 +161,8 @@ const getProps = (node: Node, option: Option): string => {
               marginFilter: true,
             }),
           },
+          option,
           node.getId(),
-          option
         );
       }
 
@@ -157,8 +173,8 @@ const getProps = (node: Node, option: Option): string => {
             excludeBackgroundColor: true,
           }),
         },
+        option,
         node.getId(),
-        option
       );
 
     case NodeType.VECTOR:
@@ -182,8 +198,8 @@ const getProps = (node: Node, option: Option): string => {
               marginFilter: true,
             }),
           },
+          option,
           node.getId(),
-          option
         );
       }
 
@@ -194,8 +210,8 @@ const getProps = (node: Node, option: Option): string => {
             excludeBackgroundColor: true,
           }),
         },
+        option,
         node.getId(),
-        option
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
@@ -208,8 +224,8 @@ const getProps = (node: Node, option: Option): string => {
             marginFilter: true,
           }),
         },
+        option,
         node.getId(),
-        option
       );
 
     default:
@@ -283,11 +299,11 @@ export const buildTwcssCssFileContent = () => {
     fontImportStatements = `@import url("${googleFontUrl}");`;
   }
 
-  const file = `@tailwind base;
+  const file = `${fontImportStatements}
+  @tailwind base;
   @tailwind components;
   @tailwind utilities;
-  ${fontImportStatements}
-  `;
+`;
 
   return file;
 };
