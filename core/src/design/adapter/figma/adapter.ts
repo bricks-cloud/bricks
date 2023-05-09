@@ -18,6 +18,8 @@ import {
   doesNodeContainsAnImage,
   getMostCommonFieldInString,
   getRgbaFromPaints,
+  figmaLineHeightToCssString,
+  figmaLetterSpacingToCssString,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
 import { StyledTextSegment } from "../node";
@@ -452,8 +454,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // line height
     const lineHeight = figmaNode.lineHeight;
     if (lineHeight !== figma.mixed && lineHeight.unit !== "AUTO") {
-      const unit = lineHeight.unit === "PIXELS" ? "px" : "%";
-      attributes["line-height"] = `${lineHeight.value}${unit}`;
+      attributes["line-height"] = figmaLineHeightToCssString(lineHeight);
     }
 
     // text transform
@@ -478,13 +479,24 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // letter spacing
     const letterSpacing = figmaNode.letterSpacing;
     if (letterSpacing !== figma.mixed && letterSpacing.value !== 0) {
-      const unit = letterSpacing.unit === "PIXELS" ? "px" : "em";
-      const value =
-        letterSpacing.unit === "PIXELS"
-          ? letterSpacing.value
-          : letterSpacing.value / 100;
+      attributes["letter-spacing"] =
+        figmaLetterSpacingToCssString(letterSpacing);
+    } else if (letterSpacing === figma.mixed) {
+      const mostCommonLetterSpacing = getMostCommonFieldInString(
+        figmaNode,
+        "letterSpacing",
+        {
+          areVariationsEqual: (letterSpacing1, letterSpacing2) =>
+            JSON.stringify(letterSpacing1.value) ===
+            JSON.stringify(letterSpacing2.value),
+        }
+      );
 
-      attributes["letter-spacing"] = `${value}${unit}`;
+      if (mostCommonLetterSpacing) {
+        attributes["letter-spacing"] = figmaLetterSpacingToCssString(
+          mostCommonLetterSpacing
+        );
+      }
     }
 
     // font weight
@@ -676,6 +688,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "textDecoration",
       "textCase",
       "fills",
+      "letterSpacing",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -699,6 +712,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
       textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
       color: rgbaToString(getRgbaFromPaints(segment.fills)),
+      letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
     }));
   }
 

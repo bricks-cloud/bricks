@@ -348,6 +348,7 @@ export class Generator {
     const defaultFontFamily = textNode.getACssAttribute("font-family");
     const defaultFontWeight = textNode.getACssAttribute("font-weight");
     const defaultColor = textNode.getACssAttribute("color");
+    const defaultLetterSpacing = textNode.getACssAttribute("letter-spacing");
 
     const cssAttributesSegments = styledTextSegments.map(
       (styledTextSegment) => {
@@ -382,6 +383,11 @@ export class Generator {
         const color = styledTextSegment.color;
         if (color !== defaultColor) {
           cssAttributes["color"] = color;
+        }
+
+        const letterSpacing = styledTextSegment.letterSpacing;
+        if (letterSpacing !== defaultLetterSpacing) {
+          cssAttributes["letter-spacing"] = letterSpacing;
         }
 
         return {
@@ -438,10 +444,20 @@ export class Generator {
                     segment.cssAttributes,
                     option
                   );
+
+                  // if css attribute applies to the whole list item, wrap it in a <li> tag
                   const htmlTag =
+                    listTag !== "none" &&
                     listItemText.length === segment.end - segment.start
                       ? "li"
                       : "span";
+
+                  if (listTag === "none") {
+                    // replace all \n in text with <br> tag
+                    text = text
+                      .split("\n")
+                      .join(option.uiFramework === "html" ? "<br>" : "<br />");
+                  }
 
                   text = `<${htmlTag} ${textProps}>${text}</${htmlTag}>`;
                 }
@@ -474,10 +490,20 @@ export class Generator {
 }
 
 const splitByNewLine = (text: string) => {
-  const listItems = text.split("\n").map((line) => line + "\n");
+  let listItems = text.split("\n");
 
-  if (listItems[listItems.length - 1] === "\n") {
+  // if last item is "", it means there is a new line at the end of the last item
+  if (listItems[listItems.length - 1] === "") {
     listItems.pop();
+    listItems = listItems.map((item) => item + "\n");
+  } else {
+    // otherwise, it means there is not a new line at the end of the last item
+    listItems = listItems.map((item, index, array) => {
+      if (index === array.length - 1) {
+        return item;
+      }
+      return item + "\n";
+    });
   }
 
   return listItems;

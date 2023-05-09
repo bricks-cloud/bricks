@@ -184,3 +184,23 @@ export function getRgbaFromPaints(paints: Paint[]) {
     return blendColors(finalColor, currentColor);
   }) as RGBA;
 }
+
+export const figmaLineHeightToCssString = (lineHeight: LineHeight) => {
+  switch (lineHeight.unit) {
+    case "AUTO":
+      return "normal";
+    case "PERCENT":
+      return `${lineHeight.value}%`;
+    case "PIXELS":
+      return `${lineHeight.value}px`;
+  }
+};
+
+export const figmaLetterSpacingToCssString = (letterSpacing: LetterSpacing) => {
+  switch (letterSpacing.unit) {
+    case "PERCENT":
+      return `${roundToTwoDps(letterSpacing.value / 100)}em`;
+    case "PIXELS":
+      return `${letterSpacing.value}px`;
+  }
+};
