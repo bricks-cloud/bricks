@@ -10,6 +10,7 @@ import { ImageNode, Node, NodeType, VisibleNode } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
+  Line,
   getLineBasedOnDirection,
 } from "./line";
 import { filterCssValue } from "./util";
@@ -19,6 +20,11 @@ export const selectBox = (
   node: Node,
   useBoundingBox: boolean = false
 ): BoxCoordinates => {
+  const attributes: Attributes = node.getCssAttributes();
+  if (!isEmpty(attributes["box-shadow"])) {
+    return node.getAbsBoundingBox();
+  }
+
   if (node.getType() === NodeType.VISIBLE) {
     const visibleNode = node as VisibleNode;
     return visibleNode.getAbsBoundingBox();
@@ -68,6 +74,7 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   node.addCssAttributes(getAdditionalCssAttributes(node));
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
+  adjustNodeHeightAndWidthCssValue(node);
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
@@ -86,18 +93,20 @@ export const getPaddingInPixels = (
   let paddingLeft: number = 0;
   let paddingRight: number = 0;
 
-  const targetLine = getContainerLineFromNodes(node.getChildren(), direction);
-  const parentLine = getContainerLineFromNodes([node], direction);
+  const targetLine = getContainerLineFromNodes(node.getChildren(), direction, true);
+  const parentLine = getContainerLineFromNodes([node], direction, true);
 
   const perpendicularTargetLine = getContainerLineFromNodes(
     node.getChildren(),
-    getOppositeDirection(direction)
+    getOppositeDirection(direction),
+    true,
   );
 
   // const boundingBoxPerpendicularTargetLine = getContainerLineFromNodes(node.getChildren(), direction, true);
   const perpendicularParentLine = getContainerLineFromNodes(
     [node],
-    getOppositeDirection(direction)
+    getOppositeDirection(direction),
+    true,
   );
 
   if (direction === Direction.VERTICAL) {
@@ -223,7 +232,7 @@ const setMarginsForChildren = (
       topGap =
         i === 0
           ? targetLine.lower - parentLine.lower - paddingTop
-          : prevTargetLine.upper - targetLine.lower;
+          : targetLine.lower - prevTargetLine.upper;
 
       switch (justifyContentValue) {
         case JustifyContent.SPACE_BETWEEN:
@@ -361,6 +370,19 @@ export const getAdditionalCssAttributes = (node: Node): Attributes => {
 
   return attributes;
 };
+
+const adjustNodeHeightAndWidthCssValue = (node: Node) => {
+  const attributes: Attributes = node.getCssAttributes();
+  if (!isEmpty(attributes["box-shadow"])) {
+    const width: number = Math.abs(node.getAbsBoundingBox().leftTop.x - node.getAbsBoundingBox().rightBot.x);
+    const height: number = Math.abs(node.getAbsBoundingBox().leftTop.y - node.getAbsBoundingBox().rightBot.y);
+    attributes["width"] = `${width}px`;
+    attributes["height"] = `${height}px`;
+  }
+
+  node.setCssAttributes(attributes);
+};
+
 
 const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
   if (!isEmpty(node.getPositionalCssAttributes())) {
@@ -650,7 +672,43 @@ const getJustifyContentValue = (
     }
   }
 
-  return JustifyContent.SPACE_BETWEEN;
+  if (targetLines.length > 2) {
+    const gaps: number[] = [];
+    let prevLine: Line = null;
+    for (let i = 0; i < targetLines.length; i++) {
+      const targetLine: Line = targetLines[i];
+      if (i === 0) {
+        prevLine = targetLine;
+        continue;
+      }
+
+      gaps.push(targetLine.lower - prevLine.upper);
+      prevLine = targetLine;
+    }
+
+    const averageGap: number = gaps.reduce((a, b) => a + b) / gaps.length;
+    let isJustifyCenter: boolean = true;
+    for (let i = 0; i < targetLines.length; i++) {
+      const targetLine: Line = targetLines[i];
+      if (i === 0) {
+        prevLine = targetLine;
+        continue;
+      }
+
+      const gap: number = targetLine.lower - prevLine.upper;
+
+      if (Math.abs(gap - averageGap) / averageGap > 0.1) {
+        isJustifyCenter = false;
+      }
+      prevLine = targetLine;
+    }
+
+    if (isJustifyCenter) {
+      return JustifyContent.SPACE_BETWEEN;
+    }
+  }
+
+  return JustifyContent.FLEX_START;
 };
 
 // getAlignItemsValue determines the value of align-items css property given a node and flex-direction.
@@ -685,7 +743,9 @@ const getAlignItemsValue = (
   }
 
   let numberOfItemsTippingLeft: number = 0;
+  let numberOfItemsTippingLeftStrict: number = 0;
   let numberOfItemsTippingRight: number = 0;
+  let numberOfItemsTippingRightStrict: number = 0;
   let numberOfItemsInTheMiddle: number = 0;
   let noGapItems: number = 0;
 
@@ -741,6 +801,30 @@ const getAlignItemsValue = (
         }
 
         numberOfItemsInTheMiddle++;
+    }
+  }
+
+  if (noGapItems === targetLines.length) {
+    for (const targetLine of targetLines) {
+      const leftGap = Math.abs(parentLine.lower - targetLine.lower);
+      const rightGap = Math.abs(parentLine.upper - targetLine.upper);
+      if (leftGap > rightGap) {
+        numberOfItemsTippingRightStrict++;
+      }
+
+      if (rightGap > leftGap) {
+        numberOfItemsTippingLeftStrict++;
+      }
+    }
+  }
+
+  if (noGapItems !== 0 && numberOfItemsInTheMiddle === 0) {
+    if (numberOfItemsTippingLeftStrict !== 0 && numberOfItemsTippingRightStrict === 0) {
+      return AlignItems.FLEX_START;
+    }
+
+    if (numberOfItemsTippingRightStrict !== 0 && numberOfItemsTippingLeftStrict === 0) {
+      return AlignItems.FLEX_END;
     }
   }
 

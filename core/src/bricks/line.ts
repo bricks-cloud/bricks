@@ -20,6 +20,18 @@ export const getLineBasedOnDirection = (node: Node, direction: Direction) => {
   return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
 };
 
+
+// getLineBasedOnDirection gets the boundary of a node depending on the input direction.
+// export const getLineUsingRenderingBox = (node: Node, direction: Direction) => {
+//   const coordinates = node.getAbsRenderingBox();
+
+//   if (direction === Direction.HORIZONTAL) {
+//     return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
+//   }
+
+//   return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
+// };
+
 // Bricks nodes are bounded by a rectangular box.
 // Line could be seen as a boundary of this rectangular box.
 export class Line {

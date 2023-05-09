@@ -113,8 +113,9 @@ export const buildTwcssConfigFileContent = (
   return file;
 };
 
-const largestTWCHeightInPixels = 384;
-const largestTWCWidthInPixels = 384;
+const largestTwcssHeightInPixels = 384;
+const largestTwcssWidthInPixels = 384;
+const largestTwcssLineheightInPixels = 45;
 
 // url("./assets/image-1.png") -> "image-1"
 export const getImageFileNameFromUrl = (path: string) => {
@@ -426,7 +427,7 @@ export const getTwcssClass = (
   switch (cssProperty) {
     case "height":
       const heightNum = extractPixelNumberFromString(cssValue);
-      if (heightNum > largestTWCHeightInPixels) {
+      if (cssValue.endsWith("px") && heightNum > largestTwcssHeightInPixels) {
         return `h-[${heightNum}px]`;
       }
 
@@ -447,7 +448,7 @@ export const getTwcssClass = (
 
     case "width":
       const widthNum = extractPixelNumberFromString(cssValue);
-      if (widthNum > largestTWCWidthInPixels) {
+      if (cssValue.endsWith("px") && widthNum > largestTwcssWidthInPixels) {
         return `w-[${widthNum}px]`;
       }
 
@@ -819,6 +820,11 @@ export const getTwcssClass = (
       }
 
     case "line-height": {
+      const lineHeightNum = extractPixelNumberFromString(cssValue);
+      if (cssValue.endsWith("px") && lineHeightNum > largestTwcssLineheightInPixels) {
+        return `leading-[${lineHeightNum}px]`;
+      }
+
       return findClosestTwcssLineHeight(cssValue);
     }
 

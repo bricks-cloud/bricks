@@ -23,7 +23,9 @@ export enum PostionalRelationship {
 export type Option = {
   truncateNumbers?: boolean;
   zeroValueAllowed?: boolean;
-  absolutePositioningOnly?: boolean;
+  absolutePositioningFilter?: boolean;
+  marginFilter?: boolean;
+  excludeBackgroundColor?: boolean;
 };
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
@@ -65,7 +67,8 @@ export class BaseNode {
     option: Option = {
       zeroValueAllowed: false,
       truncateNumbers: true,
-      absolutePositioningOnly: false,
+      absolutePositioningFilter: false,
+      marginFilter: false,
     }
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
@@ -90,7 +93,8 @@ export class BaseNode {
     option: Option = {
       zeroValueAllowed: false,
       truncateNumbers: true,
-      absolutePositioningOnly: false,
+      absolutePositioningFilter: false,
+      marginFilter: false,
     }
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
@@ -373,16 +377,10 @@ export class GroupNode extends BaseNode {
       if (coordinates.rightBot.y > yb) {
         yb = coordinates.rightBot.y;
       }
-
-      // console.log("child: ", child);
     }
 
     this.cssAttributes["width"] = `${Math.abs(xr - xl)}px`;
     this.cssAttributes["height"] = `${Math.abs(yb - yt)}px`;
-
-    // console.log("node: ", this.node);
-    // console.log(`this.cssAttributes["width"]: `, this.cssAttributes["width"]);
-    // console.log(`this.cssAttributes["height"]: `, this.cssAttributes["height"]);
 
     return {
       leftTop: {

@@ -6,6 +6,7 @@ import {
   getFileExtensionFromLanguage,
   constructExtraFiles,
   snakeCaseToCamelCase,
+  shouldUseAsBackgroundImage,
 } from "../util";
 import {
   Generator as HtmlGenerator,
@@ -19,6 +20,7 @@ import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
 import { getVariablePropForCss } from "../../../../ee/code/prop";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -120,9 +122,7 @@ const getProps = (node: Node, option: Option): string => {
       return convertCssClassesToInlineStyle(
         {
           ...node.getCssAttributes(),
-          ...filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          }),
+          ...node.getPositionalCssAttributes(),
         },
         option,
         node.getId(),
@@ -137,6 +137,14 @@ const getProps = (node: Node, option: Option): string => {
         node.getId(),
       );
     case NodeType.VISIBLE:
+      const attribtues: Attributes = node.getCssAttributes();
+      if (isEmpty(node.getChildren()) && !isEmpty(attribtues)) {
+        const height: string = attribtues["height"];
+        attribtues["min-height"] = height;
+        delete attribtues["height"];
+        node.setCssAttributes(attribtues);
+      }
+
       return convertCssClassesToInlineStyle(
         {
           ...node.getCssAttributes(),
@@ -146,31 +154,87 @@ const getProps = (node: Node, option: Option): string => {
         node.getId(),
       );
     case NodeType.IMAGE:
-      return convertCssClassesToInlineStyle(
-        filterAttributes(
+      if (shouldUseAsBackgroundImage(node)) {
+        const id: string = node.getId();
+        const imageComponentName: string =
+          nameRegistryGlobalInstance.getImageName(id);
+
+        node.addCssAttributes({
+          "background-image": `url('./assets/${imageComponentName}.png')`,
+        });
+      }
+
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToInlineStyle(
           {
-            ...node.getPositionalCssAttributes(),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
           },
-          {
-            absolutePositioningOnly: true,
-          }
-        ),
+          option,
+          node.getId(),
+        );
+      }
+
+      return convertCssClassesToInlineStyle(
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
         option,
         node.getId(),
       );
     case NodeType.VECTOR:
+      if (shouldUseAsBackgroundImage(node)) {
+        const id: string = node.getId();
+        const imageComponentName: string =
+          nameRegistryGlobalInstance.getImageName(id);
+
+        node.addCssAttributes({
+          "background-image": `url('./assets/${imageComponentName}.svg')`,
+        });
+      }
+
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToInlineStyle(
+          {
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
+          option,
+          node.getId(),
+        );
+      }
+
       return convertCssClassesToInlineStyle(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
         option,
         node.getId(),
       );
+    // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
-      return convertCssClassesToInlineStyle(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
+      return convertCssClassesToInlineStyle({
+        ...filterAttributes(node.getPositionalCssAttributes(), {
+          absolutePositioningFilter: true,
         }),
+        ...filterAttributes(node.getPositionalCssAttributes(), {
+          marginFilter: true,
+        }),
+      },
         option,
         node.getId(),
       );

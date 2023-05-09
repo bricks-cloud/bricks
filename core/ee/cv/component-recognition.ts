@@ -32,9 +32,6 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
       return node?.getType() !== NodeType.VECTOR_GROUP;
     });
 
-    // console.log("idImageMap", idImageMap);
-    // console.log("idTextMap", idTextMap);
-
     const [predictImagesResult, predictTextsResult] = await Promise.allSettled([
       predictImage(idImageMap),
       predictText(idTextMap),
@@ -55,9 +52,6 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
     if (predictTextsResult.status === "rejected") {
       console.error("Error with image prediction", predictTextsResult.reason);
     }
-
-    // console.log("imagePredictions", imagePredictions);
-    // console.log("textPredictions", textPredictions);
 
     await traverseNodes(startingNode, async (node) => {
       if (node.node) {

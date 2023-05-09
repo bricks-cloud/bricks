@@ -52,8 +52,10 @@ export const doesNodeContainsAnImage = (
   node: RectangleNode | EllipseNode
 ): boolean => {
   if (node.fills != figma.mixed) {
-    if (!isEmpty(node.fills) && node.fills[0].type === "IMAGE") {
-      return true;
+    for (const fill of node.fills) {
+      if (fill.type === "IMAGE") {
+        return true;
+      }
     }
   }
 

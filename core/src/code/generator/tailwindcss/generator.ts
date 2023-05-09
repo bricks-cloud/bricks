@@ -22,6 +22,8 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
+import { shouldUseAsBackgroundImage } from "../util";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -93,15 +95,12 @@ export class Generator {
 
 // getProps converts a single node to formated tailwindcss classes
 const getProps = (node: Node, option: Option): string => {
-
   switch (node.getType()) {
     case NodeType.TEXT:
       return convertCssClassesToTwcssClasses(
         {
           ...node.getCssAttributes(),
-          ...filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          })
+          ...node.getPositionalCssAttributes(),
         },
         node.getId(),
         option,
@@ -126,27 +125,89 @@ const getProps = (node: Node, option: Option): string => {
       );
 
     case NodeType.IMAGE:
+      if (shouldUseAsBackgroundImage(node)) {
+        const id: string = node.getId();
+        const imageComponentName: string =
+          nameRegistryGlobalInstance.getImageName(id);
+
+        node.addCssAttributes({
+          "background-image": `url('./assets/${imageComponentName}.png')`,
+        });
+      }
+
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToTwcssClasses(
+          {
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
+          node.getId(),
+          option
+        );
+      }
+
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
         node.getId(),
         option
       );
 
     case NodeType.VECTOR:
+      if (shouldUseAsBackgroundImage(node)) {
+        const id: string = node.getId();
+        const imageComponentName: string =
+          nameRegistryGlobalInstance.getImageName(id);
+
+        node.addCssAttributes({
+          "background-image": `url('./assets/${imageComponentName}.svg')`,
+        });
+      }
+
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToTwcssClasses(
+          {
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
+          node.getId(),
+          option
+        );
+      }
+
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
         node.getId(),
         option
       );
+    // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
+        {
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
         node.getId(),
         option
       );
@@ -175,6 +236,12 @@ export const buildTwcssConfigFileContent = (
     importComponents.forEach((importComponent: ImportedComponentMeta) => {
       const extension = getExtensionFromFilePath(importComponent.importPath);
       if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        backgroundImages += `"${getImageFileNameFromUrl(
+          importComponent.importPath
+        )}": "url(.${importComponent.importPath})",`;
+      }
+
+      if (extension === "svg" && shouldUseAsBackgroundImage(importComponent.node)) {
         backgroundImages += `"${getImageFileNameFromUrl(
           importComponent.importPath
         )}": "url(.${importComponent.importPath})",`;

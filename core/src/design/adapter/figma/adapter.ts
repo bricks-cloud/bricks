@@ -4,9 +4,9 @@ import {
   ImageNode,
   Node,
   TextNode as BricksTextNode,
-  VectorGroupNode,
   VectorNode as BricksVector,
   VisibleNode,
+  computePositionalRelationship,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
@@ -18,17 +18,54 @@ import {
   doesNodeContainsAnImage,
 } from "./util";
 import { GoogleFontsInstance } from "../../../google/google-fonts";
+import { PostionalRelationship } from "../../../bricks/node";
+import { getLineBasedOnDirection } from "../../../bricks/line";
+import { Direction } from "../../../bricks/direction";
 
 enum NodeType {
   GROUP = "GROUP",
   TEXT = "TEXT",
+  IMAGE = "IMAGE",
   VECTOR = "VECTOR",
   ELLIPSE = "ELLIPSE",
   FRAME = "FRAME",
   RECTANGLE = "RECTANGLE",
   INSTANCE = "INSTANCE",
+  STAR = "STAR",
+  SLICE = "SLICE",
   COMPONENT = "COMPONENT",
+  BOOLEAN_OPERATION = "BOOLEAN_OPERATION"
 }
+
+
+const safelySetWidthAndHeight = (nodeType: string, figmaNode: SceneNode, attributes: Attributes) => {
+  if (nodeType === NodeType.FRAME || nodeType === NodeType.IMAGE || nodeType === NodeType.GROUP || nodeType === NodeType.INSTANCE) {
+    if (!isEmpty(figmaNode.absoluteBoundingBox)) {
+      attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+      attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+      // @ts-ignore
+    } else if (!isEmpty(figmaNode.absoluteRenderBounds)) {
+      // @ts-ignore
+      attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+      // @ts-ignore
+      attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+    }
+
+    return;
+  }
+
+  // @ts-ignore
+  if (!isEmpty(figmaNode.absoluteRenderBounds)) {
+    // @ts-ignore
+    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+    // @ts-ignore
+    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+  } else if (!isEmpty(figmaNode.absoluteBoundingBox)) {
+    attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+    attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+  }
+
+};
 
 const addDropShadowCssProperty = (
   figmaNode:
@@ -103,7 +140,7 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     switch (figmaNode.primaryAxisAlignItems) {
       case "MIN":
-        attributes["justify-content"] = "start";
+        attributes["justify-content"] = "flex-start";
         break;
       case "CENTER":
         attributes["justify-content"] = "center";
@@ -112,24 +149,23 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
         attributes["justify-content"] = "space-between";
         break;
       case "MAX":
-        attributes["justify-content"] = "end";
+        attributes["justify-content"] = "flex-end";
         break;
     }
 
     switch (figmaNode.counterAxisAlignItems) {
       case "MIN":
-        attributes["align-items"] = "start";
+        attributes["align-items"] = "flex-start";
         break;
       case "CENTER":
         attributes["align-items"] = "center";
         break;
       case "MAX":
-        attributes["align-items"] = "end";
+        attributes["align-items"] = "flex-end";
         break;
     }
 
-    if (figmaNode.children.length > 1) {
-      // gap has no effects when only there is only one child
+    if (figmaNode.itemSpacing) {
       attributes["gap"] = `${figmaNode.itemSpacing}px`;
     }
 
@@ -158,11 +194,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
 
   if (figmaNode.type === NodeType.GROUP) {
-    // width
-    attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+    safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
 
-    // height
-    attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
     addDropShadowCssProperty(figmaNode, attributes);
   }
 
@@ -170,12 +203,20 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     figmaNode.type === NodeType.VECTOR ||
     figmaNode.type === NodeType.ELLIPSE
   ) {
-    if (!isEmpty(figmaNode.absoluteRenderBounds)) {
-      // width
-      attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+    safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
 
-      // height
-      attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+    const fills = figmaNode.fills;
+    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
+      // background color
+      const solidPaint = fills.find(
+        (fill) => fill.type === "SOLID"
+      ) as SolidPaint;
+      if (solidPaint) {
+        attributes["background-color"] = colorToStringWithOpacity(
+          solidPaint.color,
+          solidPaint.opacity
+        );
+      }
     }
   }
 
@@ -293,29 +334,55 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // width and height
     const { absoluteRenderBounds, absoluteBoundingBox } = figmaNode;
 
-    const boundingBoxWidth = figmaNode.absoluteBoundingBox.width;
-    const renderBoundsWidth = figmaNode.absoluteRenderBounds.width;
-    const renderBoundsHeight = figmaNode.absoluteRenderBounds.height;
+    let width: number = absoluteRenderBounds ? absoluteRenderBounds.width + 2 : absoluteBoundingBox.width;
+    let height: number = absoluteRenderBounds ? absoluteRenderBounds.height : absoluteBoundingBox.height;
 
     let moreThanOneRow: boolean = false;
-    if (figmaNode.fontSize !== figma.mixed) {
-      moreThanOneRow = renderBoundsHeight > figmaNode.fontSize;
+    if (absoluteRenderBounds) {
+      const renderBoundsHeight = absoluteRenderBounds.height;
+
+      if (figmaNode.fontSize !== figma.mixed) {
+        moreThanOneRow = renderBoundsHeight > figmaNode.fontSize;
+      }
+
+      if (!moreThanOneRow) {
+        attributes["white-space"] = "nowrap";
+      }
     }
 
-    if (!moreThanOneRow) {
-      attributes["white-space"] = "nowrap";
-    }
+    if (absoluteBoundingBox && absoluteRenderBounds) {
+      const renderBoundsWidth = absoluteRenderBounds.width;
+      const boundingBoxWidth = absoluteBoundingBox.width;
 
-    let width = absoluteRenderBounds.width + 2;
+      // If bounding box and rendering box are similar in size, horizontal text alignment doesn't have any
+      // actual effects therefore should be always considered as "text-align": "left" when there is only one row
+      if (
+        Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth > 0.1 ||
+        moreThanOneRow
+      ) {
+        // text alignment
+        switch (figmaNode.textAlignHorizontal) {
+          case "CENTER":
+            attributes["text-align"] = "center";
+            break;
+          case "RIGHT":
+            attributes["text-align"] = "right";
+            break;
+          case "JUSTIFIED":
+            attributes["text-align"] = "justify";
+            break;
+        }
+      }
 
-    if (
-      Math.abs(
-        figmaNode.absoluteBoundingBox.width - absoluteRenderBounds.width
-      ) /
-      figmaNode.absoluteBoundingBox.width >
-      0.2
-    ) {
-      width = absoluteRenderBounds.width + 4;
+      if (
+        Math.abs(
+          absoluteBoundingBox.width - absoluteRenderBounds.width
+        ) /
+        absoluteBoundingBox.width >
+        0.2
+      ) {
+        width = absoluteRenderBounds.width + 4;
+      }
     }
 
     // @ts-ignore
@@ -323,29 +390,50 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes["width"] = `${absoluteBoundingBox.width}px`;
     }
 
-    if (moreThanOneRow) {
-      switch (figmaNode.textAutoResize) {
-        case "NONE": {
-          attributes["width"] = `${width}px`;
-          attributes["height"] = `${absoluteRenderBounds.height}px`;
-          break;
-        }
-        case "HEIGHT": {
-          attributes["width"] = `${width}px`;
-          break;
-        }
-        case "WIDTH_AND_HEIGHT": {
-          // do nothing
-          break;
-        }
-        case "TRUNCATE": {
-          attributes["width"] = `${width}px`;
-          attributes["height"] = `${absoluteRenderBounds.height}px`;
-          attributes["text-overflow"] = "ellipsis";
-          break;
-        }
+    switch (figmaNode.textAutoResize) {
+      case "NONE": {
+        attributes["width"] = `${width}px`;
+        // attributes["height"] = `${height}px`;
+        break;
+      }
+      case "HEIGHT": {
+        attributes["width"] = `${width}px`;
+        break;
+      }
+      case "WIDTH_AND_HEIGHT": {
+        // do nothing
+        attributes["width"] = `${width}px`;
+        break;
+      }
+      case "TRUNCATE": {
+        attributes["width"] = `${width}px`;
+        // attributes["height"] = `${height}px`;
+        attributes["text-overflow"] = "ellipsis";
+        break;
       }
     }
+
+    // switch (figmaNode.textAutoResize) {
+    //   // case "NONE": {
+    //   //   attributes["width"] = `${width}px`;
+    //   //   attributes["height"] = `${absoluteRenderBounds.height}px`;
+    //   //   break;
+    //   // }
+    //   // case "HEIGHT": {
+    //   //   attributes["width"] = `${width}px`;
+    //   //   break;
+    //   // }
+    //   case "WIDTH_AND_HEIGHT": {
+    //     attributes["width"] = `${width}px`;
+    //     break;
+    //   }
+    //   // case "TRUNCATE": {
+    //   //   attributes["width"] = `${width}px`;
+    //   //   attributes["height"] = `${absoluteRenderBounds.height}px`;
+    //   //   attributes["text-overflow"] = "ellipsis";
+    //   //   break;
+    //   // }
+    // }
 
     // text decoration
     switch (figmaNode.textDecoration) {
@@ -375,26 +463,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     if (moreThanOneRow && textContainingOnlyOneWord) {
       attributes["overflow-wrap"] = "break-word";
-    }
-
-    // If bounding box and rendering box are similar in size, horizontal text alignment doesn't have any
-    // actual effects therefore should be always considered as "text-align": "left" when there is only one row
-    if (
-      Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth > 0.1 ||
-      moreThanOneRow
-    ) {
-      // text alignment
-      switch (figmaNode.textAlignHorizontal) {
-        case "CENTER":
-          attributes["text-align"] = "center";
-          break;
-        case "RIGHT":
-          attributes["text-align"] = "right";
-          break;
-        case "JUSTIFIED":
-          attributes["text-align"] = "justify";
-          break;
-      }
     }
 
     /* 
@@ -477,6 +545,7 @@ export class FigmaNodeAdapter {
   constructor(node: SceneNode) {
     this.node = node;
     this.cssAttributes = getCssAttributes(node);
+
     this.positionalCssAttribtues = getPositionalCssAttributes(node);
   }
 
@@ -573,8 +642,8 @@ export class FigmaNodeAdapter {
 }
 
 export class FigmaVectorNodeAdapter extends FigmaNodeAdapter {
-  node: VectorNode;
-  constructor(node: VectorNode) {
+  node: SceneNode;
+  constructor(node: SceneNode) {
     super(node);
     this.node = node;
   }
@@ -628,22 +697,49 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
 const EXPORTABLE_NODE_TYPES: string[] = [
   NodeType.ELLIPSE,
   NodeType.VECTOR,
+  NodeType.IMAGE,
+  NodeType.INSTANCE,
+  NodeType.GROUP,
+  NodeType.STAR,
   NodeType.FRAME,
+  NodeType.RECTANGLE,
+  NodeType.BOOLEAN_OPERATION,
+];
+
+const VECTOR_NODE_TYPES: string[] = [
+  NodeType.ELLIPSE,
+  NodeType.VECTOR,
+  NodeType.STAR,
+  NodeType.BOOLEAN_OPERATION,
   NodeType.RECTANGLE,
 ];
 
-type Feedbacks = {
+type Feedback = {
   nodes: Node[];
   areAllNodesExportable: boolean;
+  doNodesContainImage: boolean;
+  doNodesHaveNonOverlappingChildren: boolean;
 };
 
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[]
-): Feedbacks => {
+): Feedback => {
   let reordered = [...figmaNodes];
+
   if (reordered.length > 1) {
     reordered.sort((a, b) => {
+      let wrappedNodeA: Node = new VisibleNode(new FigmaNodeAdapter(a));
+      let wrappedNodeB: Node = new VisibleNode(new FigmaNodeAdapter(b));
+
+      if (computePositionalRelationship(wrappedNodeA.getAbsRenderingBox(), wrappedNodeB.getAbsRenderingBox()) === PostionalRelationship.INCLUDE) {
+        return 1;
+      }
+
+      if (computePositionalRelationship(wrappedNodeB.getAbsRenderingBox(), wrappedNodeA.getAbsRenderingBox()) === PostionalRelationship.INCLUDE) {
+        return -1;
+      }
+
       if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
         return -1;
       }
@@ -652,11 +748,15 @@ export const convertFigmaNodesToBricksNodes = (
     });
   }
 
-  let result: Feedbacks = {
+  let result: Feedback = {
     nodes: [],
     areAllNodesExportable: true,
+    doNodesContainImage: false,
+    doNodesHaveNonOverlappingChildren: false,
   };
 
+  let sliceNode: SceneNode = null;
+  let allNodesAreOfVectorNodeTypes: boolean = true;
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
 
@@ -665,13 +765,20 @@ export const convertFigmaNodesToBricksNodes = (
         result.areAllNodesExportable = false;
       }
 
-      let newNode: Node = new VisibleNode(new FigmaNodeAdapter(figmaNode));
+      if (!VECTOR_NODE_TYPES.includes(figmaNode.type)) {
+        allNodesAreOfVectorNodeTypes = false;
+      }
 
+      if (figmaNode.type === NodeType.SLICE) {
+        sliceNode = figmaNode;
+      }
+
+      let newNode: Node = new VisibleNode(new FigmaNodeAdapter(figmaNode));
       switch (figmaNode.type) {
         case NodeType.RECTANGLE:
           if (doesNodeContainsAnImage(figmaNode)) {
             newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
-            result.areAllNodesExportable = false;
+            result.doNodesContainImage = true;
           }
           break;
         case NodeType.GROUP:
@@ -688,36 +795,92 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new BricksTextNode(new FigmaTextNodeAdapter(figmaNode));
           break;
         case NodeType.VECTOR:
+        case NodeType.STAR:
           newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
           break;
         case NodeType.ELLIPSE:
           if (doesNodeContainsAnImage(figmaNode)) {
             newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
-            result.areAllNodesExportable = false;
+            result.doNodesContainImage = true;
             break;
           }
       }
 
       //@ts-ignore
       if (!isEmpty(figmaNode?.children)) {
+        let isExportableNode: boolean = false;
         //@ts-ignore
-        const feedbacks = convertFigmaNodesToBricksNodes(figmaNode.children);
-        if (feedbacks.areAllNodesExportable) {
-          newNode = new VectorGroupNode(
-            new FigmaVectorGroupNodeAdapter(figmaNode),
-            feedbacks.nodes
-          );
+        const feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
+        if (feedback.areAllNodesExportable) {
+          if (!feedback.doNodesHaveNonOverlappingChildren) {
+            isExportableNode = true;
+            if (feedback.doNodesContainImage) {
+              newNode = new ImageNode(
+                new FigmaVectorGroupNodeAdapter(figmaNode),
+              );
+            } else {
+              newNode = new BricksVector(
+                new FigmaVectorGroupNodeAdapter(figmaNode),
+              );
+            }
+          }
         }
 
         result.areAllNodesExportable =
-          feedbacks.areAllNodesExportable && result.areAllNodesExportable;
+          feedback.areAllNodesExportable && result.areAllNodesExportable;
 
-        newNode.setChildren(feedbacks.nodes);
+        result.doNodesContainImage =
+          feedback.doNodesContainImage || result.doNodesContainImage;
+
+        if (!isExportableNode) {
+          newNode.setChildren(feedback.nodes);
+        }
       }
 
       result.nodes.push(newNode);
     }
   }
 
+  let horizontalOverlap: boolean = areNodesOverlappingByDirection(result.nodes, Direction.HORIZONTAL);
+  let verticalOverlap: boolean = areNodesOverlappingByDirection(result.nodes, Direction.VERTICAL);
+  result.doNodesHaveNonOverlappingChildren = !horizontalOverlap || !verticalOverlap;
+
+  if (allNodesAreOfVectorNodeTypes) {
+    result.doNodesHaveNonOverlappingChildren = false;
+  }
+
+  if (!isEmpty(sliceNode)) {
+    result.nodes = [new BricksVector(new FigmaVectorNodeAdapter(sliceNode))];
+    result.doNodesHaveNonOverlappingChildren = false;
+    result.areAllNodesExportable = false;
+  }
+
   return result;
+};
+
+const areNodesOverlappingByDirection = (nodes: Node[], direction: Direction): boolean => {
+  let overlap: boolean = false;
+  for (let i = 0; i < nodes.length; i++) {
+    const currentNode: Node = nodes[i];
+    let currentLine = getLineBasedOnDirection(currentNode, direction);
+
+    for (let j = 0; j < nodes.length; j++) {
+      const targetNode: Node = nodes[j];
+      if (targetNode.getId() === currentNode.getId()) {
+        continue;
+      }
+
+      const targetLine = getLineBasedOnDirection(targetNode, direction);
+      if (currentLine.overlap(targetLine)) {
+        overlap = true;
+        break;
+      }
+    }
+
+    if (overlap) {
+      break;
+    }
+  }
+
+  return overlap;
 };
