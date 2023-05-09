@@ -58,9 +58,9 @@ Bricks is composed of a number of components. Below is a description of each com
 - `core`: engine that converts Figma nodes into coding files.
 
 ## License
-Distributed under the Apache 2.0 License. See `LICENSE` for more information.
+Distributed under the Apache 2.0 License and Bricks Enterprise License. See `LICENSE` for more information.
 
 ## Get in Touch
 Email: spike@bricks-tech.com
 
-<a href="https://join.slack.com/t/brickscommunity/shared_invite/zt-1pb2hy3h2-9rDYWMZdHKxHblzUG0CpTQ"><img src="https://img.shields.io/badge/slack-bricks-blue?logo=slack&labelColor=2EB67D" alt="Join Bricks on Slack"></a>
+<a href="https://discord.gg/NM6aeBeqCD"><img src="https://img.shields.io/badge/discord-bricks-blue?logo=discord&labelColor=2EB67D" alt="Join Bricks on Discord"></a>
