@@ -6,7 +6,7 @@ export interface Props {
   isGeneratingCode: boolean;
   isGeneratingCodeWithAi: boolean;
   selectedUiFramework: UiFramework;
-  limit: number,
+  limit: number;
   selectedGenerationMethod: GenerationMethod;
 }
 
@@ -21,7 +21,11 @@ const CodeGenerationStatus = ({
 
   useEffect(() => {
     if (!isGeneratingCode && !isGeneratingCodeWithAi) {
-      if (selectedGenerationMethod === GenerationMethod.withai && selectedUiFramework !== UiFramework.html && limit !== 0) {
+      if (
+        selectedGenerationMethod === GenerationMethod.withai &&
+        selectedUiFramework !== UiFramework.html &&
+        limit !== 0
+      ) {
         setCurrentPage(PAGES.POST_CODE_GENERATION_AI);
         return;
       }
@@ -32,7 +36,7 @@ const CodeGenerationStatus = ({
   const generatingCodeText = isGeneratingCodeWithAi ? (
     <p className="font-vietnam text-black font-bold text-lg text-center">
       Generating Code With AI. <br />
-      This could take up to 1 minute. <br />
+      This could take up to 3 minute. <br />
       Please wait patiently.
     </p>
   ) : (

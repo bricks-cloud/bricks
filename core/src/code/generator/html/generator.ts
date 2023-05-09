@@ -101,12 +101,13 @@ export class Generator {
           option
         );
 
+      // TODO: VECTOR_GROUP node type is deprecated
       case NodeType.VECTOR_GROUP:
         const vectorGroupNode = node as VectorGroupNode;
         const vectorGroupCodeString =
           await this.generateHtmlElementForVectorNode(vectorGroupNode, option);
 
-        return this.renderNodeWithAbsolutePosition(
+        return this.renderNodeWithPositionalAttributes(
           vectorGroupNode,
           vectorGroupCodeString,
           option
@@ -119,9 +120,18 @@ export class Generator {
           option
         );
 
-        return this.renderNodeWithAbsolutePosition(
-          vectorNode,
-          vectorCodeString,
+        if (isEmpty(node.getChildren())) {
+          return this.renderNodeWithPositionalAttributes(
+            vectorNode,
+            vectorCodeString,
+            option
+          );
+        }
+
+        const vectorNodeClassProps = this.getPropsFromNode(node, option);
+        return await this.generateHtmlFromNodes(
+          node.getChildren(),
+          [`<div ${vectorNodeClassProps}>`, `</div>`],
           option
         );
       case NodeType.IMAGE:
@@ -237,16 +247,16 @@ export class Generator {
         }
 
         return [
-          this.renderNodeWithAbsolutePosition(
+          this.renderNodeWithPositionalAttributes(
             node,
-            `<img src=${src} alt=${alt} ${widthAndHeight}/>`,
+            `<img src=${srcValue} alt=${alt} ${widthAndHeight}/>`,
             option
           ),
         ];
       }
 
       return [
-        this.renderNodeWithAbsolutePosition(
+        this.renderNodeWithPositionalAttributes(
           node,
           `<img src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}/>`,
           option
@@ -261,16 +271,22 @@ export class Generator {
     return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
-  renderNodeWithAbsolutePosition(
+  renderNodeWithPositionalAttributes(
     node: ImageNode | VectorNode | VectorGroupNode,
     inner: string,
     option: Option
   ): string {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
-    if (positionalCssAttribtues["position"] === "absolute") {
+
+    if (positionalCssAttribtues["position"] === "absolute" ||
+      positionalCssAttribtues["margin-left"] ||
+      positionalCssAttribtues["margin-right"] ||
+      positionalCssAttribtues["margin-top"] ||
+      positionalCssAttribtues["margin-bottom"]) {
       return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
+
     return inner;
   }
 
