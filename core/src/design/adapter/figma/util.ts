@@ -199,6 +199,10 @@ export const figmaLineHeightToCssString = (lineHeight: LineHeight) => {
 };
 
 export const figmaLetterSpacingToCssString = (letterSpacing: LetterSpacing) => {
+  if (letterSpacing.value === 0) {
+    return "normal";
+  }
+
   switch (letterSpacing.unit) {
     case "PERCENT":
       return `${roundToTwoDps(letterSpacing.value / 100)}em`;

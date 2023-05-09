@@ -279,11 +279,13 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
 
-    if (positionalCssAttribtues["position"] === "absolute" ||
+    if (
+      positionalCssAttribtues["position"] === "absolute" ||
       positionalCssAttribtues["margin-left"] ||
       positionalCssAttribtues["margin-right"] ||
       positionalCssAttribtues["margin-top"] ||
-      positionalCssAttribtues["margin-bottom"]) {
+      positionalCssAttribtues["margin-bottom"]
+    ) {
       return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
 
@@ -402,7 +404,11 @@ export class Generator {
         }
 
         const letterSpacing = styledTextSegment.letterSpacing;
-        if (letterSpacing !== defaultLetterSpacing) {
+        if (
+          letterSpacing !== defaultLetterSpacing &&
+          defaultLetterSpacing &&
+          letterSpacing !== "normal"
+        ) {
           cssAttributes["letter-spacing"] = letterSpacing;
         }
 
