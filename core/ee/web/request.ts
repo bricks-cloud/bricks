@@ -46,7 +46,7 @@ export const getNameMap = async (): Promise<NameMap> => {
 
   try {
     const response: any = await fetch(
-      process.env.ML_BACKEND_API_ENDPOINT + "/generate/name", 
+      process.env.ML_BACKEND_API_ENDPOINT + "/generate/name",
       // "http://localhost:8080/generate/name",
       {
         method: 'POST',
@@ -71,13 +71,7 @@ export const getNameMap = async (): Promise<NameMap> => {
       parsedNameMapArr.push(JSON.parse(nameMapStr));
     }
 
-    const consolidatedNameMap: NameMap = {};
-    parsedNameMapArr.forEach((nameMap: NameMap) => {
-      Object.entries((nameMap)).forEach(([oldName, newName]) => {
-        consolidatedNameMap[oldName] = newName;
-      });
-    });
-
+    const consolidatedNameMap: NameMap = getConsolidateNameMap(parsedNameMapArr);
     dedupNames(consolidatedNameMap);
     return consolidatedNameMap;
 
@@ -109,4 +103,44 @@ const dedupNames = (nameMap: NameMap) => {
 
     return;
   });
+};
+
+const getConsolidateNameMap = (parsedNameMapArr: NameMap[]): NameMap => {
+  const consolidatedNameMap: NameMap = {};
+  parsedNameMapArr.forEach((nameMap: NameMap) => {
+    const nonDuplicateDataFields: Set<string> = new Set<string>();
+    const nonDuplicateProps: Set<string> = new Set<string>();
+    let dataFieldCounter: number = 1;
+    let propCounter: number = 1;
+
+    Object.entries((nameMap)).forEach(([oldName, newName]) => {
+      if (nonDuplicateDataFields.has(newName)) {
+        let dedupedName: string = newName + dataFieldCounter;
+        consolidatedNameMap[oldName] = dedupedName;
+        nonDuplicateDataFields.add(dedupedName);
+        dataFieldCounter++;
+        return;
+      }
+
+      if (nonDuplicateProps.has(newName)) {
+        let dedupedName: string = newName + propCounter;
+        consolidatedNameMap[oldName] = dedupedName;
+        nonDuplicateProps.add(dedupedName);
+        propCounter++;
+        return;
+      }
+
+      consolidatedNameMap[oldName] = newName;
+
+      if (oldName.startsWith("dataField")) {
+        nonDuplicateDataFields.add(newName);
+      }
+
+      if (oldName.startsWith("prop")) {
+        nonDuplicateProps.add(newName);
+      }
+    });
+  });
+
+  return consolidatedNameMap;
 };
