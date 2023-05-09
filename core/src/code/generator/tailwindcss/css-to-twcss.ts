@@ -19,6 +19,7 @@ import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import { Option, UiFramework } from "../../code";
 import { getVariablePropForTwcss } from "../../../../ee/code/prop";
+import { GetPropsFromAttributes } from "../html/generator";
 
 export type TwcssPropRenderingMeta = {
   numberOfTwcssClasses: number;
@@ -30,11 +31,12 @@ export type TwcssPropRenderingMap = {
 };
 
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
-export const convertCssClassesToTwcssClasses = (
+export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   attributes: Attributes,
   option: Option,
-  id?: string
-): string => {
+  id?: string,
+  parentAttributes?: Attributes
+) => {
   let classPropName: string = "class";
   let variableProps: string = "";
   const twcssPropRenderingMap: TwcssPropRenderingMap = {};
@@ -43,7 +45,8 @@ export const convertCssClassesToTwcssClasses = (
     const twcssClasses: string[] = getTwcssClass(
       property,
       value,
-      attributes
+      attributes,
+      parentAttributes
     ).split(" ");
     twcssPropRenderingMap[property] = {
       numberOfTwcssClasses: twcssClasses.length,
@@ -68,9 +71,12 @@ export const convertCssClassesToTwcssClasses = (
     }
 
     for (let i = 0; i < twcssPropRenderingMeta.numberOfTwcssClasses; i++) {
-      const parts: string[] = getTwcssClass(property, value, attributes).split(
-        " "
-      );
+      const parts: string[] = getTwcssClass(
+        property,
+        value,
+        attributes,
+        parentAttributes
+      ).split(" ");
       if (twcssPropRenderingMeta.filledClassIndexes.has(i)) {
         continue;
       }
@@ -428,7 +434,8 @@ const renderTwcssProperty = (prefix: string, value: string) => {
 export const getTwcssClass = (
   cssProperty: string,
   cssValue: string,
-  cssAttributes: Attributes
+  cssAttributes: Attributes,
+  parentAttributes?: Attributes
 ): string => {
   if (isEmpty(cssValue)) {
     return "";
@@ -831,7 +838,10 @@ export const getTwcssClass = (
 
     case "line-height": {
       const lineHeightNum = extractPixelNumberFromString(cssValue);
-      if (cssValue.endsWith("px") && lineHeightNum > largestTwcssLineheightInPixels) {
+      if (
+        cssValue.endsWith("px") &&
+        lineHeightNum > largestTwcssLineheightInPixels
+      ) {
         return `leading-[${lineHeightNum}px]`;
       }
 
@@ -866,8 +876,11 @@ export const getTwcssClass = (
     }
 
     case "letter-spacing": {
+      const fontSizeString =
+        cssAttributes?.["font-size"] || parentAttributes?.["font-size"];
+
       // assume font size is always in px
-      const fontSize = parseInt(cssAttributes["font-size"].slice(0, -2), 10);
+      const fontSize = parseInt(fontSizeString.slice(0, -2), 10);
       const twClass = findClosestTwcssLetterSpacing(cssValue, fontSize);
       return twClass;
     }

@@ -162,7 +162,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -174,7 +174,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId(),
+        node.getId()
       );
 
     case NodeType.VECTOR:
@@ -199,7 +199,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -211,7 +211,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId(),
+        node.getId()
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
@@ -225,7 +225,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId(),
+        node.getId()
       );
 
     default:
@@ -257,7 +257,10 @@ export const buildTwcssConfigFileContent = (
         )}": "url(.${importComponent.importPath})",`;
       }
 
-      if (extension === "svg" && shouldUseAsBackgroundImage(importComponent.node)) {
+      if (
+        extension === "svg" &&
+        shouldUseAsBackgroundImage(importComponent.node)
+      ) {
         backgroundImages += `"${getImageFileNameFromUrl(
           importComponent.importPath
         )}": "url(.${importComponent.importPath})",`;

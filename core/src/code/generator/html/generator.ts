@@ -21,9 +21,12 @@ import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-r
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
 type GetPropsFromNode = (node: Node, option: Option) => string;
-type GetPropsFromAttributes = (
+export type GetPropsFromAttributes = (
   attributes: Attributes,
-  option: Option
+  option: Option,
+  id?: string,
+  // sometimes needed because the value of an attribute can depend on the parent's attributes
+  parentCssAttributes?: Attributes
 ) => string;
 
 export type ImportedComponentMeta = {
@@ -372,6 +375,7 @@ export class Generator {
       (styledTextSegment) => {
         // here we only keep attributes if they are different from the default attribute
         const cssAttributes: Attributes = {};
+        const parentCssAttributes: Attributes = {};
 
         const fontSize = `${styledTextSegment.fontSize}px`;
         if (fontSize !== defaultFontSize) {
@@ -410,12 +414,14 @@ export class Generator {
           letterSpacing !== "normal"
         ) {
           cssAttributes["letter-spacing"] = letterSpacing;
+          parentCssAttributes["font-size"] = defaultFontSize;
         }
 
         return {
           start: styledTextSegment.start,
           end: styledTextSegment.end,
           cssAttributes,
+          parentCssAttributes,
         };
       }
     );
@@ -464,7 +470,9 @@ export class Generator {
                 if (!isEmpty(segment.cssAttributes)) {
                   const textProps = this.getPropsFromAttributes(
                     segment.cssAttributes,
-                    option
+                    option,
+                    undefined,
+                    segment.parentCssAttributes
                   );
 
                   // if css attribute applies to the whole list item, wrap it in a <li> tag
