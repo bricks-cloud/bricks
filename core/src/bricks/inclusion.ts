@@ -1,7 +1,5 @@
 import { PostionalRelationship, Node } from "./node";
 
-const inclusionAnnotation: string = "checkedForInclusion";
-
 // groupNodesByInclusion groups nodes if they have an inclusion relationship
 // input nodes are ordered by z-index
 export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
@@ -12,10 +10,6 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
   // in terms of z-index
   for (let i = nodes.length - 1; i >= 0; i--) {
     let currentNode = nodes[i];
-
-    if (currentNode.getAnnotation(inclusionAnnotation)) {
-      return nodes;
-    }
 
     if (removedNodes.has(currentNode.getId())) {
       continue;
@@ -55,7 +49,6 @@ export const groupNodesByInclusion = (nodes: Node[]): Node[] => {
   for (let i = 0; i < nodes.length; i++) {
     let currentNode = nodes[i];
 
-    currentNode.addAnnotations(inclusionAnnotation, true);
     if (removedNodes.has(currentNode.getId())) {
       continue;
     }

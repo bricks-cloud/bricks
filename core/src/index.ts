@@ -9,7 +9,7 @@ import { getNameMap } from "../ee/web/request";
 import { instantiateNameRegistryGlobalInstance } from "./code/name-registry/name-registry";
 import { instantiateOptionRegistryGlobalInstance } from "./code/option-registry/option-registry";
 import { instantiateFontsRegistryGlobalInstance } from "./code/generator/tailwindcss/fonts-registry";
-import { removeCompletelyOverlappingNodes, removeNode } from "./bricks/remove-node";
+import { removeChildrenNode, removeCompletelyOverlappingNodes, removeNode } from "./bricks/remove-node";
 import { isEmpty, replaceVariableNameWithinFile, trackEvent } from "./utils";
 import { instantiateCodeSampleRegistryGlobalInstance } from "../ee/loop/code-sample-registry";
 import { instantiateDataArrRegistryGlobalInstance } from "../ee/loop/data-array-registry";
@@ -28,18 +28,26 @@ export const convertToCode = async (
     return [];
   }
 
+  const dedupedNodes: Node[] = [];
+  for (const node of converted) {
+    let newNode: Node = removeNode(node);
+    removeCompletelyOverlappingNodes(newNode, null);
+    removeChildrenNode(newNode);
+    dedupedNodes.push(newNode);
+  }
+
   let startingNode: Node =
-    converted.length > 1 ? new GroupNode(converted) : converted[0];
+    dedupedNodes.length > 1 ? new GroupNode(dedupedNodes) : dedupedNodes[0];
 
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
+  removeChildrenNode(startingNode);
 
   addAdditionalCssAttributesToNodes(startingNode);
 
   instantiateRegistries(startingNode, option);
-
   return await generateCodingFiles(startingNode, option);
 };
 
@@ -54,13 +62,22 @@ export const convertToCodeWithAi = async (
     return [[], []];
   }
 
+  const dedupedNodes: Node[] = [];
+  for (const node of converted) {
+    let newNode: Node = removeNode(node);
+    removeCompletelyOverlappingNodes(newNode, null);
+    removeChildrenNode(newNode);
+    dedupedNodes.push(newNode);
+  }
+
   let startingNode: Node =
-    converted.length > 1 ? new GroupNode(converted) : converted[0];
+    dedupedNodes.length > 1 ? new GroupNode(dedupedNodes) : dedupedNodes[0];
 
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
+  removeChildrenNode(startingNode);
 
   addAdditionalCssAttributesToNodes(startingNode);
 

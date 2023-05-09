@@ -1,7 +1,4 @@
-import {
-  convertToCode,
-  convertToCodeWithAi,
-} from "bricks-core/src";
+import { convertToCode, convertToCodeWithAi } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
 import { EVENT_ERROR } from "./analytic/amplitude";
@@ -55,11 +52,14 @@ figma.ui.onmessage = async (msg) => {
 
   if (msg.type === "generate-code-with-ai") {
     try {
-      const [files, applications] = await convertToCodeWithAi(figma.currentPage.selection, {
-        language: msg.options.language,
-        cssFramework: msg.options.cssFramework,
-        uiFramework: msg.options.uiFramework,
-      });
+      const [files, applications] = await convertToCodeWithAi(
+        figma.currentPage.selection,
+        {
+          language: msg.options.language,
+          cssFramework: msg.options.cssFramework,
+          uiFramework: msg.options.uiFramework,
+        }
+      );
 
       figma.ui.postMessage({
         type: "generated-files",
@@ -154,7 +154,6 @@ figma.ui.onmessage = async (msg) => {
 };
 
 figma.on("selectionchange", async () => {
-
   figma.ui.postMessage({
     type: "selection-change",
     isComponentSelected: figma.currentPage.selection.length > 0,

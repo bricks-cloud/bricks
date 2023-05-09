@@ -1,7 +1,13 @@
 import React, { useContext } from "react";
 import { RadioGroup as BaseRadioGroup } from "@headlessui/react";
 import PageContext, { PAGES } from "../context/page-context";
-import { CssFramework, GenerationMethod, Language, Settings, UiFramework } from "../constants";
+import {
+  CssFramework,
+  GenerationMethod,
+  Language,
+  Settings,
+  UiFramework,
+} from "../constants";
 import * as logo from "../assets/arrow.png";
 import htmlLogo from "../assets/html-logo.svg";
 import lightbulbLogo from "../assets/light-bulb.svg";
@@ -22,7 +28,11 @@ type Option<T> = {
 
 const GenerationMethods: Option<GenerationMethod>[] = [
   { id: GenerationMethod.withai, name: "With AI", logo: lightbulbLogo },
-  { id: GenerationMethod.withoutai, name: "Without AI", logo: lightbulbDarkLogo },
+  {
+    id: GenerationMethod.withoutai,
+    name: "Without AI",
+    logo: lightbulbDarkLogo,
+  },
 ];
 
 const UiFrameworks: Option<UiFramework>[] = [
@@ -48,7 +58,7 @@ function updateSettings(
   uiFramework: string,
   cssFramework: string,
   language: string,
-  generationMethod: string,
+  generationMethod: string
 ) {
   parent.postMessage(
     {
@@ -144,7 +154,7 @@ const CodeOutputSetting: React.FC<Props> = ({
   limit,
   setSelectedLanguage,
   selectedGenerationMethod,
-  setSelectedGenerationMethod
+  setSelectedGenerationMethod,
 }) => {
   const { previousPage, setCurrentPage } = useContext(PageContext);
 
@@ -153,7 +163,12 @@ const CodeOutputSetting: React.FC<Props> = ({
   };
 
   const handleSaveButtonClick = () => {
-    updateSettings(selectedUiFramework, selectedCssFramework, selectedLanguage, selectedGenerationMethod);
+    updateSettings(
+      selectedUiFramework,
+      selectedCssFramework,
+      selectedLanguage,
+      selectedGenerationMethod
+    );
     setCurrentPage(PAGES.HOME);
 
     parent.postMessage(
@@ -162,10 +177,10 @@ const CodeOutputSetting: React.FC<Props> = ({
           type: "analytics",
           eventName: EVENT_SAVE_SETTINGS,
           eventProperties: {
-              uiFramework: selectedUiFramework,
-              cssFramework: selectedCssFramework,
-              language: selectedLanguage,
-              generationMethod: selectedGenerationMethod,
+            uiFramework: selectedUiFramework,
+            cssFramework: selectedCssFramework,
+            language: selectedLanguage,
+            generationMethod: selectedGenerationMethod,
           },
         },
       },

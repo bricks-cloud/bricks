@@ -6,14 +6,11 @@ import { isEmpty } from "bricks-core/src/utils";
 
 export interface Props {
   limit: number;
-  aiApplications: AiApplication[],
+  aiApplications: AiApplication[];
 }
 
 const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
-  const {
-    limit,
-    aiApplications,
-  } = props;
+  const { limit, aiApplications } = props;
 
   const { setCurrentPage } = useContext(PageContext);
 
@@ -56,9 +53,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
           Here is how Ai is applied:
         </p>
         <div className="max-w-xs mx-auto flex flex-col justify-start items-start mb-8">
-          {applications.map((application) => (
-            application
-          ))}
+          {applications.map((application) => application)}
         </div>
       </div>
     );

@@ -10,8 +10,8 @@ enum RelativePoisition {
 }
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
-export const getLineBasedOnDirection = (node: Node, direction: Direction) => {
-  const coordinates = selectBox(node);
+export const getLineBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+  const coordinates = selectBox(node, useBoundingBox);
 
   if (direction === Direction.HORIZONTAL) {
     return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
