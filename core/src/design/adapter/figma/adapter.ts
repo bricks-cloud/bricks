@@ -811,6 +811,7 @@ type Feedback = {
   areAllNodesExportable: boolean;
   doNodesContainImage: boolean;
   doNodesHaveNonOverlappingChildren: boolean;
+  isSingleRectangle: boolean;
 };
 
 // convertFigmaNodesToBricksNodes converts Figma nodes to Bricks
@@ -845,10 +846,19 @@ export const convertFigmaNodesToBricksNodes = (
     areAllNodesExportable: true,
     doNodesContainImage: false,
     doNodesHaveNonOverlappingChildren: false,
+    isSingleRectangle: false,
   };
 
   let sliceNode: SceneNode = null;
   let allNodesAreOfVectorNodeTypes: boolean = true;
+
+  if (reordered.length === 1) {
+    const figmaNode = reordered[0];
+    if (figmaNode.type === NodeType.RECTANGLE) {
+      result.isSingleRectangle = true;
+    }
+  }
+
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
 
@@ -903,7 +913,7 @@ export const convertFigmaNodesToBricksNodes = (
         let isExportableNode: boolean = false;
         //@ts-ignore
         const feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
-        if (feedback.areAllNodesExportable) {
+        if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
           if (!feedback.doNodesHaveNonOverlappingChildren) {
             isExportableNode = true;
             if (feedback.doNodesContainImage) {

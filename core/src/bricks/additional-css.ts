@@ -201,28 +201,30 @@ const setMarginsForChildren = (
     let leftGap: number = 0;
     let rightGap: number = 0;
 
-    const targetLine = getLineBasedOnDirection(targetNode, direction);
-    const parentLine = getLineBasedOnDirection(parentNode, direction);
+    const targetLine = getLineBasedOnDirection(targetNode, direction, true);
+    const parentLine = getLineBasedOnDirection(parentNode, direction, true);
     const perpendicularTargetLine = getLineBasedOnDirection(
       targetNode,
-      getOppositeDirection(direction)
+      getOppositeDirection(direction),
+      true
     );
     const perpendicularParentLine = getLineBasedOnDirection(
       parentNode,
-      getOppositeDirection(direction)
+      getOppositeDirection(direction),
+      true,
     );
 
     let prevTarget = children[i];
     if (i > 0) {
       prevTarget = children[i - 1];
     }
-    const prevTargetLine = getLineBasedOnDirection(prevTarget, direction);
+    const prevTargetLine = getLineBasedOnDirection(prevTarget, direction, true);
 
     let nextTarget = children[i];
     if (i < children.length - 1) {
       nextTarget = children[i + 1];
     }
-    const nextTargetLine = getLineBasedOnDirection(nextTarget, direction);
+    const nextTargetLine = getLineBasedOnDirection(nextTarget, direction, true);
 
     if (direction === Direction.HORIZONTAL) {
       botGap =
@@ -390,6 +392,9 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
     const flexDir = node.getAPositionalAttribute("flex-direction");
 
+    const justifyContent = node.getAPositionalAttribute("justify-content");
+    const alignItems = node.getAPositionalAttribute("align-items");
+
     let gap: number = 0;
     let gapCssVal: string = node.getACssAttribute("gap");
     if (!isCssValueEmpty(gapCssVal)) {
@@ -463,6 +468,12 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         }
 
         child.addCssAttributes(attributes);
+
+        if (alignItems === "center" && child.getType() === NodeType.TEXT) {
+          const childAttributes: Attributes = child.getCssAttributes();
+          delete (childAttributes["width"]);
+          child.setCssAttributes(childAttributes);
+        }
       }
     }
 
@@ -670,6 +681,10 @@ const getJustifyContentValue = (
 
         return JustifyContent.FLEX_START;
     }
+  }
+
+  if (targetLines.length === 2) {
+    return JustifyContent.SPACE_BETWEEN;
   }
 
   if (targetLines.length > 2) {

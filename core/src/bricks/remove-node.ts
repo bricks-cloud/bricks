@@ -30,6 +30,11 @@ export const removeChildrenNode = (node: Node): Node => {
   let newChildren: Node[] = [];
   for (let i = 0; i < children.length; i++) {
     const child: Node = children[i];
+    if (child.getType() === NodeType.IMAGE || child.getType() === NodeType.VECTOR) {
+      newChildren.push(child);
+      continue;
+    }
+
     if (haveSimlarWidthAndHeight(node, child)) {
       const cssAttributes: Attributes = {
         ...node.getCssAttributes(),
