@@ -45,13 +45,8 @@ export interface StyledTextSegment {
   textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
   color: string;
   letterSpacing: string;
-}
-
-export interface ListSegment {
-  characters: string;
-  start: number;
-  end: number;
   listType: "none" | "ul" | "ol";
+  indentation: number;
 }
 
 export interface TextNode extends Node {
@@ -59,7 +54,6 @@ export interface TextNode extends Node {
   isItalic(): boolean;
   getFamilyName(): string;
   getStyledTextSegments(): StyledTextSegment[];
-  getListSegments(): ListSegment[];
 }
 
 export interface VectorNode extends Node {}

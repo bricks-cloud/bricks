@@ -9,7 +9,7 @@ import {
   computePositionalRelationship,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
-import { BoxCoordinates, Attributes, ExportFormat, ListSegment } from "../node";
+import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -771,6 +771,8 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "textCase",
       "fills",
       "letterSpacing",
+      "listOptions",
+      "indentation",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -789,6 +791,12 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       TITLE: "capitalize",
     } as const;
 
+    const figmaListOptionsToHtmlTagMap = {
+      NONE: "none",
+      UNORDERED: "ul",
+      ORDERED: "ol",
+    } as const;
+
     return styledTextSegments.map((segment) => ({
       ...segment,
       fontFamily: figmaFontNameToCssString(segment.fontName),
@@ -796,20 +804,6 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
       color: rgbaToString(getRgbaFromPaints(segment.fills)),
       letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
-    }));
-  }
-
-  getListSegments(): ListSegment[] {
-    const figmaListOptionsToHtmlTagMap = {
-      NONE: "none",
-      UNORDERED: "ul",
-      ORDERED: "ol",
-    } as const;
-
-    const listSegments = this.node.getStyledTextSegments(["listOptions"]);
-
-    return listSegments.map((segment) => ({
-      ...segment,
       listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
     }));
   }

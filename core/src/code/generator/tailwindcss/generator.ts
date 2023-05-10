@@ -108,16 +108,16 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       };
 
       //@ts-ignore
-      const listSegments = node.node.getListSegments();
-      // Extra classes needed for lists due to Tailwind's CSS reset
-      const listType = listSegments[0].listType;
-      if (listSegments.length === 1 && listType === "ul") {
-        attributes["list-style-type"] = "disc";
-      }
+      // const listSegments = node.node.getListSegments();
+      // // Extra classes needed for lists due to Tailwind's CSS reset
+      // const listType = listSegments[0].listType;
+      // if (listSegments.length === 1 && listType === "ul") {
+      //   attributes["list-style-type"] = "disc";
+      // }
 
-      if (listSegments.length === 1 && listType === "ol") {
-        attributes["list-style-type"] = "decimal";
-      }
+      // if (listSegments.length === 1 && listType === "ol") {
+      //   attributes["list-style-type"] = "decimal";
+      // }
 
       return convertCssClassesToTwcssClasses(attributes, option, node.getId());
     }
