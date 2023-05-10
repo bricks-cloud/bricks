@@ -512,6 +512,17 @@ export class Generator {
         ) {
           return listContent;
         } else {
+          const isTailwindCss = option.cssFramework === "tailwindcss";
+
+          if (isTailwindCss) {
+            const attribute =
+              listTag === "ul"
+                ? { "list-style-type": "disc" }
+                : { "list-style-type": "decimal" };
+            const textProps = this.getPropsFromAttributes(attribute, option);
+            return `<${listTag} ${textProps}>${listContent}</${listTag}>`;
+          }
+
           return `<${listTag}>${listContent}</${listTag}>`;
         }
       })
