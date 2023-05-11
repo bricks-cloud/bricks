@@ -419,8 +419,20 @@ export class Generator {
               }
 
               if (option.cssFramework === "tailwindcss") {
+                // Extra attributes needed due to Tailwind's CSS reset
+                const listProps = this.getPropsFromAttributes(
+                  {
+                    "margin-left": "40px",
+                    "list-style-type": listType === "ul" ? "disc" : "decimal",
+                  },
+                  option
+                );
+
+                resultText += `<${listType} ${listProps}>`;
+              } else {
+                resultText += `<${listType}>`;
               }
-              resultText += `<${listType}>`;
+
               htmlTagStack.push(listType);
             }
           } else if (indentationToAdd < 0) {
