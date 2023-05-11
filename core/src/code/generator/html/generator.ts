@@ -386,12 +386,12 @@ export class Generator {
             styledTextSegment
           );
 
-          const { characters, listType, indentation } = styledTextSegment;
+          const { characters, listType, indentation, href } = styledTextSegment;
 
           if (listType === "none") {
             const result = this.wrapTextIfHasAttributes(
               characters,
-              "span",
+              href,
               cssAttributes,
               parentCssAttributes,
               option
@@ -463,35 +463,26 @@ export class Generator {
 
               let result = "";
 
-              if (hasOpenListItem) {
-                const lastListItem =
-                  listItemArr[listItemIndex - 1] ||
-                  styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
-                  "";
-
-                if (lastListItem.endsWith("\n")) {
-                  result += "</li><li>";
-                }
-
-                result += this.wrapTextIfHasAttributes(
-                  listItem,
-                  "span",
-                  cssAttributes,
-                  parentCssAttributes,
-                  option
-                );
-              } else {
+              if (!hasOpenListItem) {
                 htmlTagStack.push("li");
                 result += "<li>";
-
-                result += this.wrapTextIfHasAttributes(
-                  listItem,
-                  "span",
-                  cssAttributes,
-                  parentCssAttributes,
-                  option
-                );
               }
+
+              const lastListItem =
+                listItemArr[listItemIndex - 1] ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                "";
+              if (hasOpenListItem && lastListItem.endsWith("\n")) {
+                result += "</li><li>";
+              }
+
+              result += this.wrapTextIfHasAttributes(
+                listItem,
+                href,
+                cssAttributes,
+                parentCssAttributes,
+                option
+              );
 
               const isLastListItem = listItemIndex === listItemArr.length - 1;
               if (listItem.endsWith("\n") && !isLastListItem) {
@@ -519,22 +510,29 @@ export class Generator {
 
   wrapTextIfHasAttributes(
     text: string,
-    htmlTag: string,
+    href: string,
     cssAttributes: Attributes,
     parentCssAttributes: Attributes,
     option: Option
   ) {
-    if (isEmpty(cssAttributes)) {
-      return escapeHtml(text);
+    const resultText = escapeHtml(text);
+
+    if (isEmpty(cssAttributes) && !href) {
+      return resultText;
     }
 
-    const textProps = this.getPropsFromAttributes(
-      cssAttributes,
-      option,
-      undefined,
-      parentCssAttributes
-    );
-    return `<${htmlTag} ${textProps}>${escapeHtml(text)}</${htmlTag}>`;
+    const htmlTag = href ? "a" : "span";
+    const hrefAttribute = href ? ` href="${href}"` : "";
+    const styleAttribute = !isEmpty(cssAttributes)
+      ? ` ${this.getPropsFromAttributes(
+          cssAttributes,
+          option,
+          undefined,
+          parentCssAttributes
+        )}`
+      : "";
+
+    return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
   }
 }
 

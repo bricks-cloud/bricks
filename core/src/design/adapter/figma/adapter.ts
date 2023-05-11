@@ -773,6 +773,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "letterSpacing",
       "listOptions",
       "indentation",
+      "hyperlink",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -805,6 +806,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       color: rgbaToString(getRgbaFromPaints(segment.fills)),
       letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
       listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
+      href: segment?.hyperlink?.type === "URL" ? segment.hyperlink.value : "",
     }));
   }
 }

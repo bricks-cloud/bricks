@@ -37,7 +37,6 @@ export interface StyledTextSegment {
     family: string;
     style: string;
   };
-  // CSS strings
   fontSize: number;
   fontFamily: string;
   fontWeight: number;
@@ -47,6 +46,7 @@ export interface StyledTextSegment {
   letterSpacing: string;
   listType: "none" | "ul" | "ol";
   indentation: number;
+  href: string;
 }
 
 export interface TextNode extends Node {
