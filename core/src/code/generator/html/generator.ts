@@ -72,15 +72,17 @@ export class Generator {
         const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
         const textProp = this.getText(node, option);
-        console.log("textProp");
-        console.log(textProp);
 
-        //@ts-ignore
-        // const listSegments = node.node.getListSegments();
-        // const listType = listSegments[0].listType;
-        // if (listSegments.length === 1 && listType !== "none") {
-        //   return `<${listType} ${attributes}${textNodeClassProps}>${textProp}</${listType}>`;
-        // }
+        // if textProp is enclosed in a <ul> or <ol> tag, we don't want to wrap another <div> around it
+        const result = /^<(ul|ol)>.*<\/(ul|ol)>$/s.exec(textProp);
+        if (result && result[1] === result[2]) {
+          const listTag = result[1];
+          const textPropWithoutListTag = textProp.substring(
+            4, // length of <ul> or <ol>
+            textProp.length - 5 // length of </ul> or </ol>
+          );
+          return `<${listTag} ${textNodeClassProps}>${textPropWithoutListTag}</${listTag}>`;
+        }
 
         return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
       }
@@ -416,6 +418,8 @@ export class Generator {
                 htmlTagStack.push("li");
               }
 
+              if (option.cssFramework === "tailwindcss") {
+              }
               resultText += `<${listType}>`;
               htmlTagStack.push(listType);
             }
