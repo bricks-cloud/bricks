@@ -485,12 +485,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // font color
     const paints = figmaNode.fills;
     if (paints !== figma.mixed && paints.length > 0) {
-      const solidPaints = paints.filter(
-        (paint) => paint.type === "SOLID"
-      ) as SolidPaint[];
-
-      if (solidPaints.length > 0) {
-        const finalColor = getRgbaFromPaints(solidPaints);
+      const finalColor = getRgbaFromPaints(paints);
+      if (finalColor) {
         attributes["color"] = rgbaToString(finalColor);
       }
     } else if (paints === figma.mixed) {
@@ -505,7 +501,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       }) as SolidPaint[];
 
       const finalColor = getRgbaFromPaints(mostCommonPaints);
-      attributes["color"] = rgbaToString(finalColor);
+      if (finalColor) {
+        attributes["color"] = rgbaToString(finalColor);
+      }
     }
 
     const textContainingOnlyOneWord =
@@ -798,16 +796,19 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       ORDERED: "ol",
     } as const;
 
-    return styledTextSegments.map((segment) => ({
-      ...segment,
-      fontFamily: figmaFontNameToCssString(segment.fontName),
-      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
-      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
-      color: rgbaToString(getRgbaFromPaints(segment.fills)),
-      letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
-      listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
-      href: segment?.hyperlink?.type === "URL" ? segment.hyperlink.value : "",
-    }));
+    return styledTextSegments.map((segment) => {
+      const rgba = getRgbaFromPaints(segment.fills);
+      return {
+        ...segment,
+        fontFamily: figmaFontNameToCssString(segment.fontName),
+        textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
+        textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
+        color: rgba ? rgbaToString(rgba) : "",
+        letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
+        listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
+        href: segment?.hyperlink?.type === "URL" ? segment.hyperlink.value : "",
+      };
+    });
   }
 }
 
