@@ -371,118 +371,131 @@ export class Generator {
 
     const styledTextSegments = textNode.node.getStyledTextSegments();
 
-    // for keeping track of nested lists
-    const currentListStack = [];
+    // for keeping track of nested tags
+    const htmlTagStack: ("ol" | "ul" | "li")[] = [];
+    let prevIndentation = 0;
 
     let resultText = styledTextSegments
-      .map((styledTextSegment) => {
-        // get attributes that are different from parent attributes
-        const { cssAttributes, parentCssAttributes } = getAttributeOverrides(
-          node as TextNode,
-          styledTextSegment
-        );
-
-        const { characters, listType, indentation } = styledTextSegment;
-
-        if (listType === "none") {
-          const result = this.wrapTextIfHasAttributes(
-            characters,
-            "span",
-            cssAttributes,
-            parentCssAttributes,
-            option
+      .map(
+        (styledTextSegment, styledTextSegmentIndex, styledTextSegmentArr) => {
+          // get attributes that are different from parent attributes
+          const { cssAttributes, parentCssAttributes } = getAttributeOverrides(
+            node as TextNode,
+            styledTextSegment
           );
 
-          return result
-            .split("\n")
-            .join(option.uiFramework === "html" ? "<br>" : "<br />");
-        }
+          const { characters, listType, indentation } = styledTextSegment;
 
-        // create enough lists to match identation
-        let result = "";
-        const indentationDiff = indentation - currentListStack.length;
-        if (indentationDiff > 0) {
-          // Open new sublists
-          for (let i = 0; i < indentationDiff; i++) {
-            if (i === 0) {
-              result += `<${listType}>`;
-            } else {
-              result += `<li><${listType}>`;
-            }
-            currentListStack.push(listType);
-          }
-        } else if (indentationDiff < 0) {
-          // Close sublists
-          for (let i = 0; i < Math.abs(indentationDiff); i++) {
-            const listToClose = currentListStack.pop();
-            if (i === 0) {
-              result += `</li></${listToClose}></li>`;
-            } else {
-              result += `</${listToClose}></li>`;
-            }
-          }
-        }
-
-        // create list items
-        const listItems = splitByNewLine(characters);
-        let hasOpenListItem = false;
-        result += listItems.map((listItem) => {
-          if (listItem.endsWith("\n") && hasOpenListItem) {
-            hasOpenListItem = false;
-            return (
-              this.wrapTextIfHasAttributes(
-                listItem,
-                "span",
-                cssAttributes,
-                parentCssAttributes,
-                option
-              ) + "</li>"
-            );
-          }
-
-          if (listItem.endsWith("\n") && !hasOpenListItem) {
-            const textProps = this.getPropsFromAttributes(
-              cssAttributes,
-              option,
-              undefined,
-              parentCssAttributes
-            );
-            return `<li ${textProps}>${characters}`;
-          }
-
-          if (!listItem.endsWith("\n") && hasOpenListItem) {
-            return this.wrapTextIfHasAttributes(
-              listItem,
+          if (listType === "none") {
+            const result = this.wrapTextIfHasAttributes(
+              characters,
               "span",
               cssAttributes,
               parentCssAttributes,
               option
             );
+
+            return result
+              .split("\n")
+              .join(option.uiFramework === "html" ? "<br>" : "<br />");
           }
 
-          if (!listItem.endsWith("\n") && !hasOpenListItem) {
-            hasOpenListItem = true;
-            return (
-              "<li>" +
-              this.wrapTextIfHasAttributes(
-                listItem,
-                "span",
-                cssAttributes,
-                parentCssAttributes,
-                option
-              )
-            );
-          }
-        });
+          // create enough lists to match identation
+          let resultText = "";
+          const indentationToAdd = indentation - prevIndentation;
 
-        return result;
-      })
+          if (indentationToAdd > 0) {
+            // Open new sublists
+            for (let i = 0; i < indentationToAdd; i++) {
+              const lastOpenTag = htmlTagStack[htmlTagStack.length - 1];
+
+              // According to the HTML5 W3C spec, <ul> or <ol> can only contain <li>.
+              // Hence, we are appending a <li> tag if the last open tag is <ul> or <ol>.
+              if (lastOpenTag === "ul" || lastOpenTag === "ol") {
+                resultText += `<li>`;
+                htmlTagStack.push("li");
+              }
+
+              resultText += `<${listType}>`;
+              htmlTagStack.push(listType);
+            }
+          } else if (indentationToAdd < 0) {
+            // Close sublists
+            for (
+              let numOfListClosed = 0;
+              numOfListClosed < Math.abs(indentationToAdd);
+
+            ) {
+              const htmlTag = htmlTagStack.pop();
+              if (htmlTag === "li") {
+                resultText += `</li>`;
+              } else {
+                resultText += `</${htmlTag}>`;
+                numOfListClosed++;
+              }
+            }
+          }
+          // update indentation for the next loop
+          prevIndentation = indentation;
+
+          // create list items
+          const listItems = splitByNewLine(characters);
+          resultText += listItems
+            .map((listItem, listItemIndex, listItemArr) => {
+              const hasOpenListItem =
+                htmlTagStack[htmlTagStack.length - 1] === "li";
+
+              let result = "";
+
+              if (hasOpenListItem) {
+                const lastListItem =
+                  listItemArr[listItemIndex - 1] ||
+                  styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                  "";
+
+                if (lastListItem.endsWith("\n")) {
+                  result += "</li><li>";
+                }
+
+                result += this.wrapTextIfHasAttributes(
+                  listItem,
+                  "span",
+                  cssAttributes,
+                  parentCssAttributes,
+                  option
+                );
+              } else {
+                htmlTagStack.push("li");
+                result += "<li>";
+
+                result += this.wrapTextIfHasAttributes(
+                  listItem,
+                  "span",
+                  cssAttributes,
+                  parentCssAttributes,
+                  option
+                );
+              }
+
+              const isLastListItem = listItemIndex === listItemArr.length - 1;
+              if (listItem.endsWith("\n") && !isLastListItem) {
+                // close list item
+                htmlTagStack.pop();
+                result += "</li>";
+              }
+
+              return result;
+            })
+            .join("");
+
+          return resultText;
+        }
+      )
       .join("");
 
-    // close all lists
-    while (currentListStack.length) {
-      const listToClose = currentListStack.pop();
-      resultText += `</li></${listToClose}>`;
+    // close all open tags
+    while (htmlTagStack.length) {
+      resultText += `</${htmlTagStack.pop()}>`;
     }
 
     return resultText;
@@ -496,7 +509,7 @@ export class Generator {
     option: Option
   ) {
     if (isEmpty(cssAttributes)) {
-      return text;
+      return escapeHtml(text);
     }
 
     const textProps = this.getPropsFromAttributes(
@@ -505,7 +518,7 @@ export class Generator {
       undefined,
       parentCssAttributes
     );
-    return `<${htmlTag} ${textProps}>${text}</${htmlTag}>`;
+    return `<${htmlTag} ${textProps}>${escapeHtml(text)}</${htmlTag}>`;
   }
 }
 
@@ -572,7 +585,7 @@ const splitByNewLine = (text: string) => {
   let listItems = text.split("\n");
 
   // if last item is "", it means there is a new line at the end of the last item
-  if (listItems[listItems.length - 1] === "") {
+  if (text !== "" && listItems[listItems.length - 1] === "") {
     listItems.pop();
     listItems = listItems.map((item) => item + "\n");
   } else {
