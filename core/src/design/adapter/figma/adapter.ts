@@ -151,6 +151,10 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
       }
     }
 
+    // console.log("figmaNode: ", figmaNode);
+    // console.log("primaryAxisAlignItems: ", figmaNode.primaryAxisAlignItems);
+    // console.log("counterAxisAlignItems: ", figmaNode.counterAxisAlignItems);
+
     switch (figmaNode.primaryAxisAlignItems) {
       case "MIN":
         attributes["justify-content"] = "flex-start";

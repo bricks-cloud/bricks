@@ -7,7 +7,13 @@ export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
   if (children.length === 1) {
     const child = children[0];
+
+    // console.log("haveSimlarWidthAndHeight(node, child): ", haveSimlarWidthAndHeight(node, child));
+
+
     if (haveSimlarWidthAndHeight(node, child)) {
+
+
       const cssAttributes: Attributes = {
         ...node.getCssAttributes(),
         ...child.getCssAttributes(),
@@ -41,10 +47,7 @@ export const removeChildrenNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = {
-        ...node.getPositionalCssAttributes(),
-        ...child.getPositionalCssAttributes(),
-      };
+      const positionalCssAttributes: Attributes = mergeAttributes(node.getPositionalCssAttributes(), node.getPositionalCssAttributes());
 
       node.setCssAttributes(cssAttributes);
       node.setPositionalCssAttributes(positionalCssAttributes);
@@ -108,13 +111,6 @@ const filterAttributes = (attribtues: Attributes): Attributes => {
 };
 
 const mergeAttributes = (parentPosAttributes: Attributes, childPosAttributes: Attributes): Attributes => {
-  if (!isEmpty(parentPosAttributes["display"]) && isEmpty(childPosAttributes["display"])) {
-    return {
-      ...parentPosAttributes,
-      ...childPosAttributes,
-    };
-  }
-
   if (parentPosAttributes["display"] !== childPosAttributes["display"] || parentPosAttributes["flex-direction"] !== childPosAttributes["flex-direction"] || parentPosAttributes["align-items"] !== childPosAttributes["align-items"] || parentPosAttributes["justify-content"] !== childPosAttributes["justify-content"]) {
     return {
       ...filterAttributes(parentPosAttributes),

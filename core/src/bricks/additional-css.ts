@@ -819,6 +819,11 @@ const getAlignItemsValue = (
     }
   }
 
+  // console.log("numberOfItemsInTheMiddle: ", numberOfItemsInTheMiddle);
+  // console.log("numberOfItemsTippingLeft: ", numberOfItemsTippingLeft);
+  // console.log("numberOfItemsTippingRight: ", numberOfItemsTippingRight);
+
+
   if (noGapItems === targetLines.length) {
     for (const targetLine of targetLines) {
       const leftGap = Math.abs(parentLine.lower - targetLine.lower);

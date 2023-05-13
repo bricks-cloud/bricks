@@ -4,6 +4,16 @@ export const tailwindTextDecorationMap = {
   none: "no-underline",
 };
 
+
+export const twcssDropShadowToYOffSetMap = {
+  "sm": "drop-shadow(0 1px 1px rgba(0,0,0,0.05))",
+  "": "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+  "md": "drop-shadow(0 4px 3px rgba(0,0,0,0.07))",
+  "lg": "drop-shadow(0 10px 8px rgba(0,0,0,0.04))",
+  "xl": "drop-shadow(0 20px 13px rgba(0,0,0,0.03))",
+  "2xl": "drop-shadow(0 25px 25px rgba(0,0,0,0.15))",
+};
+
 export const twHeightMap = {
   "h-0": "0px",
   "h-px": "1px",
@@ -418,7 +428,7 @@ export const twLetterSpacingMap = {
   "tracking-widest": "0.1em",
 };
 
-export const twFontWeightMap: { [key: string]: number } = {
+export const twFontWeightMap: { [key: string]: number; } = {
   "font-thin": 100,
   "font-extralight": 200,
   "font-light": 300,

@@ -14,6 +14,7 @@ import {
   twWidthMap,
   tailwindTextDecorationMap,
   MAX_BORDER_RADIUS_IN_PIXELS,
+  twcssDropShadowToYOffSetMap,
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
@@ -337,6 +338,85 @@ const findClosestTwcssLetterSpacing = (
   return twClassToUse;
 };
 
+
+const getYOffsetFromBoxShadow = (boxShadowValue: string): number => {
+  const spaceParts: string[] = boxShadowValue.split(" ");
+  if (spaceParts.length <= 4) {
+    return 1;
+  }
+
+  if (spaceParts[1].endsWith("px")) {
+    return parseInt(boxShadowValue.slice(0, -2));
+  }
+
+  return 1;
+};
+
+
+const getRadiusFromBoxShadow = (boxShadowValue: string): number => {
+  const spaceParts: string[] = boxShadowValue.split(" ");
+  if (spaceParts.length <= 4) {
+    return 1;
+  }
+
+  if (spaceParts[2].endsWith("px")) {
+    return parseInt(boxShadowValue.slice(0, -2));
+  }
+
+  return 1;
+};
+
+const findClosestTwcssDropShadowClassUsingPixel = (
+  cssValue: string,
+) => {
+  let closestTwClass = "";
+  const radius: number = getYOffsetFromBoxShadow(cssValue);
+
+  let largestBoxShadowValue: string = "";
+  let targetPixelNum: number = 1;
+
+  const dropShadowParts: string[] = cssValue.split("),");
+
+  if (isEmpty(dropShadowParts)) {
+    return "";
+  }
+
+  const newShadowParts: string[] = [];
+
+  for (let i = 0; i < dropShadowParts.length; i++) {
+    if (i !== dropShadowParts.length - 1) {
+      newShadowParts.push(dropShadowParts[i] + ")");
+      continue;
+    }
+
+    newShadowParts.push(dropShadowParts[i]);
+  }
+
+  let largestYOffset: number = -Infinity;
+  for (let i = 0; i < newShadowParts.length; i++) {
+    const yOffset: number = getYOffsetFromBoxShadow(newShadowParts[i]);
+    if (yOffset > largestYOffset) {
+      largestBoxShadowValue = cssValue;
+      targetPixelNum = yOffset;
+    }
+  }
+
+  let smallestDiff: number = -Infinity;
+  Object.entries(twcssDropShadowToYOffSetMap).forEach(([key, val]) => {
+    const pixelNum = extractPixelNumberFromString(val);
+    if (val.endsWith("px")) {
+      const diff = Math.abs(targetPixelNum - pixelNum);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestTwClass = key;
+      }
+    }
+  });
+
+  return closestTwClass;
+};
+
+
 // findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
 const findClosestTwcssFontWeight = (fontWeight: string): string => {
   const givenFontWeight = parseInt(fontWeight);
@@ -584,13 +664,14 @@ export const getTwcssClass = (
       return `bg-${getImageFileNameFromUrl(cssValue)}`;
 
     case "box-shadow": {
+      console.log(cssValue);
       // A very naive conversion for now, because parsing box-shadow string is too complicated
       if (cssValue.includes("inset")) {
         // inner shadow
         return "shadow-inner";
       } else {
         // drop shadow
-        return "shadow-xl";
+        return findClosestTwcssDropShadowClassUsingPixel(cssValue);
       }
     }
 
