@@ -5,14 +5,36 @@ export const tailwindTextDecorationMap = {
 };
 
 
-export const twcssDropShadowToYOffSetMap = {
-  "sm": "drop-shadow(0 1px 1px rgba(0,0,0,0.05))",
-  "": "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
-  "md": "drop-shadow(0 4px 3px rgba(0,0,0,0.07))",
-  "lg": "drop-shadow(0 10px 8px rgba(0,0,0,0.04))",
-  "xl": "drop-shadow(0 20px 13px rgba(0,0,0,0.03))",
-  "2xl": "drop-shadow(0 25px 25px rgba(0,0,0,0.15))",
+export const twcssDropShadowToSumMap = {
+  "sm": "3px",
+  "": "4px",
+  "md": "10px",
+  "lg": "25px",
+  "xl": "45px",
+  "2xl": "75px",
 };
+
+export const twcssRotateToDegMap = {
+  "rotate-0": 0,
+  "rotate-1": 1,
+  "rotate-2": 2,
+  "rotate-3": 3,
+  "rotate-6": 6,
+  "rotate-12": 12,
+  "rotate-45": 45,
+  "rotate-90": 90,
+  "rotate-180": 180,
+};
+
+export const twcssZIndexMap = {
+  "z-0": 0,
+  "z-10": 10,
+  "z-20": 20,
+  "z-30": 30,
+  "z-40": 40,
+  "z-50": 50,
+};
+
 
 export const twHeightMap = {
   "h-0": "0px",

@@ -103,21 +103,16 @@ const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT: {
       const attributes: Attributes = {
+        ...{
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
         ...node.getCssAttributes(),
-        ...node.getPositionalCssAttributes(),
       };
-
-      //@ts-ignore
-      const listSegments = node.node.getListSegments();
-      // Extra classes needed for lists due to Tailwind's CSS reset
-      const listType = listSegments[0].listType;
-      if (listSegments.length === 1 && listType === "ul") {
-        attributes["list-style-type"] = "disc";
-      }
-
-      if (listSegments.length === 1 && listType === "ol") {
-        attributes["list-style-type"] = "decimal";
-      }
 
       return convertCssClassesToTwcssClasses(attributes, option, node.getId());
     }
@@ -154,6 +149,9 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       if (isEmpty(node.getChildren())) {
         return convertCssClassesToTwcssClasses(
           {
+            ...filterAttributes(node.getCssAttributes(), {
+              excludeBackgroundColor: true,
+            }),
             ...filterAttributes(node.getPositionalCssAttributes(), {
               absolutePositioningFilter: true,
             }),

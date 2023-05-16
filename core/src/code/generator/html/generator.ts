@@ -8,7 +8,11 @@ import {
   VectorNode,
   TextNode,
 } from "../../../bricks/node";
-import { Attributes, ExportFormat } from "../../../design/adapter/node";
+import {
+  Attributes,
+  ExportFormat,
+  StyledTextSegment,
+} from "../../../design/adapter/node";
 import { generateProps } from "../../../../ee/loop/data-array-registry";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 import { Component, Data, DataArr } from "../../../../ee/loop/component";
@@ -69,14 +73,34 @@ export class Generator {
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
         const textProp = this.getText(node, option);
 
-        //@ts-ignore
-        const listSegments = node.node.getListSegments();
-        const listType = listSegments[0].listType;
-        if (listSegments.length === 1 && listType !== "none") {
-          return `<${listType} ${attributes}${textNodeClassProps}>${textProp}</${listType}>`;
+        // if textProp is enclosed in a <ul> or <ol> tag, we don't want to wrap another <div> around it
+        const result = /^<(ul|ol)>.*<\/(ul|ol)>$/s.exec(textProp);
+        if (result && result[1] === result[2]) {
+          const listTag = result[1];
+          const textPropWithoutListTag = textProp.substring(
+            4, // length of <ul> or <ol>
+            textProp.length - 5 // length of </ul> or </ol>
+          );
+          return `<${listTag} ${textNodeClassProps}>${textPropWithoutListTag}</${listTag}>`;
         }
 
-        return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        const children: Node[] = node.getChildren();
+
+        if (isEmpty(children)) {
+          return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        }
+
+        for (const child of children) {
+          if (child.getType() === NodeType.TEXT) {
+            child.addAnnotations("htmlTag", "span");
+          }
+        }
+
+        return await this.generateHtmlFromNodes(
+          children,
+          [`<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`, `</${htmlTag}>`],
+          option
+        );
       }
 
       case NodeType.GROUP:
@@ -282,12 +306,16 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
 
+    const cssAttribtues: Attributes =
+      node.getCssAttributes();
+
     if (
       positionalCssAttribtues["position"] === "absolute" ||
       positionalCssAttribtues["margin-left"] ||
       positionalCssAttribtues["margin-right"] ||
       positionalCssAttribtues["margin-top"] ||
-      positionalCssAttribtues["margin-bottom"]
+      positionalCssAttribtues["margin-bottom"] ||
+      cssAttribtues["border-radius"]
     ) {
       return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
@@ -365,165 +393,286 @@ export class Generator {
 
     const styledTextSegments = textNode.node.getStyledTextSegments();
 
-    const defaultFontSize = textNode.getACssAttribute("font-size");
-    const defaultFontFamily = textNode.getACssAttribute("font-family");
-    const defaultFontWeight = textNode.getACssAttribute("font-weight");
-    const defaultColor = textNode.getACssAttribute("color");
-    const defaultLetterSpacing = textNode.getACssAttribute("letter-spacing");
+    // for keeping track of nested tags
+    const htmlTagStack: ("ol" | "ul" | "li")[] = [];
+    let prevIndentation = 0;
 
-    const cssAttributesSegments = styledTextSegments.map(
-      (styledTextSegment) => {
-        // here we only keep attributes if they are different from the default attribute
-        const cssAttributes: Attributes = {};
-        const parentCssAttributes: Attributes = {};
+    let resultText = styledTextSegments
+      .map(
+        (styledTextSegment, styledTextSegmentIndex, styledTextSegmentArr) => {
+          // get attributes that are different from parent attributes
+          const { cssAttributes, parentCssAttributes } = getAttributeOverrides(
+            node as TextNode,
+            styledTextSegment
+          );
 
-        const fontSize = `${styledTextSegment.fontSize}px`;
-        if (fontSize !== defaultFontSize) {
-          cssAttributes["font-size"] = fontSize;
-        }
+          const { characters, listType, indentation, href } = styledTextSegment;
 
-        const fontFamily = styledTextSegment.fontFamily;
-        if (fontFamily !== defaultFontFamily) {
-          cssAttributes["font-family"] = fontFamily;
-        }
+          if (listType === "none") {
+            const result = this.wrapTextIfHasAttributes(
+              characters,
+              href,
+              cssAttributes,
+              parentCssAttributes,
+              option
+            );
 
-        const fontWeight = styledTextSegment.fontWeight.toString();
-        if (fontWeight !== defaultFontWeight) {
-          cssAttributes["font-weight"] = fontWeight;
-        }
 
-        const textDecoration = styledTextSegment.textDecoration;
-        if (textDecoration !== "normal") {
-          cssAttributes["text-decoration"] = textDecoration;
-        }
+            let newStr: string = replaceNewLine(result, option);
+            newStr = replaceLeadingWhiteSpace(newStr, option);
 
-        const textTransform = styledTextSegment.textTransform;
-        if (textTransform !== "none") {
-          cssAttributes["text-transform"] = textTransform;
-        }
+            return newStr;
+          }
 
-        const color = styledTextSegment.color;
-        if (color !== defaultColor) {
-          cssAttributes["color"] = color;
-        }
+          // create enough lists to match identation
+          let resultText = "";
+          const indentationToAdd = indentation - prevIndentation;
 
-        const letterSpacing = styledTextSegment.letterSpacing;
-        if (
-          letterSpacing !== defaultLetterSpacing &&
-          defaultLetterSpacing &&
-          letterSpacing !== "normal"
-        ) {
-          cssAttributes["letter-spacing"] = letterSpacing;
-          parentCssAttributes["font-size"] = defaultFontSize;
-        }
+          if (indentationToAdd > 0) {
+            // Open new sublists
+            for (let i = 0; i < indentationToAdd; i++) {
+              const lastOpenTag = htmlTagStack[htmlTagStack.length - 1];
 
-        return {
-          start: styledTextSegment.start,
-          end: styledTextSegment.end,
-          cssAttributes,
-          parentCssAttributes,
-        };
-      }
-    );
+              // According to the HTML5 W3C spec, <ul> or <ol> can only contain <li>.
+              // Hence, we are appending a <li> tag if the last open tag is <ul> or <ol>.
+              if (lastOpenTag === "ul" || lastOpenTag === "ol") {
+                resultText += `<li>`;
+                htmlTagStack.push("li");
+              }
 
-    // Here are handle lists in text, where:
-    // - A "list segment" is a segment of text that is an ordered list, an unordered list, or not a list at all
-    // - A "list item" is text inside a list segment, separated by a new line character.
-    //
-    // For example:
-    // <ul> <- this is a "list segment"
-    //   <li>item 1</li> <- this is a "list item"
-    //   <li>item 2</li> <- this is another "list item"
-    // </ul>
-    return textNode.node
-      .getListSegments()
-      .map((listSegment, _, listSegments) => {
-        const listTag = listSegment.listType;
-
-        const listItems = splitByNewLine(listSegment.characters);
-
-        // for keeping track of where we are in listSegment.characters
-        let currentIndex = listSegment.start;
-
-        const listContent = listItems
-          .map((listItemText) => {
-            const itemStartIndex = currentIndex;
-            const itemEndIndex = currentIndex + listItemText.length - 1;
-
-            const cssAttributesSegmentsInListItem =
-              cssAttributesSegments.filter(
-                (segment) =>
-                  !(
-                    segment.end < itemStartIndex || segment.start > itemEndIndex
-                  )
-              );
-
-            let result = cssAttributesSegmentsInListItem
-              .map((segment) => {
-                let text = escapeHtml(
-                  listItemText.substring(
-                    segment.start - itemStartIndex,
-                    segment.end - itemStartIndex
-                  )
+              if (option.cssFramework === "tailwindcss") {
+                // Extra attributes needed due to Tailwind's CSS reset
+                const listProps = this.getPropsFromAttributes(
+                  {
+                    "margin-left": "40px",
+                    "list-style-type": listType === "ul" ? "disc" : "decimal",
+                  },
+                  option
                 );
 
-                if (!isEmpty(segment.cssAttributes)) {
-                  const textProps = this.getPropsFromAttributes(
-                    segment.cssAttributes,
-                    option,
-                    undefined,
-                    segment.parentCssAttributes
-                  );
+                resultText += `<${listType} ${listProps}>`;
+              } else {
+                resultText += `<${listType}>`;
+              }
 
-                  // if css attribute applies to the whole list item, wrap it in a <li> tag
-                  const htmlTag =
-                    listTag !== "none" &&
-                    listItemText.length === segment.end - segment.start
-                      ? "li"
-                      : "span";
-
-                  if (listTag === "none") {
-                    // replace all \n in text with <br> tag
-                    text = text
-                      .split("\n")
-                      .join(option.uiFramework === "html" ? "<br>" : "<br />");
-                  }
-
-                  text = `<${htmlTag} ${textProps}>${text}</${htmlTag}>`;
-                }
-
-                return text;
-              })
-              .join("");
-
-            if (listTag !== "none" && !result.startsWith("<li")) {
-              result = `<li>${result}</li>`;
+              htmlTagStack.push(listType);
             }
+          } else if (indentationToAdd < 0) {
+            // Close sublists
+            for (
+              let numOfListClosed = 0;
+              numOfListClosed < Math.abs(indentationToAdd);
 
-            currentIndex = itemEndIndex + 1;
-            return result;
-          })
-          .join("");
+            ) {
+              const htmlTag = htmlTagStack.pop();
+              if (htmlTag === "li") {
+                resultText += `</li>`;
+              } else {
+                resultText += `</${htmlTag}>`;
+                numOfListClosed++;
+              }
+            }
+          }
+          // update indentation for the next loop
+          prevIndentation = indentation;
 
-        if (
-          listTag === "none" ||
-          // if there is only one list, we don't wrap the list items in a <ul> or <ol> tag because we're doing it outside
-          listSegments.length === 1
-        ) {
-          return listContent;
-        } else {
-          return `<${listTag}>${listContent}</${listTag}>`;
+          // create list items
+          const listItems = splitByNewLine(characters);
+          resultText += listItems
+            .map((listItem, listItemIndex, listItemArr) => {
+              const hasOpenListItem =
+                htmlTagStack[htmlTagStack.length - 1] === "li";
+
+              let result = "";
+
+              if (!hasOpenListItem) {
+                htmlTagStack.push("li");
+                result += "<li>";
+              }
+
+              const lastListItem =
+                listItemArr[listItemIndex - 1] ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                "";
+              if (hasOpenListItem && lastListItem.endsWith("\n")) {
+                result += "</li><li>";
+              }
+
+              result += this.wrapTextIfHasAttributes(
+                listItem,
+                href,
+                cssAttributes,
+                parentCssAttributes,
+                option
+              );
+
+              const isLastListItem = listItemIndex === listItemArr.length - 1;
+              if (listItem.endsWith("\n") && !isLastListItem) {
+                // close list item
+                htmlTagStack.pop();
+                result += "</li>";
+              }
+
+              return result;
+            })
+            .join("");
+
+          return resultText;
         }
-      })
+      )
       .join("");
+
+    // close all open tags
+    while (htmlTagStack.length) {
+      resultText += `</${htmlTagStack.pop()}>`;
+    }
+
+    return resultText;
+  }
+
+  wrapTextIfHasAttributes(
+    text: string,
+    href: string,
+    cssAttributes: Attributes,
+    parentCssAttributes: Attributes,
+    option: Option
+  ) {
+    const resultText = escapeHtml(text);
+
+    if (isEmpty(cssAttributes) && !href) {
+      return resultText;
+    }
+
+    const htmlTag = href ? "a" : "span";
+    const hrefAttribute = href ? ` href="${href}"` : "";
+    const styleAttribute = !isEmpty(cssAttributes)
+      ? ` ${this.getPropsFromAttributes(
+        cssAttributes,
+        option,
+        undefined,
+        parentCssAttributes
+      )}`
+      : "";
+
+    return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
   }
 }
+
+const getAttributeOverrides = (
+  textNode: TextNode,
+  styledTextSegment: StyledTextSegment
+) => {
+  const defaultFontSize = textNode.getACssAttribute("font-size");
+  const defaultFontFamily = textNode.getACssAttribute("font-family");
+  const defaultFontWeight = textNode.getACssAttribute("font-weight");
+  const defaultColor = textNode.getACssAttribute("color");
+  const defaultLetterSpacing = textNode.getACssAttribute("letter-spacing");
+
+  const cssAttributes: Attributes = {};
+  const parentCssAttributes: Attributes = {};
+
+  const fontSize = `${styledTextSegment.fontSize}px`;
+  if (fontSize !== defaultFontSize) {
+    cssAttributes["font-size"] = fontSize;
+  }
+
+  const fontFamily = styledTextSegment.fontFamily;
+  if (fontFamily !== defaultFontFamily) {
+    cssAttributes["font-family"] = fontFamily;
+  }
+
+  const fontWeight = styledTextSegment.fontWeight.toString();
+  if (fontWeight !== defaultFontWeight) {
+    cssAttributes["font-weight"] = fontWeight;
+  }
+
+  const textDecoration = styledTextSegment.textDecoration;
+  if (textDecoration !== "normal") {
+    cssAttributes["text-decoration"] = textDecoration;
+  }
+
+  const textTransform = styledTextSegment.textTransform;
+  if (textTransform !== "none") {
+    cssAttributes["text-transform"] = textTransform;
+  }
+
+  const color = styledTextSegment.color;
+  if (color !== defaultColor) {
+    cssAttributes["color"] = color;
+  }
+
+  const letterSpacing = styledTextSegment.letterSpacing;
+  if (
+    letterSpacing !== defaultLetterSpacing &&
+    defaultLetterSpacing &&
+    letterSpacing !== "normal"
+  ) {
+    cssAttributes["letter-spacing"] = letterSpacing;
+    parentCssAttributes["font-size"] = defaultFontSize;
+  }
+
+  return {
+    cssAttributes,
+    parentCssAttributes,
+  };
+};
+
+const replaceNewLine = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  let start: number = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (i === str.length - 1) {
+      newStrParts.push(str.substring(start));
+    }
+
+    if (str.charAt(i) === "\n") {
+      let numberOfNewLines: number = 1;
+      let end: number = i + 1;
+      for (let j = i + 1; j < str.length; j++) {
+        if (str.charAt(j) !== "\n") {
+          break;
+        }
+
+        end = j + 1;
+        numberOfNewLines++;
+      }
+
+      if (numberOfNewLines > 1) {
+        newStrParts.push(str.substring(start, i - 1));
+
+        for (let j = 0; j < numberOfNewLines; j++) {
+          newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
+        }
+
+        start = end;
+        i = start;
+      }
+    }
+  }
+
+  return newStrParts.join("");
+};
+
+const replaceLeadingWhiteSpace = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) === 160) {
+      newStrParts.push("&nbsp;");
+      continue;
+    }
+
+    newStrParts.push(str.substring(i));
+    break;
+  }
+
+  return newStrParts.join("");
+};
 
 const splitByNewLine = (text: string) => {
   let listItems = text.split("\n");
 
   // if last item is "", it means there is a new line at the end of the last item
-  if (listItems[listItems.length - 1] === "") {
+  if (text !== "" && listItems[listItems.length - 1] === "") {
     listItems.pop();
     listItems = listItems.map((item) => item + "\n");
   } else {

@@ -7,9 +7,10 @@ import {
   VectorNode as BricksVector,
   VisibleNode,
   computePositionalRelationship,
+  VectorNode,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
-import { BoxCoordinates, Attributes, ExportFormat, ListSegment } from "../node";
+import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -23,9 +24,9 @@ import {
   figmaFontNameToCssString,
 } from "./util";
 import { PostionalRelationship } from "../../../bricks/node";
-import { getLineBasedOnDirection } from "../../../bricks/line";
 import { Direction } from "../../../bricks/direction";
 import { StyledTextSegment } from "../node";
+import { Line } from "../../../bricks/line";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -47,6 +48,15 @@ const safelySetWidthAndHeight = (
   figmaNode: SceneNode,
   attributes: Attributes
 ) => {
+  // @ts-ignore
+  if (!isEmpty(figmaNode.rotation) && figmaNode.rotation !== 0) {
+    // @ts-ignore
+    attributes["width"] = `${figmaNode.width}px`;
+    // @ts-ignore
+    attributes["height"] = `${figmaNode.height}px`;
+    return;
+  }
+
   if (
     nodeType === NodeType.FRAME ||
     nodeType === NodeType.IMAGE ||
@@ -62,6 +72,24 @@ const safelySetWidthAndHeight = (
       attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
       // @ts-ignore
       attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+    }
+
+    // @ts-ignore
+    if (!isEmpty(figmaNode.absoluteRenderBounds)) {
+      const boundingWidth: number = figmaNode.absoluteBoundingBox.width;
+      const boundingHeight: number = figmaNode.absoluteBoundingBox.height;
+
+      // @ts-ignore
+      const renderingWidth: number = figmaNode.absoluteRenderBounds.width;
+      // @ts-ignore
+      const renderingHeight: number = figmaNode.absoluteRenderBounds.height;
+
+      if (renderingWidth * 0.5 > boundingWidth || renderingHeight * 0.5 > boundingHeight) {
+        // @ts-ignore
+        attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
+        // @ts-ignore
+        attributes["height"] = `${figmaNode.absoluteRenderBounds.height}px`;
+      }
     }
 
     return;
@@ -97,9 +125,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -150,10 +177,6 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
         delete attributes["width"];
       }
     }
-
-    // console.log("figmaNode: ", figmaNode);
-    // console.log("primaryAxisAlignItems: ", figmaNode.primaryAxisAlignItems);
-    // console.log("counterAxisAlignItems: ", figmaNode.counterAxisAlignItems);
 
     switch (figmaNode.primaryAxisAlignItems) {
       case "MIN":
@@ -214,6 +237,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
 
     addDropShadowCssProperty(figmaNode, attributes);
+  }
+
+  // @ts-ignore
+  if (!isEmpty(figmaNode.rotation) && figmaNode.rotation !== 0) {
+    // @ts-ignore
+    attributes["transform"] = `rotate(${figmaNode.rotation}deg)`;
   }
 
   if (
@@ -289,11 +318,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
         figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
     }
 
-    // width
-    attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
-
-    // height
-    attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+    safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
 
     // box shadow
     addDropShadowCssProperty(figmaNode, attributes);
@@ -375,24 +400,28 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     let width: number = absoluteRenderBounds
       ? absoluteRenderBounds.width + 2
       : absoluteBoundingBox.width;
-    let height: number = absoluteRenderBounds
-      ? absoluteRenderBounds.height
-      : absoluteBoundingBox.height;
 
     let moreThanOneRow: boolean = false;
-    if (absoluteRenderBounds) {
+    let fontSize: number = 0;
+
+    if (!isEmpty(absoluteRenderBounds)) {
       const renderBoundsHeight = absoluteRenderBounds.height;
 
       if (figmaNode.fontSize !== figma.mixed) {
-        moreThanOneRow = renderBoundsHeight > figmaNode.fontSize;
+        fontSize = figmaNode.fontSize;
+      } else {
+        for (const segment of figmaNode.getStyledTextSegments(["fontSize"])) {
+          if (segment.fontSize > fontSize) {
+            fontSize = segment.fontSize;
+          }
+        }
       }
 
-      if (!moreThanOneRow) {
-        attributes["white-space"] = "nowrap";
-      }
+
+      moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
     }
 
-    if (absoluteBoundingBox && absoluteRenderBounds) {
+    if (!isEmpty(absoluteBoundingBox) && !isEmpty(absoluteRenderBounds)) {
       const renderBoundsWidth = absoluteRenderBounds.width;
       const boundingBoxWidth = absoluteBoundingBox.width;
 
@@ -400,7 +429,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-          0.1 ||
+        0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -419,39 +448,19 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-          absoluteBoundingBox.width >
+        absoluteBoundingBox.width >
         0.2
       ) {
-        width = absoluteRenderBounds.width + 4;
+        width = absoluteRenderBounds.width + 6;
       }
     }
 
-    // @ts-ignore
-    if (isAutoLayout(figmaNode.parent)) {
+
+    if (!moreThanOneRow && !isEmpty(absoluteRenderBounds) && (Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) < fontSize)) {
+      attributes["min-width"] = `${absoluteBoundingBox.width}px`;
+      attributes["white-space"] = "nowrap";
+    } else {
       attributes["width"] = `${absoluteBoundingBox.width}px`;
-    }
-
-    switch (figmaNode.textAutoResize) {
-      case "NONE": {
-        attributes["width"] = `${width}px`;
-        // attributes["height"] = `${height}px`;
-        break;
-      }
-      case "HEIGHT": {
-        attributes["width"] = `${width}px`;
-        break;
-      }
-      case "WIDTH_AND_HEIGHT": {
-        // do nothing
-        attributes["width"] = `${width}px`;
-        break;
-      }
-      case "TRUNCATE": {
-        attributes["width"] = `${width}px`;
-        // attributes["height"] = `${height}px`;
-        attributes["text-overflow"] = "ellipsis";
-        break;
-      }
     }
 
     // switch (figmaNode.textAutoResize) {
@@ -489,12 +498,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     // font color
     const paints = figmaNode.fills;
     if (paints !== figma.mixed && paints.length > 0) {
-      const solidPaints = paints.filter(
-        (paint) => paint.type === "SOLID"
-      ) as SolidPaint[];
-
-      if (solidPaints.length > 0) {
-        const finalColor = getRgbaFromPaints(solidPaints);
+      const finalColor = getRgbaFromPaints(paints);
+      if (finalColor) {
         attributes["color"] = rgbaToString(finalColor);
       }
     } else if (paints === figma.mixed) {
@@ -509,7 +514,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       }) as SolidPaint[];
 
       const finalColor = getRgbaFromPaints(mostCommonPaints);
-      attributes["color"] = rgbaToString(finalColor);
+      if (finalColor) {
+        attributes["color"] = rgbaToString(finalColor);
+      }
     }
 
     const textContainingOnlyOneWord =
@@ -610,6 +617,35 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   return attributes;
 };
 
+const getBoxCoordinatesFromFigmaNode = (figmaNode: SceneNode): BoxCoordinates => {
+  let boundingBox = figmaNode.absoluteBoundingBox;
+  // // @ts-ignore
+
+  // if (figmaNode.absoluteRenderBounds) {
+  //   // @ts-ignore
+  //   boundingBox = figmaNode.absoluteRenderBounds;
+  // }
+
+  return {
+    leftTop: {
+      x: boundingBox.x,
+      y: boundingBox.y,
+    },
+    leftBot: {
+      x: boundingBox.x,
+      y: boundingBox.y + boundingBox.height,
+    },
+    rightTop: {
+      x: boundingBox.x + boundingBox.width,
+      y: boundingBox.y,
+    },
+    rightBot: {
+      x: boundingBox.x + boundingBox.width,
+      y: boundingBox.y + boundingBox.height,
+    },
+  };
+};
+
 export class FigmaNodeAdapter {
   node: SceneNode;
   private cssAttributes: Attributes;
@@ -641,6 +677,48 @@ export class FigmaNodeAdapter {
   getAbsoluteBoundingBoxCoordinates(): BoxCoordinates {
     let boundingBox = this.node.absoluteBoundingBox;
 
+    // // @ts-ignore
+    // if (!isEmpty(this.node.rotation)) {
+    //   const leftTop: Coordinate = {
+    //     x: this.node.absoluteTransform[0][2],
+    //     y: this.node.absoluteTransform[1][2]
+    //   };
+
+    //   return {
+    //     leftTop: {
+    //       x: leftTop.x,
+    //       y: leftTop.y,
+    //     },
+    //     leftBot: {
+    //       x: leftTop.x,
+    //       y: leftTop.y + this.node.height,
+    //     },
+    //     rightTop: {
+    //       x: leftTop.x + this.node.width,
+    //       y: leftTop.y,
+    //     },
+    //     rightBot: {
+    //       x: leftTop.x + this.node.width,
+    //       y: leftTop.y + this.node.height,
+    //     },
+    //   };
+    // }
+
+    // @ts-ignore
+    if (!isEmpty(this.node.absoluteRenderBounds)) {
+      const boundingWidth: number = this.node.absoluteBoundingBox.width;
+      const boundingHeight: number = this.node.absoluteBoundingBox.height;
+
+      // @ts-ignore
+      const renderingWidth: number = this.node.absoluteRenderBounds.width;
+      // @ts-ignore
+      const renderingHeight: number = this.node.absoluteRenderBounds.height;
+
+      if (renderingWidth * 0.5 > boundingWidth || renderingHeight * 0.5 > boundingHeight) {
+        return this.getRenderingBoundsCoordinates();
+      }
+    }
+
     return {
       leftTop: {
         x: boundingBox.x,
@@ -663,9 +741,15 @@ export class FigmaNodeAdapter {
 
   getRenderingBoundsCoordinates(): BoxCoordinates {
     let boundingBox = this.node.absoluteBoundingBox;
-    // @ts-ignore
 
-    if (this.node.absoluteRenderBounds) {
+    // // @ts-ignore 
+    // if (!isEmpty(this.node.rotation)) {
+    //   return this.getAbsoluteBoundingBoxCoordinates();
+    // }
+
+
+    // @ts-ignore
+    if (!isEmpty(this.node.absoluteRenderBounds)) {
       // @ts-ignore
       boundingBox = this.node.absoluteRenderBounds;
     }
@@ -775,6 +859,9 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       "textCase",
       "fills",
       "letterSpacing",
+      "listOptions",
+      "indentation",
+      "hyperlink",
     ]);
 
     // for converting figma textDecoration to css textDecoration
@@ -793,29 +880,25 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
       TITLE: "capitalize",
     } as const;
 
-    return styledTextSegments.map((segment) => ({
-      ...segment,
-      fontFamily: figmaFontNameToCssString(segment.fontName),
-      textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
-      textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
-      color: rgbaToString(getRgbaFromPaints(segment.fills)),
-      letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
-    }));
-  }
-
-  getListSegments(): ListSegment[] {
     const figmaListOptionsToHtmlTagMap = {
       NONE: "none",
       UNORDERED: "ul",
       ORDERED: "ol",
     } as const;
 
-    const listSegments = this.node.getStyledTextSegments(["listOptions"]);
-
-    return listSegments.map((segment) => ({
-      ...segment,
-      listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
-    }));
+    return styledTextSegments.map((segment) => {
+      const rgba = getRgbaFromPaints(segment.fills);
+      return {
+        ...segment,
+        fontFamily: figmaFontNameToCssString(segment.fontName),
+        textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
+        textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
+        color: rgba ? rgbaToString(rgba) : "",
+        letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
+        listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
+        href: segment?.hyperlink?.type === "URL" ? segment.hyperlink.value : "",
+      };
+    });
   }
 }
 
@@ -851,7 +934,14 @@ type Feedback = {
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[]
 ): Feedback => {
-  let reordered = [...figmaNodes];
+  let reordered = [];
+
+  for (let i = 0; i < figmaNodes.length; i++) {
+    const figmaNode: SceneNode = figmaNodes[i];
+    if (figmaNode.visible) {
+      reordered.push(figmaNode);
+    }
+  }
 
   if (reordered.length > 1) {
     reordered.sort((a, b) => {
@@ -897,10 +987,12 @@ export const convertFigmaNodesToBricksNodes = (
 
   if (reordered.length === 1) {
     const figmaNode = reordered[0];
-    if (figmaNode.type === NodeType.RECTANGLE) {
+    if (figmaNode.type === NodeType.RECTANGLE && !doesNodeContainsAnImage(figmaNode)) {
       result.isSingleRectangle = true;
     }
   }
+
+  const newNodes: Node[] = [];
 
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
@@ -929,11 +1021,23 @@ export const convertFigmaNodesToBricksNodes = (
         case NodeType.GROUP:
           newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
           break;
-        case NodeType.INSTANCE:
         case NodeType.FRAME:
+          if (doesNodeContainsAnImage(figmaNode)) {
+            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            result.doNodesContainImage = true;
+            break;
+          }
+
+          if (isFrameNodeTransparent(figmaNode)) {
+            newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
+          }
+
+          break;
+        case NodeType.INSTANCE:
         case NodeType.COMPONENT:
           if (isFrameNodeTransparent(figmaNode)) {
             newNode = new BricksGroupNode([], new FigmaNodeAdapter(figmaNode));
+            break;
           }
           break;
         case NodeType.TEXT:
@@ -949,57 +1053,139 @@ export const convertFigmaNodesToBricksNodes = (
             result.doNodesContainImage = true;
             break;
           }
-      }
 
-      //@ts-ignore
-      if (!isEmpty(figmaNode?.children)) {
-        let isExportableNode: boolean = false;
-        //@ts-ignore
-        const feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
-        if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
-          if (!feedback.doNodesHaveNonOverlappingChildren) {
-            isExportableNode = true;
-            if (feedback.doNodesContainImage) {
-              newNode = new ImageNode(
-                new FigmaVectorGroupNodeAdapter(figmaNode)
-              );
-            } else {
-              newNode = new BricksVector(
-                new FigmaVectorGroupNodeAdapter(figmaNode)
-              );
-            }
+          if (!isEmpty(figmaNode.rotation)) {
+            newNode = new VectorNode(new FigmaImageNodeAdapter(figmaNode));
+            break;
           }
-        }
-
-        result.areAllNodesExportable =
-          feedback.areAllNodesExportable && result.areAllNodesExportable;
-
-        result.doNodesContainImage =
-          feedback.doNodesContainImage || result.doNodesContainImage;
-
-        if (!isExportableNode) {
-          newNode.setChildren(feedback.nodes);
-        }
       }
 
-      result.nodes.push(newNode);
+
+      newNodes.push(newNode);
+
+      // //@ts-ignore
+      // if (!isEmpty(figmaNode?.children)) {
+      //   let isExportableNode: boolean = false;
+      //   //@ts-ignore
+      //   const feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
+      //   if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
+      //     if (!feedback.doNodesHaveNonOverlappingChildren) {
+      //       isExportableNode = true;
+      //       if (feedback.doNodesContainImage) {
+      //         newNode = new ImageNode(
+      //           new FigmaVectorGroupNodeAdapter(figmaNode)
+      //         );
+      //       } else {
+      //         newNode = new BricksVector(
+      //           new FigmaVectorGroupNodeAdapter(figmaNode)
+      //         );
+      //       }
+      //     }
+      //   }
+
+      //   result.areAllNodesExportable =
+      //     feedback.areAllNodesExportable && result.areAllNodesExportable;
+
+      //   result.doNodesContainImage =
+      //     feedback.doNodesContainImage || result.doNodesContainImage;
+
+      //   if (!isExportableNode) {
+      //     newNode.setChildren(feedback.nodes);
+      //   }
+      // }
+
+      // result.nodes.push(newNode);
     }
   }
 
-  let horizontalOverlap: boolean = areNodesOverlappingByDirection(
-    result.nodes,
-    Direction.HORIZONTAL
-  );
-  let verticalOverlap: boolean = areNodesOverlappingByDirection(
-    result.nodes,
-    Direction.VERTICAL
-  );
-  result.doNodesHaveNonOverlappingChildren =
-    !horizontalOverlap || !verticalOverlap;
+  // let horizontalOverlap: boolean = areNodesOverlappingByDirection(
+  //   reordered,
+  //   Direction.HORIZONTAL
+  // );
 
-  if (allNodesAreOfVectorNodeTypes) {
-    result.doNodesHaveNonOverlappingChildren = false;
+  // let verticalOverlap: boolean = areNodesOverlappingByDirection(
+  //   reordered,
+  //   Direction.VERTICAL
+  // );
+
+  // result.doNodesHaveNonOverlappingChildren =
+  //   !horizontalOverlap || !verticalOverlap;
+
+  // console.log("result.doNodesHaveNonOverlappingChildren: ", result.doNodesHaveNonOverlappingChildren);
+
+
+  // console.log(figmaNodes);
+  // console.log(result);
+
+  for (let i = 0; i < reordered.length; i++) {
+    const figmaNode = reordered[i];
+
+    let newNode: Node = newNodes[i];
+
+    //@ts-ignore
+    if (!isEmpty(figmaNode?.children)) {
+      let isExportableNode: boolean = false;
+      //@ts-ignore
+      const feedback: Feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
+
+      let doNodesHaveNonOverlappingChildren: boolean = true;
+      let horizontalNonOverlap: boolean = areThereNonOverlappingByDirection(
+        //@ts-ignore
+        figmaNode?.children,
+        Direction.HORIZONTAL
+      );
+
+      //@ts-ignore
+      let verticalNonOverlap: boolean = areThereNonOverlappingByDirection(
+        //@ts-ignore
+        figmaNode?.children,
+        Direction.VERTICAL
+      );
+
+      doNodesHaveNonOverlappingChildren =
+        horizontalNonOverlap || verticalNonOverlap || feedback.doNodesHaveNonOverlappingChildren;
+
+      if (allNodesAreOfVectorNodeTypes) {
+        doNodesHaveNonOverlappingChildren = false;
+      }
+
+
+      // console.log("parent:<<<<<<<<<<<<<<<<<<< ", figmaNodes);
+      // console.log("feedback: ", feedback);
+      // console.log("figmaNode: ", figmaNode);
+      // console.log("!doNodesHaveNonOverlappingChildren: ", !doNodesHaveNonOverlappingChildren);
+      if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
+        if (!doNodesHaveNonOverlappingChildren) {
+          isExportableNode = true;
+          if (feedback.doNodesContainImage) {
+            newNode = new ImageNode(
+              new FigmaVectorGroupNodeAdapter(figmaNode)
+            );
+          } else {
+            newNode = new BricksVector(
+              new FigmaVectorGroupNodeAdapter(figmaNode)
+            );
+          }
+        }
+      }
+
+      result.areAllNodesExportable =
+        feedback.areAllNodesExportable && result.areAllNodesExportable;
+
+      result.doNodesContainImage =
+        feedback.doNodesContainImage || result.doNodesContainImage;
+
+      result.doNodesHaveNonOverlappingChildren = doNodesHaveNonOverlappingChildren;
+
+      if (!isExportableNode) {
+        newNode.setChildren(feedback.nodes);
+      }
+
+      newNodes[i] = newNode;
+    }
   }
+
+  result.nodes = newNodes;
 
   if (!isEmpty(sliceNode)) {
     result.nodes = [new BricksVector(new FigmaVectorNodeAdapter(sliceNode))];
@@ -1010,32 +1196,47 @@ export const convertFigmaNodesToBricksNodes = (
   return result;
 };
 
-const areNodesOverlappingByDirection = (
-  nodes: Node[],
+const areThereNonOverlappingByDirection = (
+  nodes: readonly SceneNode[],
   direction: Direction
 ): boolean => {
-  let overlap: boolean = false;
-  for (let i = 0; i < nodes.length; i++) {
-    const currentNode: Node = nodes[i];
-    let currentLine = getLineBasedOnDirection(currentNode, direction);
 
+  for (let i = 0; i < nodes.length; i++) {
+    const currentNode: SceneNode = nodes[i];
+    let currentLine = getFigmaLineBasedOnDirection(currentNode, direction);
+
+    let nonOverlap: boolean = true;
     for (let j = 0; j < nodes.length; j++) {
-      const targetNode: Node = nodes[j];
-      if (targetNode.getId() === currentNode.getId()) {
+      const targetNode: SceneNode = nodes[j];
+      if (i === j) {
         continue;
       }
 
-      const targetLine = getLineBasedOnDirection(targetNode, direction);
-      if (currentLine.overlap(targetLine)) {
-        overlap = true;
+
+      const targetLine = getFigmaLineBasedOnDirection(targetNode, direction);
+
+      if (currentLine.overlapStrict(targetLine)) {
+        nonOverlap = false;
         break;
       }
     }
 
-    if (overlap) {
-      break;
+    if (nonOverlap) {
+      return true;
     }
   }
 
-  return overlap;
+  return false;
+};
+
+
+// getFigmaLineBasedOnDirection gets the boundary of a node depending on the input direction.
+export const getFigmaLineBasedOnDirection = (figmaNode: SceneNode, direction: Direction) => {
+  const coordinates = getBoxCoordinatesFromFigmaNode(figmaNode);
+
+  if (direction === Direction.HORIZONTAL) {
+    return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
+  }
+
+  return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
 };

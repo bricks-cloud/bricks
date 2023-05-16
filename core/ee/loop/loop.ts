@@ -203,8 +203,8 @@ const areTwoNodesSimilar = (currentNode: Node, targetNode: Node): [boolean, stri
     }
   }
 
-  const [currentWidth, currentHeight] = currentNode.getAbsBoundingBoxWidthAndHeights();
-  const [targetWidth, taregtHeight] = currentNode.getAbsBoundingBoxWidthAndHeights();
+  const [currentWidth, currentHeight] = currentNode.getAbsBoundingBoxWidthAndHeight();
+  const [targetWidth, taregtHeight] = currentNode.getAbsBoundingBoxWidthAndHeight();
 
   if (currentWidth === targetWidth) {
     return [true, "similar widths"];

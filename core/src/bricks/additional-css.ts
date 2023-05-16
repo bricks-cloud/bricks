@@ -6,15 +6,18 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { ImageNode, Node, NodeType, VisibleNode } from "./node";
+import { Node, NodeType } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
   Line,
   getLineBasedOnDirection,
+  getContainerRenderingLineFromNodes,
+  getLineUsingRenderingBoxBasedOnDirection,
 } from "./line";
 import { filterCssValue } from "./util";
 import { absolutePositioningAnnotation } from "./overlap";
+import { getFigmaLineBasedOnDirection } from "../design/adapter/figma/adapter";
 
 export const selectBox = (
   node: Node,
@@ -26,14 +29,17 @@ export const selectBox = (
   }
 
   if (node.getType() === NodeType.VISIBLE) {
-    const visibleNode = node as VisibleNode;
-    return visibleNode.getAbsBoundingBox();
+    return node.getAbsBoundingBox();
   }
 
   if (node.getType() === NodeType.IMAGE) {
-    const imageNode = node as ImageNode;
-    return imageNode.getAbsBoundingBox();
+    return node.getAbsBoundingBox();
   }
+
+  if (node.getType() === NodeType.TEXT) {
+    return node.getAbsBoundingBox();
+  }
+
 
   if (useBoundingBox) {
     return node.getAbsBoundingBox();
@@ -64,6 +70,13 @@ enum RelativePoisition {
 
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
 export const addAdditionalCssAttributesToNodes = (node: Node) => {
+  if (isEmpty(node)) {
+    return;
+  }
+
+  adjustNodeHeightAndWidthCssValue(node);
+  addAdditionalCssAttributes(node);
+
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
@@ -71,13 +84,54 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
 
   const direction = getDirection(node.children);
   reorderNodesBasedOnDirection(node.children, direction);
-  node.addCssAttributes(getAdditionalCssAttributes(node));
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
-  adjustNodeHeightAndWidthCssValue(node);
+  adjustChildrenPositionalCssValue(node, direction);
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
+  }
+};
+
+const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
+  const children = node.getChildren();
+  if (isEmpty(children)) {
+    return;
+  }
+
+  children.sort((a, b): number => {
+    const currentRenderingBox: BoxCoordinates = a.getAbsRenderingBox();
+    const targetRenderingBox: BoxCoordinates = b.getAbsRenderingBox();
+
+    if (direction === Direction.HORIZONTAL) {
+      return currentRenderingBox.leftTop.y - targetRenderingBox.leftTop.y;
+    }
+
+    return currentRenderingBox.leftTop.x - targetRenderingBox.leftTop.x;
+  });
+
+  const zIndexArr: string[] = ["50", "40", "30", "20", "10"];
+
+  if (node.hasAnnotation(absolutePositioningAnnotation)) {
+    if (children.length <= 5) {
+      for (let i = 0; i < children.length; i++) {
+        const current: Node = children[i];
+        const zIndex: string = zIndexArr[zIndexArr.length - children.length + i];
+        current.addPositionalCssAttributes({
+          "z-index": zIndex,
+        });
+
+      }
+    }
+
+    if (children.length > 5) {
+      for (let i = 0; i < children.length; i++) {
+        const current: Node = children[i];
+        current.addPositionalCssAttributes({
+          "z-index": `${children.length - i}`,
+        });
+      }
+    }
   }
 };
 
@@ -358,19 +412,45 @@ const isCssValueEmpty = (value: string): boolean => {
   );
 };
 
-// getAdditionalCssAttributes gets additioanl css information of a node in relation to its children.
-export const getAdditionalCssAttributes = (node: Node): Attributes => {
-  const attributes: Attributes = {};
-
-  if (
-    (!isCssValueEmpty(node.getACssAttribute("border-radius")) ||
-      !isCssValueEmpty(node.getACssAttribute("border-width"))) &&
-    node.areThereOverflowingChildren()
-  ) {
-    attributes["overflow"] = "hidden";
+export const addAdditionalCssAttributes = (node: Node) => {
+  if (node.getType() === NodeType.IMAGE) {
+    node.addCssAttributes({
+      "overflow": "hidden",
+    });
+    return;
   }
 
-  return attributes;
+  if (isEmpty(node.getChildren())) {
+    return;
+  }
+
+  if (isEmpty(node.getACssAttribute("border-radius"))) {
+    return;
+  }
+
+  const childrenContainerLineY = getContainerRenderingLineFromNodes(node.getChildren(), Direction.HORIZONTAL);
+  const childrenHeight = Math.abs(childrenContainerLineY.upper - childrenContainerLineY.lower);
+  const childrenContainerLineX = getContainerRenderingLineFromNodes(node.getChildren(), Direction.VERTICAL);
+  const childrenWidth = Math.abs(childrenContainerLineX.upper - childrenContainerLineX.lower);
+
+  const containerLineY = getContainerRenderingLineFromNodes([node], Direction.HORIZONTAL);
+  const height = Math.abs(containerLineY.upper - containerLineY.lower);
+  const containerLineX = getContainerRenderingLineFromNodes([node], Direction.VERTICAL);
+  const width = Math.abs(containerLineX.upper - containerLineX.lower);
+
+  const borderRadius: string = node.getACssAttribute("border-radius");
+  if (!borderRadius.endsWith("px")) {
+    return;
+  }
+
+  const borderRadiusNum: number = parseInt(borderRadius.slice(0, -2));
+  if (childrenHeight < height - borderRadiusNum || childrenWidth < width - borderRadiusNum) {
+    return;
+  }
+
+  node.addCssAttributes({
+    "overflow": "hidden",
+  });
 };
 
 const adjustNodeHeightAndWidthCssValue = (node: Node) => {
@@ -378,6 +458,13 @@ const adjustNodeHeightAndWidthCssValue = (node: Node) => {
   if (!isEmpty(attributes["box-shadow"])) {
     const width: number = Math.abs(node.getAbsBoundingBox().leftTop.x - node.getAbsBoundingBox().rightBot.x);
     const height: number = Math.abs(node.getAbsBoundingBox().leftTop.y - node.getAbsBoundingBox().rightBot.y);
+    attributes["width"] = `${width}px`;
+    attributes["height"] = `${height}px`;
+  }
+
+  if (node.getType() === NodeType.VECTOR) {
+    const width: number = Math.abs(node.getAbsRenderingBox().leftTop.x - node.getAbsRenderingBox().rightBot.x);
+    const height: number = Math.abs(node.getAbsRenderingBox().leftTop.y - node.getAbsRenderingBox().rightBot.y);
     attributes["width"] = `${width}px`;
     attributes["height"] = `${height}px`;
   }
@@ -593,10 +680,10 @@ export const getPositionalCssAttributes = (
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
     attributes["position"] = "relative";
 
-    const currentBox = node.getAbsRenderingBox();
+    const currentBox = selectBox(node);
     for (const child of node.getChildren()) {
       const childAttributes: Attributes = {};
-      const targetBox = child.getAbsRenderingBox();
+      const targetBox = selectBox(child);
       const top = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
       const bottom = Math.abs(currentBox.rightBot.y - targetBox.rightBot.y);
       const left = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
@@ -607,6 +694,7 @@ export const getPositionalCssAttributes = (
       childAttributes["bottom"] = `${bottom}px`;
       childAttributes["right"] = `${right}px`;
       childAttributes["left"] = `${left}px`;
+
 
       child.addPositionalCssAttributes(childAttributes);
     }

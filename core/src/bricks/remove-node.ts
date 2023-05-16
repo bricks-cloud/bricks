@@ -1,4 +1,4 @@
-import { Node, computePositionalRelationship, PostionalRelationship, NodeType } from "./node";
+import { Node, NodeType } from "./node";
 import { Attributes } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { cssStrToNum } from "../code/generator/util";
@@ -7,13 +7,7 @@ export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
   if (children.length === 1) {
     const child = children[0];
-
-    // console.log("haveSimlarWidthAndHeight(node, child): ", haveSimlarWidthAndHeight(node, child));
-
-
     if (haveSimlarWidthAndHeight(node, child)) {
-
-
       const cssAttributes: Attributes = {
         ...node.getCssAttributes(),
         ...child.getCssAttributes(),
@@ -41,7 +35,7 @@ export const removeChildrenNode = (node: Node): Node => {
       continue;
     }
 
-    if (haveSimlarWidthAndHeight(node, child)) {
+    if (haveSimlarWidthAndHeight(node, child) && isEmpty(child.getChildren())) {
       const cssAttributes: Attributes = {
         ...node.getCssAttributes(),
         ...child.getCssAttributes(),
@@ -63,10 +57,6 @@ export const removeChildrenNode = (node: Node): Node => {
 };
 
 const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean => {
-  if (computePositionalRelationship(currentNode.getAbsBoundingBox(), targetNode.getAbsBoundingBox()) === PostionalRelationship.COMPLETE_OVERLAP) {
-    return true;
-  }
-
   const currentWidth: string = currentNode.getACssAttribute("width");
   const targetWidth: string = targetNode.getACssAttribute("width");
   let similarWidth: boolean = false;
@@ -93,7 +83,28 @@ const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean 
     similarHeight = true;
   }
 
+
   return similarHeight && similarWidth;
+
+
+  // const currentBorderRadius: string = currentNode.getACssAttribute("border-radius");
+  // const targetBorderRadius: string = targetNode.getACssAttribute("border-radius");
+
+  // // console.log("currentNode: ", currentNode);
+  // // console.log("targetNode: ", targetNode);
+  // // console.log("currentBorderRadius: ", currentBorderRadius);
+  // // console.log("targetBorderRadius: ", targetBorderRadius);
+  // if (isEmpty(currentBorderRadius) || isEmpty(targetBorderRadius)) {
+  //   return similarHeight && similarWidth;
+  // }
+
+  // let similarCornerRadius: boolean = false;
+  // let diffInCornerRadius: number = Math.abs(cssStrToNum(currentBorderRadius) - cssStrToNum(targetHeight));
+  // if (diffInCornerRadius <= 1) {
+  //   similarCornerRadius = true;
+  // }
+
+  // return similarHeight && similarWidth && similarCornerRadius;
 };
 
 const filterAttributes = (attribtues: Attributes): Attributes => {

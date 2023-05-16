@@ -50,7 +50,7 @@ export const isFrameNodeTransparent = (
 
 // doesNodeContainsAnImage tests whether rectangle node contain an image
 export const doesNodeContainsAnImage = (
-  node: RectangleNode | EllipseNode
+  node: RectangleNode | EllipseNode | FrameNode
 ): boolean => {
   if (node.fills != figma.mixed) {
     for (const fill of node.fills) {
@@ -166,14 +166,14 @@ function blendColors(color1: RGBA, color2: RGBA) {
   return { r, g, b, a } as RGBA;
 }
 
-export function getRgbaFromPaints(paints: Paint[]) {
+export function getRgbaFromPaints(paints: readonly Paint[]) {
   // TODO: support GradientPaint
   const solidPaints = paints.filter(
     (paint) => paint.type === "SOLID"
   ) as SolidPaint[];
 
   if (solidPaints.length === 0) {
-    throw new Error("No solid paints found");
+    return null;
   }
 
   const colors = solidPaints.map(({ color, opacity }) => ({

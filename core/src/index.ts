@@ -18,6 +18,7 @@ import { instantiateComponentRegistryGlobalInstance } from "../ee/loop/component
 import { annotateNodeForHtmlTag } from "../ee/cv/component-recognition";
 import { instantiateAiApplicationRegistryGlobalInstance, AiApplication, aiApplicationRegistryGlobalInstance } from "../ee/ui/ai-application-registry";
 import { EVENT_AI_CODE_GEN_SUCCESS, EVENT_AI_COMPONENT_IDENTIFICATION_SUCCESS, EVENT_AI_GET_NAME_SUCCESS } from "./analytic/amplitude";
+import { removeCssFromNode } from "./bricks/remove-css";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
@@ -28,28 +29,34 @@ export const convertToCode = async (
     return [];
   }
 
-  // console.log("converted: ", converted);
-
   const dedupedNodes: Node[] = [];
   for (const node of converted) {
     let newNode: Node = removeNode(node);
+    // console.log("after ssssss: ", newNode);
     removeCompletelyOverlappingNodes(newNode, null);
     removeChildrenNode(newNode);
     dedupedNodes.push(newNode);
   }
 
+
   let startingNode: Node =
     dedupedNodes.length > 1 ? new GroupNode(dedupedNodes) : dedupedNodes[0];
 
-  // console.log("startingNode: ", startingNode);
+  console.log("after trim: ", startingNode);
+
 
   groupNodes(startingNode);
+
+  console.log("after group: ", startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
   removeChildrenNode(startingNode);
 
+  // console.log("startingNode: ", startingNode);
+
   addAdditionalCssAttributesToNodes(startingNode);
+  removeCssFromNode(startingNode);
 
   instantiateRegistries(startingNode, option);
   return await generateCodingFiles(startingNode, option);
