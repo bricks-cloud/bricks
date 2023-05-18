@@ -450,9 +450,6 @@ const findClosestTwcssFontWeight = (fontWeight: string): string => {
   return twClassToUse;
 };
 
-// const maxTwcssSizeInPixels = 384;
-// const maxTwcssSizeInRem = 24;
-
 // findClosestTwcssSize finds the closest size in tailwindcss given css value.
 const findClosestTwcssSize = (cssSize: string): string => {
   const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
@@ -470,9 +467,6 @@ const findClosestTwcssSize = (cssSize: string): string => {
 
       if (givenUnit === "px" && cssValue.endsWith("px")) {
         const val = parseFloat(cssValue.slice(0, -2));
-        // if (val > maxTwcssSizeInPixels) {
-        //   return `${val}px`;
-        // }
 
         diff = Math.abs(givenPadding - val);
       }
@@ -481,9 +475,6 @@ const findClosestTwcssSize = (cssSize: string): string => {
         // assume root font size equals 16px, which is true in most cases
 
         const val = parseFloat(cssValue.slice(0, -3)) * 16;
-        // if (val > maxTwcssSizeInPixels) {
-        //   return `${val}px`;
-        // }
 
         diff = Math.abs(givenPadding - val);
       }
@@ -667,11 +658,6 @@ export const getTwcssClass = (
       if (borderRadiusTwSize === "0") {
         return "";
       }
-
-      // const borderRadiusSize = extractPixelNumberFromString(cssValue);
-      // if (borderRadiusSize > MAX_BORDER_RADIUS_IN_PIXELS) {
-      //   return `rounded-[${borderRadiusSize}px]`;
-      // }
 
       return borderRadiusTwSize === ""
         ? "rounded"
