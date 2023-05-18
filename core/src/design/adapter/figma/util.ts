@@ -50,7 +50,7 @@ export const isFrameNodeTransparent = (
 
 // doesNodeContainsAnImage tests whether rectangle node contain an image
 export const doesNodeContainsAnImage = (
-  node: RectangleNode | EllipseNode
+  node: RectangleNode | EllipseNode | FrameNode
 ): boolean => {
   if (node.fills != figma.mixed) {
     for (const fill of node.fills) {
@@ -145,12 +145,6 @@ export function getMostCommonFieldInString<
     }
   }
 
-  console.log(
-    "variation with longest length for field:",
-    field,
-    " = ",
-    variationWithLongestLength
-  );
   return variationWithLongestLength;
 }
 
@@ -191,7 +185,7 @@ export function getRgbaFromPaints(paints: readonly Paint[]) {
 export const figmaLineHeightToCssString = (lineHeight: LineHeight) => {
   switch (lineHeight.unit) {
     case "AUTO":
-      return "normal";
+      return "100%";
     case "PERCENT":
       return `${lineHeight.value}%`;
     case "PIXELS":

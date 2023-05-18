@@ -6,7 +6,6 @@ import {
   getFileExtensionFromLanguage,
   constructExtraFiles,
   snakeCaseToCamelCase,
-  shouldUseAsBackgroundImage,
 } from "../util";
 import {
   Generator as HtmlGenerator,
@@ -126,8 +125,15 @@ const getPropsFromNode = (node: Node, option: Option): string => {
     case NodeType.TEXT:
       return convertCssClassesToInlineStyle(
         {
+          ...{
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
           ...node.getCssAttributes(),
-          ...node.getPositionalCssAttributes(),
         },
         option,
         node.getId()
@@ -159,19 +165,12 @@ const getPropsFromNode = (node: Node, option: Option): string => {
         node.getId()
       );
     case NodeType.IMAGE:
-      if (shouldUseAsBackgroundImage(node)) {
-        const id: string = node.getId();
-        const imageComponentName: string =
-          nameRegistryGlobalInstance.getImageName(id);
-
-        node.addCssAttributes({
-          "background-image": `url('./assets/${imageComponentName}.png')`,
-        });
-      }
-
       if (isEmpty(node.getChildren())) {
         return convertCssClassesToInlineStyle(
           {
+            ...filterAttributes(node.getCssAttributes(), {
+              excludeBackgroundColor: true,
+            }),
             ...filterAttributes(node.getPositionalCssAttributes(), {
               absolutePositioningFilter: true,
             }),
@@ -195,16 +194,6 @@ const getPropsFromNode = (node: Node, option: Option): string => {
         node.getId()
       );
     case NodeType.VECTOR:
-      if (shouldUseAsBackgroundImage(node)) {
-        const id: string = node.getId();
-        const imageComponentName: string =
-          nameRegistryGlobalInstance.getImageName(id);
-
-        node.addCssAttributes({
-          "background-image": `url('./assets/${imageComponentName}.svg')`,
-        });
-      }
-
       if (isEmpty(node.getChildren())) {
         return convertCssClassesToInlineStyle(
           {

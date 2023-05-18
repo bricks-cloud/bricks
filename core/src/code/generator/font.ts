@@ -26,7 +26,7 @@ const findAllFonts = (node: Node, fonts: FontMetadataMap) => {
     const styledTextSegments = textNode.node.getStyledTextSegments();
 
     styledTextSegments.forEach((styledTextSegment) => {
-      const { fontName, fontSize, fontWeight } = styledTextSegment;
+      const { fontName, fontSize, fontWeight, fontFamily } = styledTextSegment;
       const { family, style } = fontName;
       const isItalic = style.toLowerCase().includes("italic");
 
@@ -35,7 +35,7 @@ const findAllFonts = (node: Node, fonts: FontMetadataMap) => {
         if (!font) {
           fonts[family] = {
             isItalic,
-            familyCss: family,
+            familyCss: fontFamily,
             sizes: [fontSize],
             weights: [fontWeight],
           };

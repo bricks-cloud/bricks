@@ -60,7 +60,7 @@ export const getNameMap = async (): Promise<NameMap> => {
       });
 
     const text: string = await response.text();
-    const parsedArr: string[] = JSON.parse(text);
+    const parsedArr: NameMap[] = JSON.parse(text);
 
     if (isEmpty(parsedArr)) {
       return {};
@@ -68,7 +68,7 @@ export const getNameMap = async (): Promise<NameMap> => {
 
     const parsedNameMapArr: NameMap[] = [];
     for (const nameMapStr of parsedArr) {
-      parsedNameMapArr.push(JSON.parse(nameMapStr));
+      parsedNameMapArr.push(nameMapStr);
     }
 
     const consolidatedNameMap: NameMap = getConsolidateNameMap(parsedNameMapArr);
@@ -97,7 +97,7 @@ const dedupNames = (nameMap: NameMap) => {
       return;
     }
 
-    if (oldName.startsWith("dataArr") || oldName.startsWith("Component")) {
+    if (oldName.startsWith("data") || oldName.startsWith("Component")) {
       globalNonDuplicates.add(newName);
     }
 
