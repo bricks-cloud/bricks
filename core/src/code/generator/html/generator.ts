@@ -388,7 +388,7 @@ export class Generator {
       return prop;
     }
 
-    const styledTextSegments = textNode.node.getStyledTextSegments();
+    const styledTextSegments = textNode.getStyledTextSegments();
 
     // for keeping track of nested tags
     const htmlTagStack: ("ol" | "ul" | "li")[] = [];
