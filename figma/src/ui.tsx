@@ -64,7 +64,7 @@ const UI = () => {
         {
           pluginMessage: {
             type: "adjust-plugin-screen-size",
-            height: 300,
+            height: 320,
             width: 350,
           },
         },
@@ -211,6 +211,9 @@ const UI = () => {
 
     if (pluginMessage.type === "get-last-reset") {
       // 86400000 is one day
+
+      resetLimit();
+
       if (
         !!pluginMessage.reset &&
         Date.now() - pluginMessage.reset > 86400000

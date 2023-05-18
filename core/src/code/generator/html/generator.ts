@@ -615,35 +615,12 @@ const getAttributeOverrides = (
 
 const replaceNewLine = (str: string, option: Option) => {
   let newStrParts: string[] = [];
-  let start: number = 0;
   for (let i = 0; i < str.length; i++) {
-    if (i === str.length - 1) {
-      newStrParts.push(str.substring(start));
-    }
-
     if (str.charAt(i) === "\n") {
-      let numberOfNewLines: number = 1;
-      let end: number = i + 1;
-      for (let j = i + 1; j < str.length; j++) {
-        if (str.charAt(j) !== "\n") {
-          break;
-        }
-
-        end = j + 1;
-        numberOfNewLines++;
-      }
-
-      if (numberOfNewLines > 1) {
-        newStrParts.push(str.substring(start, i - 1));
-
-        for (let j = 0; j < numberOfNewLines; j++) {
-          newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
-        }
-
-        start = end;
-        i = start;
-      }
+      newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
     }
+
+    newStrParts.push(str.charAt(i));
   }
 
   return newStrParts.join("");
