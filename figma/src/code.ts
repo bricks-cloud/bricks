@@ -24,18 +24,19 @@ figma.showUI(__html__, { height: 300, width: 350 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "styled-bricks-nodes") {
-    try {
-      const files = await convertToCode(figma.currentPage.selection, {
-        language: msg.options.language,
-        cssFramework: msg.options.cssFramework,
-        uiFramework: msg.options.uiFramework,
-      });
+    const promise = convertToCode(figma.currentPage.selection, {
+      language: msg.options.language,
+      cssFramework: msg.options.cssFramework,
+      uiFramework: msg.options.uiFramework,
+    });
 
+    promise.then((files) => {
       figma.ui.postMessage({
         type: "generated-files",
         files,
       });
-    } catch (e) {
+
+    }).catch((e) => {
       const errorDetails = {
         error: e.name,
         message: e.message,
@@ -53,26 +54,27 @@ figma.ui.onmessage = async (msg) => {
         files: [],
         error: true,
       });
-    }
+    });
   }
 
   if (msg.type === "generate-code-with-ai") {
-    try {
-      const [files, applications] = await convertToCodeWithAi(
-        figma.currentPage.selection,
-        {
-          language: msg.options.language,
-          cssFramework: msg.options.cssFramework,
-          uiFramework: msg.options.uiFramework,
-        }
-      );
+    const promise = convertToCodeWithAi(
+      figma.currentPage.selection,
+      {
+        language: msg.options.language,
+        cssFramework: msg.options.cssFramework,
+        uiFramework: msg.options.uiFramework,
+      }
+    );
 
+    promise.then(([files, applications]) => {
       figma.ui.postMessage({
         type: "generated-files",
         files,
         applications,
       });
-    } catch (e) {
+
+    }).catch((e) => {
       const errorDetails = {
         error: e.name,
         message: e.message,
@@ -91,7 +93,7 @@ figma.ui.onmessage = async (msg) => {
         applications: [],
         error: true,
       });
-    }
+    });
   }
 
   if (msg.type === "update-settings") {
@@ -130,10 +132,6 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "get-last-reset") {
-    if (figma.currentUser.id === "624412189236026359") {
-      await figma.clientStorage.setAsync("limit", 6);
-    }
-
     const reset: number = await figma.clientStorage.getAsync("last-reset");
 
     figma.ui.postMessage({

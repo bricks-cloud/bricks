@@ -13,6 +13,7 @@ import {
   Line,
   getLineBasedOnDirection,
   getContainerRenderingLineFromNodes,
+  getLineUsingRenderingBoxBasedOnDirection,
 } from "./line";
 import { filterCssValue, shouldUseAsBackgroundImage } from "./util";
 import { absolutePositioningAnnotation } from "./overlap";
@@ -87,7 +88,7 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   }
 };
 
-const adjustChildrenPositionalCssValue = (node: Node, direction) => {
+const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
@@ -112,6 +113,32 @@ const adjustChildrenPositionalCssValue = (node: Node, direction) => {
         const current: Node = children[i];
         current.addPositionalCssAttributes({
           "z-index": `${children.length - i}`,
+        });
+      }
+    }
+
+    return;
+  }
+
+  let prevChild: Node = null;
+  for (let i = 0; i < children.length; i++) {
+    const child: Node = children[i];
+    if (i === 0) {
+      prevChild = child;
+      continue;
+    }
+
+    const currentLine: Line = getLineUsingRenderingBoxBasedOnDirection(child, direction);
+    const prevLine: Line = getLineUsingRenderingBoxBasedOnDirection(prevChild, direction);
+
+    if (currentLine.overlapStrict(prevLine)) {
+      if (child.getACssAttribute("box-shadow")) {
+        child.addCssAttributes({
+          "z-index": "10",
+        });
+      } else if (prevChild.getACssAttribute("box-shadow")) {
+        prevChild.addCssAttributes({
+          "z-index": "10",
         });
       }
     }

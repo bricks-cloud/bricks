@@ -54,7 +54,7 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
         if (predictedHtmlTag) {
           aiApplicationRegistryGlobalInstance.addApplication(AiApplication.componentIdentification);
           node.addAnnotations("htmlTag", predictedHtmlTag);
-          return predictedHtmlTag !== "a" && predictedHtmlTag !== "button";
+          return predictedHtmlTag !== "button";
         }
       }
 

@@ -43,6 +43,9 @@ const Home = (props: PropsWithChildren<Props>) => {
   const { setCurrentPage } = useContext(PageContext);
 
   const handleGenerateCodeButtonClick = () => {
+    setIsGeneratingCode(true);
+    setCurrentPage(PAGES.CODE_GENERATION);
+
     parent.postMessage(
       {
         pluginMessage: {
@@ -56,8 +59,6 @@ const Home = (props: PropsWithChildren<Props>) => {
       },
       "*"
     );
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {
@@ -76,6 +77,10 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const handleGenerateCodeWithAiButtonClick = () => {
+    setIsGeneratingCodeWithAi(true);
+    setIsGeneratingCode(true);
+    setCurrentPage(PAGES.CODE_GENERATION);
+
     parent.postMessage(
       {
         pluginMessage: {
@@ -89,10 +94,6 @@ const Home = (props: PropsWithChildren<Props>) => {
       },
       "*"
     );
-
-    setIsGeneratingCodeWithAi(true);
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {
