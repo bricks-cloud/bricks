@@ -57,6 +57,26 @@ const safelySetWidthAndHeight = (
     return;
   }
 
+  // @ts-ignore
+  if (!isEmpty(figmaNode?.effects)) {
+    // @ts-ignore
+    const dropShadowStrings: string[] = figmaNode.effects
+      .filter(
+        (effect) =>
+          effect.visible &&
+          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"));
+
+
+    if (dropShadowStrings.length > 0) {
+      if (!isEmpty(figmaNode.absoluteBoundingBox)) {
+        attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
+        attributes["height"] = `${figmaNode.absoluteBoundingBox.height}px`;
+      }
+
+      return;
+    }
+  }
+
   if (
     nodeType === NodeType.FRAME ||
     nodeType === NodeType.IMAGE ||
@@ -314,8 +334,30 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
         }
       }
 
-      attributes["border-style"] =
-        figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+      if (strokeTopWeight > 0 && strokeBottomWeight > 0 && strokeLeftWeight > 0 && strokeRightWeight > 0) {
+        attributes["border-style"] =
+          figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+      } else {
+        if (strokeTopWeight > 0) {
+          attributes["border-top"] =
+            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+        }
+
+        if (strokeBottomWeight > 0) {
+          attributes["border-bottom"] =
+            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+        }
+
+        if (strokeLeftWeight > 0) {
+          attributes["border-left"] =
+            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+        }
+
+        if (strokeRightWeight > 0) {
+          attributes["border-right"] =
+            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+        }
+      }
     }
 
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
@@ -456,7 +498,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
 
-    if (!moreThanOneRow && !isEmpty(absoluteRenderBounds) && (Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) < fontSize)) {
+    if (!moreThanOneRow) {
       attributes["min-width"] = `${absoluteBoundingBox.width}px`;
       attributes["white-space"] = "nowrap";
     } else {
@@ -464,25 +506,25 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     // switch (figmaNode.textAutoResize) {
-    //   // case "NONE": {
-    //   //   attributes["width"] = `${width}px`;
-    //   //   attributes["height"] = `${absoluteRenderBounds.height}px`;
-    //   //   break;
-    //   // }
-    //   // case "HEIGHT": {
-    //   //   attributes["width"] = `${width}px`;
-    //   //   break;
-    //   // }
+    //   case "NONE": {
+    //     attributes["width"] = `${width}px`;
+    //     attributes["height"] = `${absoluteRenderBounds.height}px`;
+    //     break;
+    //   }
+    //   case "HEIGHT": {
+    //     attributes["width"] = `${width}px`;
+    //     break;
+    //   }
     //   case "WIDTH_AND_HEIGHT": {
     //     attributes["width"] = `${width}px`;
     //     break;
     //   }
-    //   // case "TRUNCATE": {
-    //   //   attributes["width"] = `${width}px`;
-    //   //   attributes["height"] = `${absoluteRenderBounds.height}px`;
-    //   //   attributes["text-overflow"] = "ellipsis";
-    //   //   break;
-    //   // }
+    //   case "TRUNCATE": {
+    //     attributes["width"] = `${width}px`;
+    //     attributes["height"] = `${absoluteRenderBounds.height}px`;
+    //     attributes["text-overflow"] = "ellipsis";
+    //     break;
+    //   }
     // }
 
     // text decoration
@@ -520,10 +562,25 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     const textContainingOnlyOneWord =
-      figmaNode.characters.split(" ").length === 1;
+      figmaNode.characters.trim().split(" ").length === 1;
 
     if (moreThanOneRow && textContainingOnlyOneWord) {
       attributes["overflow-wrap"] = "break-word";
+    }
+
+    if (textContainingOnlyOneWord) {
+      // text alignment
+      switch (figmaNode.textAlignHorizontal) {
+        case "CENTER":
+          attributes["text-align"] = "center";
+          break;
+        case "RIGHT":
+          attributes["text-align"] = "right";
+          break;
+        case "JUSTIFIED":
+          attributes["text-align"] = "justify";
+          break;
+      }
     }
 
     /* 
@@ -545,7 +602,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     // line height
     const lineHeight = figmaNode.lineHeight;
-    if (lineHeight !== figma.mixed && lineHeight.unit !== "AUTO") {
+    if (lineHeight !== figma.mixed) {
       attributes["line-height"] = figmaLineHeightToCssString(lineHeight);
     }
 
@@ -1062,60 +1119,8 @@ export const convertFigmaNodesToBricksNodes = (
 
 
       newNodes.push(newNode);
-
-      // //@ts-ignore
-      // if (!isEmpty(figmaNode?.children)) {
-      //   let isExportableNode: boolean = false;
-      //   //@ts-ignore
-      //   const feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
-      //   if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
-      //     if (!feedback.doNodesHaveNonOverlappingChildren) {
-      //       isExportableNode = true;
-      //       if (feedback.doNodesContainImage) {
-      //         newNode = new ImageNode(
-      //           new FigmaVectorGroupNodeAdapter(figmaNode)
-      //         );
-      //       } else {
-      //         newNode = new BricksVector(
-      //           new FigmaVectorGroupNodeAdapter(figmaNode)
-      //         );
-      //       }
-      //     }
-      //   }
-
-      //   result.areAllNodesExportable =
-      //     feedback.areAllNodesExportable && result.areAllNodesExportable;
-
-      //   result.doNodesContainImage =
-      //     feedback.doNodesContainImage || result.doNodesContainImage;
-
-      //   if (!isExportableNode) {
-      //     newNode.setChildren(feedback.nodes);
-      //   }
-      // }
-
-      // result.nodes.push(newNode);
     }
   }
-
-  // let horizontalOverlap: boolean = areNodesOverlappingByDirection(
-  //   reordered,
-  //   Direction.HORIZONTAL
-  // );
-
-  // let verticalOverlap: boolean = areNodesOverlappingByDirection(
-  //   reordered,
-  //   Direction.VERTICAL
-  // );
-
-  // result.doNodesHaveNonOverlappingChildren =
-  //   !horizontalOverlap || !verticalOverlap;
-
-  // console.log("result.doNodesHaveNonOverlappingChildren: ", result.doNodesHaveNonOverlappingChildren);
-
-
-  // console.log(figmaNodes);
-  // console.log(result);
 
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
@@ -1149,11 +1154,6 @@ export const convertFigmaNodesToBricksNodes = (
         doNodesHaveNonOverlappingChildren = false;
       }
 
-
-      // console.log("parent:<<<<<<<<<<<<<<<<<<< ", figmaNodes);
-      // console.log("feedback: ", feedback);
-      // console.log("figmaNode: ", figmaNode);
-      // console.log("!doNodesHaveNonOverlappingChildren: ", !doNodesHaveNonOverlappingChildren);
       if (feedback.areAllNodesExportable && !feedback.isSingleRectangle) {
         if (!doNodesHaveNonOverlappingChildren) {
           isExportableNode = true;

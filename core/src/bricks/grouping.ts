@@ -24,37 +24,22 @@ export const groupNodes = (parentNode: Node) => {
   }
 
   let groupedNodes = groupNodesByInclusion(children);
-
-  // console.log("groupNodesByInclusion: ", groupedNodes);
-
   groupedNodes = groupNodesByOverlap(groupedNodes);
-
-  // console.log("groupNodesByOverlap: ", groupedNodes);
 
   const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
     Direction.HORIZONTAL
   );
 
-  // console.log("horizontalSegmentedNodes: ", horizontalSegmentedNodes);
-
-
   const verticalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,
     Direction.VERTICAL
   );
 
-  // console.log("verticalSegmentedNodes: ", verticalSegmentedNodes);
-
-
   const decided = decideBetweenDirectionalOverlappingNodes(
     horizontalSegmentedNodes,
     verticalSegmentedNodes
   );
-
-
-  // console.log("decided: ", decided);
-
 
   if (!isEmpty(decided)) {
     groupedNodes = decided;

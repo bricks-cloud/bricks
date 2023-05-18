@@ -291,10 +291,6 @@ export class Generator {
       ];
     }
 
-    node.addCssAttributes({
-      "background-image": `url('./assets/${imageComponentName}.png')`,
-    });
-
     return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
@@ -352,6 +348,7 @@ export class Generator {
     });
 
     let codeStr: string = "";
+
     if (renderInALoop) {
       let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(
         data

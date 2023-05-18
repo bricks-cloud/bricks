@@ -2,6 +2,7 @@ import { Node, NodeType } from "./node";
 import { Attributes } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { cssStrToNum } from "../code/generator/util";
+import { replacedParentAnnotation } from "./annotation";
 
 export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
@@ -17,6 +18,7 @@ export const removeNode = (node: Node): Node => {
 
       child.setCssAttributes(cssAttributes);
       child.setPositionalCssAttributes(positionalCssAttributes);
+      child.addAnnotations(replacedParentAnnotation, true);
 
       return removeNode(child);
     }
@@ -85,26 +87,6 @@ const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean 
 
 
   return similarHeight && similarWidth;
-
-
-  // const currentBorderRadius: string = currentNode.getACssAttribute("border-radius");
-  // const targetBorderRadius: string = targetNode.getACssAttribute("border-radius");
-
-  // // console.log("currentNode: ", currentNode);
-  // // console.log("targetNode: ", targetNode);
-  // // console.log("currentBorderRadius: ", currentBorderRadius);
-  // // console.log("targetBorderRadius: ", targetBorderRadius);
-  // if (isEmpty(currentBorderRadius) || isEmpty(targetBorderRadius)) {
-  //   return similarHeight && similarWidth;
-  // }
-
-  // let similarCornerRadius: boolean = false;
-  // let diffInCornerRadius: number = Math.abs(cssStrToNum(currentBorderRadius) - cssStrToNum(targetHeight));
-  // if (diffInCornerRadius <= 1) {
-  //   similarCornerRadius = true;
-  // }
-
-  // return similarHeight && similarWidth && similarCornerRadius;
 };
 
 const filterAttributes = (attribtues: Attributes): Attributes => {

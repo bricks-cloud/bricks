@@ -142,6 +142,14 @@ export const getTextVariableProp = (nodeId: string): string => {
     for (const propBinding of propBindings) {
       for (const location of propBinding.locations) {
         if (location.type === "text") {
+          if (propBinding.dataType === DataType.boolean) {
+            if (isEmpty(propBinding.conditionalValue)) {
+              continue;
+            }
+
+            return `{${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}"}`;
+          }
+
           return `{${propBinding.prop}}`;
         }
       }

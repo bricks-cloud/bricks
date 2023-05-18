@@ -36,10 +36,16 @@ figma.ui.onmessage = async (msg) => {
         files,
       });
     } catch (e) {
-      console.error("Error from Figma core:\n", e.stack);
+      const errorDetails = {
+        error: e.name,
+        message: e.message,
+        stack: e.stack,
+      };
+
+      console.error("Error from Figma core:\n", errorDetails);
       trackEvent(EVENT_ERROR, {
         source: "figma",
-        error: e.stack,
+        ...errorDetails,
       });
 
       figma.ui.postMessage({
@@ -67,10 +73,16 @@ figma.ui.onmessage = async (msg) => {
         applications,
       });
     } catch (e) {
-      console.error("Error from Figma core:\n", e.stack);
+      const errorDetails = {
+        error: e.name,
+        message: e.message,
+        stack: e.stack,
+      };
+
+      console.error("Error from Figma core:\n", errorDetails);
       trackEvent(EVENT_ERROR, {
         source: "figma",
-        error: e.stack,
+        ...errorDetails,
       });
 
       figma.ui.postMessage({

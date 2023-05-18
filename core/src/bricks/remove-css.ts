@@ -17,7 +17,7 @@ export const removeCssFromNode = (node: Node) => {
   const positionalAttributes: Attributes = node.getPositionalCssAttributes();
   let cssAttributes: Attributes = node.getCssAttributes();
 
-  if (isEmpty(positionalAttributes["position"]) && positionalAttributes["justify-content"] !== "space-between") {
+  if (isEmpty(positionalAttributes["position"]) && positionalAttributes["justify-content"] !== "space-between" && !isEmpty(cssAttributes["width"])) {
     const actualChildrenWidth: number = calculateActualChildrenWidth(node);
     const width: number = cssStrToNum(cssAttributes["width"]);
 
@@ -37,12 +37,12 @@ export const removeCssFromNode = (node: Node) => {
       if (!isEmpty(childAttributes["height"]) && !isEmpty(cssAttributes["height"]) && childAttributes["height"] === cssAttributes["height"]) {
         delete (cssAttributes["height"]);
       }
-
-      node.setCssAttributes(cssAttributes);
     }
 
     removeCssFromNode(child);
   }
+
+  node.setCssAttributes(cssAttributes);
 };
 
 const calculateActualChildrenWidth = (node: Node): number => {
@@ -68,6 +68,8 @@ const calculateActualChildrenWidth = (node: Node): number => {
 
     if (childAttributes["width"]) {
       widthCum += cssStrToNum(childAttributes["width"]);
+    } else if (childAttributes["min-width"]) {
+      widthCum += cssStrToNum(childAttributes["min-width"]);
     }
 
     if (isEmpty(positionalAttributes["gap"])) {

@@ -685,7 +685,6 @@ export const getTwcssClass = (
       return `bg-${getImageFileNameFromUrl(cssValue)}`;
 
     case "box-shadow": {
-      console.log(cssValue);
       // A very naive conversion for now, because parsing box-shadow string is too complicated
       if (cssValue.includes("inset")) {
         // inner shadow
@@ -823,6 +822,10 @@ export const getTwcssClass = (
       }
     }
 
+    case "border-top":
+    case "border-bottom":
+    case "border-left":
+    case "border-right":
     case "border-style": {
       switch (cssValue) {
         case "solid":
@@ -1093,7 +1096,6 @@ const findClosestTwcssRotate = (cssValue: string) => {
   const end: number = cssValue.indexOf("d");
   const numStr: string = cssValue.substring(start, end);
 
-  console.log(cssValue.substring(start, end));
   let numRaw: number = parseInt(numStr);
   if (isEmpty(numRaw)) {
     return "";

@@ -6,18 +6,17 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node, NodeType } from "./node";
+import { Node, NodeType, TextNode } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
   Line,
   getLineBasedOnDirection,
   getContainerRenderingLineFromNodes,
-  getLineUsingRenderingBoxBasedOnDirection,
 } from "./line";
-import { filterCssValue } from "./util";
+import { filterCssValue, shouldUseAsBackgroundImage } from "./util";
 import { absolutePositioningAnnotation } from "./overlap";
-import { getFigmaLineBasedOnDirection } from "../design/adapter/figma/adapter";
+import { nameRegistryGlobalInstance } from "../code/name-registry/name-registry";
 
 export const selectBox = (
   node: Node,
@@ -35,11 +34,6 @@ export const selectBox = (
   if (node.getType() === NodeType.IMAGE) {
     return node.getAbsBoundingBox();
   }
-
-  if (node.getType() === NodeType.TEXT) {
-    return node.getAbsBoundingBox();
-  }
-
 
   if (useBoundingBox) {
     return node.getAbsBoundingBox();
@@ -82,7 +76,7 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
     return;
   }
 
-  const direction = getDirection(node.children);
+  const direction = getDirection(node);
   reorderNodesBasedOnDirection(node.children, direction);
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
@@ -93,22 +87,11 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   }
 };
 
-const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
+const adjustChildrenPositionalCssValue = (node: Node, direction) => {
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
   }
-
-  children.sort((a, b): number => {
-    const currentRenderingBox: BoxCoordinates = a.getAbsRenderingBox();
-    const targetRenderingBox: BoxCoordinates = b.getAbsRenderingBox();
-
-    if (direction === Direction.HORIZONTAL) {
-      return currentRenderingBox.leftTop.y - targetRenderingBox.leftTop.y;
-    }
-
-    return currentRenderingBox.leftTop.x - targetRenderingBox.leftTop.x;
-  });
 
   const zIndexArr: string[] = ["50", "40", "30", "20", "10"];
 
@@ -413,6 +396,22 @@ const isCssValueEmpty = (value: string): boolean => {
 };
 
 export const addAdditionalCssAttributes = (node: Node) => {
+  if (shouldUseAsBackgroundImage(node)) {
+    const id: string = node.getId();
+    const imageComponentName: string =
+      nameRegistryGlobalInstance.getImageName(id);
+
+
+    let extension: string = "png";
+    if (node.getType() === NodeType.VECTOR) {
+      extension = "svg";
+    }
+
+    node.addCssAttributes({
+      "background-image": `url('./assets/${imageComponentName}.${extension}')`,
+    });
+  }
+
   if (node.getType() === NodeType.IMAGE) {
     node.addCssAttributes({
       "overflow": "hidden",
@@ -479,7 +478,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
     const flexDir = node.getAPositionalAttribute("flex-direction");
 
-    const justifyContent = node.getAPositionalAttribute("justify-content");
     const alignItems = node.getAPositionalAttribute("align-items");
 
     let gap: number = 0;
@@ -556,10 +554,28 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
         child.addCssAttributes(attributes);
 
+
         if (alignItems === "center" && child.getType() === NodeType.TEXT) {
-          const childAttributes: Attributes = child.getCssAttributes();
-          delete (childAttributes["width"]);
-          child.setCssAttributes(childAttributes);
+          let moreThanOneRow: boolean = false;
+          const textNode: TextNode = child as TextNode;
+          const childAttributes: Attributes = textNode.getCssAttributes();
+
+          const [_, renderBoundsHeight] = child.getRenderingBoxWidthAndHeight();
+
+          let fontSize: number = -Infinity;
+          for (const segment of textNode.getStyledTextSegments()) {
+            if (segment.fontSize > fontSize) {
+              fontSize = segment.fontSize;
+            }
+          }
+
+          moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
+
+          if (!moreThanOneRow) {
+            delete (childAttributes["width"]);
+            delete (childAttributes["min-width"]);
+            child.setCssAttributes(childAttributes);
+          }
         }
       }
     }
@@ -752,6 +768,22 @@ const getJustifyContentValue = (
   if (targetLines.length === 1) {
     const targetLine = targetLines[0];
     const mid = parentLine.getMid();
+
+    const touchingStart: boolean = parentLine.lower + 2 >= targetLine.lower && targetLine.lower >= parentLine.lower - 2;
+    const touchingEnd: boolean = parentLine.upper + 2 >= targetLine.upper && targetLine.upper >= parentLine.upper - 2;
+
+    if (touchingStart && touchingEnd) {
+      return JustifyContent.CENTER;
+    }
+
+    if (touchingStart) {
+      return JustifyContent.FLEX_START;
+    }
+
+    if (touchingEnd) {
+      return JustifyContent.FLEX_END;
+    }
+
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
         return JustifyContent.FLEX_START;
@@ -906,10 +938,6 @@ const getAlignItemsValue = (
         numberOfItemsInTheMiddle++;
     }
   }
-
-  // console.log("numberOfItemsInTheMiddle: ", numberOfItemsInTheMiddle);
-  // console.log("numberOfItemsTippingLeft: ", numberOfItemsTippingLeft);
-  // console.log("numberOfItemsTippingRight: ", numberOfItemsTippingRight);
 
 
   if (noGapItems === targetLines.length) {

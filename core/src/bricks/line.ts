@@ -111,7 +111,7 @@ export const getLinesFromNodes = (
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
-    const renderingBox = node.getAbsRenderingBox();
+    const renderingBox = selectBox(node);
 
     if (direction === Direction.VERTICAL) {
       lines.push(new Line(renderingBox.leftTop.x, renderingBox.rightBot.x));

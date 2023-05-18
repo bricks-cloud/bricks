@@ -8,6 +8,7 @@ import {
   VectorNode as AdaptedVectorNode,
   VectorGroupNode as AdaptedVectorGroupNode,
   ImageNode as AdaptedImageNode,
+  StyledTextSegment,
 } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { selectBox } from "./additional-css";
@@ -181,9 +182,6 @@ export const doOverlap = (
   if (!isEmpty(intersection)) {
     const intersectionWidth: number = Math.abs(intersection.leftTop.x - intersection.rightBot.x);
     const intersectionHeight: number = Math.abs(intersection.leftTop.y - intersection.rightBot.y);
-
-    // console.log("intersectionWidth: ", intersectionWidth);
-    // console.log("intersectionHeight: ", intersectionHeight);
 
     if (intersectionWidth < 2 || intersectionHeight < 2) {
       return false;
@@ -361,6 +359,14 @@ export class GroupNode extends BaseNode {
   getAbsRenderingBox() {
     return this.absRenderingBox;
   }
+
+  getRenderingBoxWidthAndHeight(): number[] {
+    const coordinates = this.getAbsRenderingBox();
+    const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
+    const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
+    return [width, height];
+  }
+
 
   getAbsBoundingBox() {
     if (!isEmpty(this.node)) {
@@ -570,6 +576,10 @@ export class TextNode extends VisibleNode {
 
   getType(): NodeType {
     return NodeType.TEXT;
+  }
+
+  getStyledTextSegments(): StyledTextSegment[] {
+    return this.node.getStyledTextSegments();
   }
 }
 

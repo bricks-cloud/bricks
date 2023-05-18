@@ -32,7 +32,6 @@ export const convertToCode = async (
   const dedupedNodes: Node[] = [];
   for (const node of converted) {
     let newNode: Node = removeNode(node);
-    // console.log("after ssssss: ", newNode);
     removeCompletelyOverlappingNodes(newNode, null);
     removeChildrenNode(newNode);
     dedupedNodes.push(newNode);
@@ -40,25 +39,19 @@ export const convertToCode = async (
 
 
   let startingNode: Node =
-    dedupedNodes.length > 1 ? new GroupNode(dedupedNodes) : dedupedNodes[0];
-
-  console.log("after trim: ", startingNode);
-
+    dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
   groupNodes(startingNode);
-
-  console.log("after group: ", startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
   removeChildrenNode(startingNode);
 
-  // console.log("startingNode: ", startingNode);
+  instantiateRegistries(startingNode, option);
 
   addAdditionalCssAttributesToNodes(startingNode);
   removeCssFromNode(startingNode);
 
-  instantiateRegistries(startingNode, option);
   return await generateCodingFiles(startingNode, option);
 };
 
@@ -90,9 +83,9 @@ export const convertToCodeWithAi = async (
   removeCompletelyOverlappingNodes(startingNode, null);
   removeChildrenNode(startingNode);
 
-  addAdditionalCssAttributesToNodes(startingNode);
-
   instantiateRegistries(startingNode, option);
+
+  addAdditionalCssAttributesToNodes(startingNode);
 
   // ee features
   let startAnnotateHtmlTag: number = Date.now();
