@@ -35,7 +35,6 @@ figma.ui.onmessage = async (msg) => {
         type: "generated-files",
         files,
       });
-
     }).catch((e) => {
       const errorDetails = {
         error: e.name,
@@ -73,7 +72,6 @@ figma.ui.onmessage = async (msg) => {
         files,
         applications,
       });
-
     }).catch((e) => {
       const errorDetails = {
         error: e.name,
