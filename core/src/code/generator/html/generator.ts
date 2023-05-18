@@ -414,7 +414,6 @@ export class Generator {
               option
             );
 
-
             let newStr: string = replaceNewLine(result, option);
             newStr = replaceLeadingWhiteSpace(newStr, option);
 
