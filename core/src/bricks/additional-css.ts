@@ -6,15 +6,18 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { ImageNode, Node, NodeType, VisibleNode } from "./node";
+import { Node, NodeType, TextNode } from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
   Line,
   getLineBasedOnDirection,
+  getContainerRenderingLineFromNodes,
+  getLineUsingRenderingBoxBasedOnDirection,
 } from "./line";
-import { filterCssValue } from "./util";
+import { filterCssValue, shouldUseAsBackgroundImage } from "./util";
 import { absolutePositioningAnnotation } from "./overlap";
+import { nameRegistryGlobalInstance } from "../code/name-registry/name-registry";
 
 export const selectBox = (
   node: Node,
@@ -26,13 +29,11 @@ export const selectBox = (
   }
 
   if (node.getType() === NodeType.VISIBLE) {
-    const visibleNode = node as VisibleNode;
-    return visibleNode.getAbsBoundingBox();
+    return node.getAbsBoundingBox();
   }
 
   if (node.getType() === NodeType.IMAGE) {
-    const imageNode = node as ImageNode;
-    return imageNode.getAbsBoundingBox();
+    return node.getAbsBoundingBox();
   }
 
   if (useBoundingBox) {
@@ -64,20 +65,83 @@ enum RelativePoisition {
 
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
 export const addAdditionalCssAttributesToNodes = (node: Node) => {
+  if (isEmpty(node)) {
+    return;
+  }
+
+  adjustNodeHeightAndWidthCssValue(node);
+  addAdditionalCssAttributes(node);
+
   const children = node.getChildren();
   if (isEmpty(children)) {
     return;
   }
 
-  const direction = getDirection(node.children);
+  const direction = getDirection(node);
   reorderNodesBasedOnDirection(node.children, direction);
-  node.addCssAttributes(getAdditionalCssAttributes(node));
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
-  adjustNodeHeightAndWidthCssValue(node);
+  adjustChildrenPositionalCssValue(node, direction);
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
+  }
+};
+
+const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
+  const children = node.getChildren();
+  if (isEmpty(children)) {
+    return;
+  }
+
+  const zIndexArr: string[] = ["50", "40", "30", "20", "10"];
+
+  if (node.hasAnnotation(absolutePositioningAnnotation)) {
+    if (children.length <= 5) {
+      for (let i = 0; i < children.length; i++) {
+        const current: Node = children[i];
+        const zIndex: string = zIndexArr[zIndexArr.length - children.length + i];
+        current.addPositionalCssAttributes({
+          "z-index": zIndex,
+        });
+
+      }
+    }
+
+    if (children.length > 5) {
+      for (let i = 0; i < children.length; i++) {
+        const current: Node = children[i];
+        current.addPositionalCssAttributes({
+          "z-index": `${children.length - i}`,
+        });
+      }
+    }
+
+    return;
+  }
+
+  let prevChild: Node = null;
+  for (let i = 0; i < children.length; i++) {
+    const child: Node = children[i];
+    if (i === 0) {
+      prevChild = child;
+      continue;
+    }
+
+    const currentLine: Line = getLineUsingRenderingBoxBasedOnDirection(child, direction);
+    const prevLine: Line = getLineUsingRenderingBoxBasedOnDirection(prevChild, direction);
+
+    if (currentLine.overlapStrict(prevLine)) {
+      if (child.getACssAttribute("box-shadow")) {
+        child.addCssAttributes({
+          "z-index": "10",
+        });
+      } else if (prevChild.getACssAttribute("box-shadow")) {
+        prevChild.addCssAttributes({
+          "z-index": "10",
+        });
+      }
+    }
   }
 };
 
@@ -358,19 +422,61 @@ const isCssValueEmpty = (value: string): boolean => {
   );
 };
 
-// getAdditionalCssAttributes gets additioanl css information of a node in relation to its children.
-export const getAdditionalCssAttributes = (node: Node): Attributes => {
-  const attributes: Attributes = {};
+export const addAdditionalCssAttributes = (node: Node) => {
+  if (shouldUseAsBackgroundImage(node)) {
+    const id: string = node.getId();
+    const imageComponentName: string =
+      nameRegistryGlobalInstance.getImageName(id);
 
-  if (
-    (!isCssValueEmpty(node.getACssAttribute("border-radius")) ||
-      !isCssValueEmpty(node.getACssAttribute("border-width"))) &&
-    node.areThereOverflowingChildren()
-  ) {
-    attributes["overflow"] = "hidden";
+
+    let extension: string = "png";
+    if (node.getType() === NodeType.VECTOR) {
+      extension = "svg";
+    }
+
+    node.addCssAttributes({
+      "background-image": `url('./assets/${imageComponentName}.${extension}')`,
+    });
   }
 
-  return attributes;
+  if (node.getType() === NodeType.IMAGE) {
+    node.addCssAttributes({
+      "overflow": "hidden",
+    });
+    return;
+  }
+
+  if (isEmpty(node.getChildren())) {
+    return;
+  }
+
+  if (isEmpty(node.getACssAttribute("border-radius"))) {
+    return;
+  }
+
+  const childrenContainerLineY = getContainerRenderingLineFromNodes(node.getChildren(), Direction.HORIZONTAL);
+  const childrenHeight = Math.abs(childrenContainerLineY.upper - childrenContainerLineY.lower);
+  const childrenContainerLineX = getContainerRenderingLineFromNodes(node.getChildren(), Direction.VERTICAL);
+  const childrenWidth = Math.abs(childrenContainerLineX.upper - childrenContainerLineX.lower);
+
+  const containerLineY = getContainerRenderingLineFromNodes([node], Direction.HORIZONTAL);
+  const height = Math.abs(containerLineY.upper - containerLineY.lower);
+  const containerLineX = getContainerRenderingLineFromNodes([node], Direction.VERTICAL);
+  const width = Math.abs(containerLineX.upper - containerLineX.lower);
+
+  const borderRadius: string = node.getACssAttribute("border-radius");
+  if (!borderRadius.endsWith("px")) {
+    return;
+  }
+
+  const borderRadiusNum: number = parseInt(borderRadius.slice(0, -2));
+  if (childrenHeight < height - borderRadiusNum || childrenWidth < width - borderRadiusNum) {
+    return;
+  }
+
+  node.addCssAttributes({
+    "overflow": "hidden",
+  });
 };
 
 const adjustNodeHeightAndWidthCssValue = (node: Node) => {
@@ -378,6 +484,13 @@ const adjustNodeHeightAndWidthCssValue = (node: Node) => {
   if (!isEmpty(attributes["box-shadow"])) {
     const width: number = Math.abs(node.getAbsBoundingBox().leftTop.x - node.getAbsBoundingBox().rightBot.x);
     const height: number = Math.abs(node.getAbsBoundingBox().leftTop.y - node.getAbsBoundingBox().rightBot.y);
+    attributes["width"] = `${width}px`;
+    attributes["height"] = `${height}px`;
+  }
+
+  if (node.getType() === NodeType.VECTOR) {
+    const width: number = Math.abs(node.getAbsRenderingBox().leftTop.x - node.getAbsRenderingBox().rightBot.x);
+    const height: number = Math.abs(node.getAbsRenderingBox().leftTop.y - node.getAbsRenderingBox().rightBot.y);
     attributes["width"] = `${width}px`;
     attributes["height"] = `${height}px`;
   }
@@ -392,7 +505,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
     const flexDir = node.getAPositionalAttribute("flex-direction");
 
-    const justifyContent = node.getAPositionalAttribute("justify-content");
     const alignItems = node.getAPositionalAttribute("align-items");
 
     let gap: number = 0;
@@ -469,10 +581,28 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
         child.addCssAttributes(attributes);
 
+
         if (alignItems === "center" && child.getType() === NodeType.TEXT) {
-          const childAttributes: Attributes = child.getCssAttributes();
-          delete (childAttributes["width"]);
-          child.setCssAttributes(childAttributes);
+          let moreThanOneRow: boolean = false;
+          const textNode: TextNode = child as TextNode;
+          const childAttributes: Attributes = textNode.getCssAttributes();
+
+          const [_, renderBoundsHeight] = child.getRenderingBoxWidthAndHeight();
+
+          let fontSize: number = -Infinity;
+          for (const segment of textNode.getStyledTextSegments()) {
+            if (segment.fontSize > fontSize) {
+              fontSize = segment.fontSize;
+            }
+          }
+
+          moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
+
+          if (!moreThanOneRow) {
+            delete (childAttributes["width"]);
+            delete (childAttributes["min-width"]);
+            child.setCssAttributes(childAttributes);
+          }
         }
       }
     }
@@ -593,10 +723,10 @@ export const getPositionalCssAttributes = (
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
     attributes["position"] = "relative";
 
-    const currentBox = node.getAbsRenderingBox();
+    const currentBox = selectBox(node);
     for (const child of node.getChildren()) {
       const childAttributes: Attributes = {};
-      const targetBox = child.getAbsRenderingBox();
+      const targetBox = selectBox(child);
       const top = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
       const bottom = Math.abs(currentBox.rightBot.y - targetBox.rightBot.y);
       const left = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
@@ -607,6 +737,7 @@ export const getPositionalCssAttributes = (
       childAttributes["bottom"] = `${bottom}px`;
       childAttributes["right"] = `${right}px`;
       childAttributes["left"] = `${left}px`;
+
 
       child.addPositionalCssAttributes(childAttributes);
     }
@@ -664,6 +795,22 @@ const getJustifyContentValue = (
   if (targetLines.length === 1) {
     const targetLine = targetLines[0];
     const mid = parentLine.getMid();
+
+    const touchingStart: boolean = parentLine.lower + 2 >= targetLine.lower && targetLine.lower >= parentLine.lower - 2;
+    const touchingEnd: boolean = parentLine.upper + 2 >= targetLine.upper && targetLine.upper >= parentLine.upper - 2;
+
+    if (touchingStart && touchingEnd) {
+      return JustifyContent.CENTER;
+    }
+
+    if (touchingStart) {
+      return JustifyContent.FLEX_START;
+    }
+
+    if (touchingEnd) {
+      return JustifyContent.FLEX_END;
+    }
+
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
         return JustifyContent.FLEX_START;
@@ -818,6 +965,7 @@ const getAlignItemsValue = (
         numberOfItemsInTheMiddle++;
     }
   }
+
 
   if (noGapItems === targetLines.length) {
     for (const targetLine of targetLines) {

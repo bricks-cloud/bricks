@@ -35,6 +35,10 @@ const isNumeric = (str: string): boolean => {
 
 
 export const cssStrToNum = (value: string): number => {
+  if (isEmpty(value)) {
+    return 0;
+  }
+
   if (value.endsWith("px")) {
     return parseInt(value.slice(0, -2));
   }

@@ -13,7 +13,9 @@ import {
   twUnitMap,
   twWidthMap,
   tailwindTextDecorationMap,
-  MAX_BORDER_RADIUS_IN_PIXELS,
+  twcssDropShadowToSumMap,
+  twcssRotateToDegMap,
+  twcssZIndexMap,
 } from "./twcss-conversion-map";
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
@@ -231,6 +233,10 @@ const findClosestTwcssFontSize = (cssFontSize: string) => {
     }
   });
 
+  if (!(smallestDiff < 2)) {
+    return `text-[${cssFontSize}]`;
+  }
+
   return closestTailwindFontSize;
 };
 
@@ -245,7 +251,7 @@ const findClosestTwcssClassUsingPixel = (
   targetPixelStr: string,
   twClassToPixelMap: Record<string, string>,
   defaultClass: string
-) => {
+): [string, number] => {
   let closestTwClass = defaultClass;
   const targetPixelNum = extractPixelNumberFromString(targetPixelStr);
 
@@ -261,7 +267,7 @@ const findClosestTwcssClassUsingPixel = (
     }
   });
 
-  return closestTwClass;
+  return [closestTwClass, smallestDiff];
 };
 
 // findTwcssTextDecoration translates text-decoration from css to tailwindcss
@@ -337,6 +343,92 @@ const findClosestTwcssLetterSpacing = (
   return twClassToUse;
 };
 
+const getRadiusFromBoxShadow = (boxShadowValue: string): number => {
+  const spaceParts: string[] = boxShadowValue.split(" ");
+
+  if (spaceParts.length < 4) {
+    return 2;
+  }
+
+  if (spaceParts[2].endsWith("px")) {
+    return parseInt(spaceParts[2].slice(0, -2));
+  }
+
+  return 2;
+};
+
+const getYOffSetFromBoxShadow = (boxShadowValue: string): number => {
+  const spaceParts: string[] = boxShadowValue.split(" ");
+
+  if (spaceParts.length < 4) {
+    return 1;
+  }
+
+  if (spaceParts[1].endsWith("px")) {
+    return parseInt(spaceParts[1].slice(0, -2));
+  }
+
+  return 1;
+};
+
+const findClosestTwcssDropShadowClassUsingPixel = (
+  cssValue: string,
+) => {
+  let closestTwClass = "";
+  const dropShadowParts: string[] = cssValue.split("),");
+
+  if (isEmpty(dropShadowParts)) {
+    return "shadow";
+  }
+
+  const newShadowParts: string[] = [];
+
+  for (let i = 0; i < dropShadowParts.length; i++) {
+    if (i !== dropShadowParts.length - 1) {
+      newShadowParts.push(dropShadowParts[i] + ")");
+      continue;
+    }
+
+    newShadowParts.push(dropShadowParts[i]);
+  }
+
+
+  let largestRadius: number = -Infinity;
+  let largestYOffset: number = -Infinity;
+
+  for (let i = 0; i < newShadowParts.length; i++) {
+    const radius: number = getRadiusFromBoxShadow(newShadowParts[i]);
+    const yOffset: number = getYOffSetFromBoxShadow(newShadowParts[i]);
+
+    if (radius > largestRadius) {
+      largestRadius = radius;
+    }
+
+    if (yOffset > largestYOffset) {
+      largestYOffset = yOffset;
+    }
+  }
+
+  let smallestDiff: number = Infinity;
+  Object.entries(twcssDropShadowToSumMap).forEach(([key, val]) => {
+    const pixelNum = extractPixelNumberFromString(val);
+    if (val.endsWith("px")) {
+      const diff: number = Math.abs(largestRadius + largestYOffset - pixelNum);
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestTwClass = key;
+      }
+    }
+  });
+
+  if (isEmpty(closestTwClass)) {
+    return "shadow";
+  }
+
+  return "shadow" + "-" + closestTwClass;
+};
+
+
 // findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
 const findClosestTwcssFontWeight = (fontWeight: string): string => {
   const givenFontWeight = parseInt(fontWeight);
@@ -358,9 +450,6 @@ const findClosestTwcssFontWeight = (fontWeight: string): string => {
   return twClassToUse;
 };
 
-// const maxTwcssSizeInPixels = 384;
-// const maxTwcssSizeInRem = 24;
-
 // findClosestTwcssSize finds the closest size in tailwindcss given css value.
 const findClosestTwcssSize = (cssSize: string): string => {
   const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
@@ -378,9 +467,6 @@ const findClosestTwcssSize = (cssSize: string): string => {
 
       if (givenUnit === "px" && cssValue.endsWith("px")) {
         const val = parseFloat(cssValue.slice(0, -2));
-        // if (val > maxTwcssSizeInPixels) {
-        //   return `${val}px`;
-        // }
 
         diff = Math.abs(givenPadding - val);
       }
@@ -389,9 +475,6 @@ const findClosestTwcssSize = (cssSize: string): string => {
         // assume root font size equals 16px, which is true in most cases
 
         const val = parseFloat(cssValue.slice(0, -3)) * 16;
-        // if (val > maxTwcssSizeInPixels) {
-        //   return `${val}px`;
-        // }
 
         diff = Math.abs(givenPadding - val);
       }
@@ -448,7 +531,7 @@ export const getTwcssClass = (
         return `h-[${heightNum}px]`;
       }
 
-      const approximatedTwcssHeightClass = findClosestTwcssClassUsingPixel(
+      const [approximatedTwcssHeightClass] = findClosestTwcssClassUsingPixel(
         cssValue,
         twHeightMap,
         "h-0"
@@ -463,13 +546,17 @@ export const getTwcssClass = (
 
       return approximatedTwcssHeightClass;
 
+    case "min-width":
+      const minWidthNum = extractPixelNumberFromString(cssValue);
+      return `min-w-[${minWidthNum}px]`;
+
     case "width":
       const widthNum = extractPixelNumberFromString(cssValue);
       if (cssValue.endsWith("px") && widthNum > largestTwcssWidthInPixels) {
         return `w-[${widthNum}px]`;
       }
 
-      const approximatedTwcssWidthClass = findClosestTwcssClassUsingPixel(
+      const [approximatedTwcssWidthClass] = findClosestTwcssClassUsingPixel(
         cssValue,
         twWidthMap,
         "w-0"
@@ -488,7 +575,7 @@ export const getTwcssClass = (
       return "border-" + findClosestTwcssColor(cssValue);
 
     case "border-width": {
-      const borderWidthTwSize = findClosestTwcssClassUsingPixel(
+      const [borderWidthTwSize] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
         "0"
@@ -502,7 +589,7 @@ export const getTwcssClass = (
     }
 
     case "border-top-width": {
-      const borderTopWidthTwSize = findClosestTwcssClassUsingPixel(
+      const [borderTopWidthTwSize] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
         "0"
@@ -516,7 +603,7 @@ export const getTwcssClass = (
     }
 
     case "border-bottom-width": {
-      const borderBottomWidthTwSize = findClosestTwcssClassUsingPixel(
+      const [borderBottomWidthTwSize] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
         "0"
@@ -530,7 +617,7 @@ export const getTwcssClass = (
     }
 
     case "border-left-width": {
-      const borderLeftWidthTwSize = findClosestTwcssClassUsingPixel(
+      const [borderLeftWidthTwSize] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
         "0"
@@ -544,7 +631,7 @@ export const getTwcssClass = (
     }
 
     case "border-right-width": {
-      const borderRightWidthTwSize = findClosestTwcssClassUsingPixel(
+      const [borderRightWidthTwSize] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBroderWidthMap,
         "0"
@@ -558,18 +645,18 @@ export const getTwcssClass = (
     }
 
     case "border-radius": {
-      const borderRadiusTwSize = findClosestTwcssClassUsingPixel(
+      const [borderRadiusTwSize, smallestDiff] = findClosestTwcssClassUsingPixel(
         cssValue,
         twBorderRadiusMap,
         "none"
       );
-      if (borderRadiusTwSize === "0") {
-        return "";
+
+      if (smallestDiff > 2) {
+        return `rounded-[${cssValue}]`;
       }
 
-      const borderRadiusSize = extractPixelNumberFromString(cssValue);
-      if (borderRadiusSize > MAX_BORDER_RADIUS_IN_PIXELS) {
-        return `rounded-[${borderRadiusSize}px]`;
+      if (borderRadiusTwSize === "0") {
+        return "";
       }
 
       return borderRadiusTwSize === ""
@@ -590,7 +677,7 @@ export const getTwcssClass = (
         return "shadow-inner";
       } else {
         // drop shadow
-        return "shadow-xl";
+        return findClosestTwcssDropShadowClassUsingPixel(cssValue);
       }
     }
 
@@ -721,6 +808,10 @@ export const getTwcssClass = (
       }
     }
 
+    case "border-top":
+    case "border-bottom":
+    case "border-left":
+    case "border-right":
     case "border-style": {
       switch (cssValue) {
         case "solid":
@@ -941,7 +1032,86 @@ export const getTwcssClass = (
       }
     }
 
+    case "transform": {
+      if (cssValue.startsWith("rotate")) {
+        return findClosestTwcssRotate(cssValue);
+      }
+    }
+
+    case "z-index": {
+      return findClosestZIndex(cssValue);
+    }
+
     default:
       return "";
   }
+};
+
+const findClosestZIndex = (cssValue: string) => {
+  let num: number = parseInt(cssValue);
+
+  if (isEmpty(num) || num === 0) {
+    return "";
+  }
+
+  let minDiff = Infinity;
+  let twcssClass: string = "";
+  Object.entries(twcssZIndexMap).forEach(([twcssValue, index]) => {
+    let diff: number = Math.abs(num - index);
+
+    if (diff < minDiff) {
+      minDiff = diff;
+      twcssClass = twcssValue;
+    }
+  });
+
+  if (isEmpty(twcssClass)) {
+    return "";
+  }
+
+  if (Math.abs(minDiff) !== 0) {
+    return "z-" + `[${num}]`;
+  }
+
+  return twcssClass;
+};
+
+
+const findClosestTwcssRotate = (cssValue: string) => {
+  const start: number = cssValue.indexOf("(") + 1;
+  const end: number = cssValue.indexOf("d");
+  const numStr: string = cssValue.substring(start, end);
+
+  let numRaw: number = parseInt(numStr);
+  if (isEmpty(numRaw)) {
+    return "";
+  }
+
+  let num: number = numRaw;
+  let rotatePrefix: string = "";
+  if (numRaw < 0) {
+    num = numRaw * -1;
+    rotatePrefix = "-";
+  }
+
+  let minDiff = Infinity;
+  let twcssClass: string = "";
+  Object.entries(twcssRotateToDegMap).forEach(([twValue, deg]) => {
+    let diff: number = Math.abs(num - deg);
+
+    if (diff < minDiff) {
+      minDiff = diff;
+      twcssClass = twValue;
+    }
+  });
+
+  if (isEmpty(twcssClass)) {
+    return "";
+  }
+
+  if (Math.abs(minDiff) > 3) {
+    return rotatePrefix + "rotate" + `[${num}deg]`;
+  }
+
+  return rotatePrefix + twcssClass;
 };

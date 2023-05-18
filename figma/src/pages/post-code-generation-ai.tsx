@@ -22,7 +22,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
     if (isEmpty(aiApplications)) {
       return (
         <p className="font-vietnam text-black font-bold text-base mb-4 text-start">
-          Ai is not applied in this code generation. No credits deducted.
+          We didnt detect any looped components, buttons, or links so we switched to instant version. No credits have been deducted.
         </p>
       );
     }
@@ -33,7 +33,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
       if (aiApplication === AiApplication.componentIdentification) {
         applications.push(
           <p className="font-vietnam text-black text-base mb-4 text-start">
-            * Auto identification of buttons and links.
+            * Auto identification of buttons.
           </p>
         );
       }

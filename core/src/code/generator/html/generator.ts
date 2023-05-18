@@ -84,7 +84,23 @@ export class Generator {
           return `<${listTag} ${textNodeClassProps}>${textPropWithoutListTag}</${listTag}>`;
         }
 
-        return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        const children: Node[] = node.getChildren();
+
+        if (isEmpty(children)) {
+          return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        }
+
+        for (const child of children) {
+          if (child.getType() === NodeType.TEXT) {
+            child.addAnnotations("htmlTag", "span");
+          }
+        }
+
+        return await this.generateHtmlFromNodes(
+          children,
+          [`<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`, `</${htmlTag}>`],
+          option
+        );
       }
 
       case NodeType.GROUP:
@@ -275,10 +291,6 @@ export class Generator {
       ];
     }
 
-    node.addCssAttributes({
-      "background-image": `url('./assets/${imageComponentName}.png')`,
-    });
-
     return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
@@ -290,12 +302,16 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
 
+    const cssAttribtues: Attributes =
+      node.getCssAttributes();
+
     if (
       positionalCssAttribtues["position"] === "absolute" ||
       positionalCssAttribtues["margin-left"] ||
       positionalCssAttribtues["margin-right"] ||
       positionalCssAttribtues["margin-top"] ||
-      positionalCssAttribtues["margin-bottom"]
+      positionalCssAttribtues["margin-bottom"] ||
+      cssAttribtues["border-radius"]
     ) {
       return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
@@ -332,6 +348,7 @@ export class Generator {
     });
 
     let codeStr: string = "";
+
     if (renderInALoop) {
       let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(
         data
@@ -371,7 +388,7 @@ export class Generator {
       return prop;
     }
 
-    const styledTextSegments = textNode.node.getStyledTextSegments();
+    const styledTextSegments = textNode.getStyledTextSegments();
 
     // for keeping track of nested tags
     const htmlTagStack: ("ol" | "ul" | "li")[] = [];
@@ -397,9 +414,10 @@ export class Generator {
               option
             );
 
-            return result
-              .split("\n")
-              .join(option.uiFramework === "html" ? "<br>" : "<br />");
+            let newStr: string = replaceNewLine(result, option);
+            newStr = replaceLeadingWhiteSpace(newStr, option);
+
+            return newStr;
           }
 
           // create enough lists to match identation
@@ -525,11 +543,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-          cssAttributes,
-          option,
-          undefined,
-          parentCssAttributes
-        )}`
+        cssAttributes,
+        option,
+        undefined,
+        parentCssAttributes
+      )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
@@ -593,6 +611,57 @@ const getAttributeOverrides = (
     cssAttributes,
     parentCssAttributes,
   };
+};
+
+const replaceNewLine = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  let start: number = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (i === str.length - 1) {
+      newStrParts.push(str.substring(start));
+    }
+
+    if (str.charAt(i) === "\n") {
+      let numberOfNewLines: number = 1;
+      let end: number = i + 1;
+      for (let j = i + 1; j < str.length; j++) {
+        if (str.charAt(j) !== "\n") {
+          break;
+        }
+
+        end = j + 1;
+        numberOfNewLines++;
+      }
+
+      if (numberOfNewLines > 1) {
+        newStrParts.push(str.substring(start, i - 1));
+
+        for (let j = 0; j < numberOfNewLines; j++) {
+          newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
+        }
+
+        start = end;
+        i = start;
+      }
+    }
+  }
+
+  return newStrParts.join("");
+};
+
+const replaceLeadingWhiteSpace = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) === 160) {
+      newStrParts.push("&nbsp;");
+      continue;
+    }
+
+    newStrParts.push(str.substring(i));
+    break;
+  }
+
+  return newStrParts.join("");
 };
 
 const splitByNewLine = (text: string) => {

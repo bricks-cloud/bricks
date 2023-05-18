@@ -20,7 +20,6 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
-import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
 
@@ -103,8 +102,15 @@ const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
     case NodeType.TEXT: {
       const attributes: Attributes = {
+        ...{
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
         ...node.getCssAttributes(),
-        ...node.getPositionalCssAttributes(),
       };
 
       return convertCssClassesToTwcssClasses(attributes, option, node.getId());
@@ -129,19 +135,12 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       );
 
     case NodeType.IMAGE:
-      if (shouldUseAsBackgroundImage(node)) {
-        const id: string = node.getId();
-        const imageComponentName: string =
-          nameRegistryGlobalInstance.getImageName(id);
-
-        node.addCssAttributes({
-          "background-image": `url('./assets/${imageComponentName}.png')`,
-        });
-      }
-
       if (isEmpty(node.getChildren())) {
         return convertCssClassesToTwcssClasses(
           {
+            ...filterAttributes(node.getCssAttributes(), {
+              excludeBackgroundColor: true,
+            }),
             ...filterAttributes(node.getPositionalCssAttributes(), {
               absolutePositioningFilter: true,
             }),
@@ -166,16 +165,6 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       );
 
     case NodeType.VECTOR:
-      if (shouldUseAsBackgroundImage(node)) {
-        const id: string = node.getId();
-        const imageComponentName: string =
-          nameRegistryGlobalInstance.getImageName(id);
-
-        node.addCssAttributes({
-          "background-image": `url('./assets/${imageComponentName}.svg')`,
-        });
-      }
-
       if (isEmpty(node.getChildren())) {
         return convertCssClassesToTwcssClasses(
           {

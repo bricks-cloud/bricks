@@ -152,7 +152,6 @@ const UI = () => {
   }, []);
 
   const resetLimit = () => {
-    console.log("called!!!");
     parent.postMessage(
       {
         pluginMessage: {
@@ -197,8 +196,6 @@ const UI = () => {
     }
 
     if (pluginMessage.type === "get-limit") {
-      // resetLimit();
-
       if (Number.isInteger(pluginMessage.limit) && pluginMessage.limit >= 0) {
         setLimit(pluginMessage.limit);
       } else {

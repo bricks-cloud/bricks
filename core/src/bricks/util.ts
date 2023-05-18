@@ -1,6 +1,6 @@
 import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
-import { Option } from "./node";
+import { Node, NodeType, Option } from "./node";
 
 const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
 
@@ -185,4 +185,16 @@ export const filterCssValue = (cssValue: string, option: Option): string => {
   }
 
   return updated;
+};
+
+export const shouldUseAsBackgroundImage = (node: Node): boolean => {
+  if (node.getType() === NodeType.VECTOR && !isEmpty(node.getChildren())) {
+    return true;
+  }
+
+  if (node.getType() === NodeType.IMAGE && !isEmpty(node.getChildren())) {
+    return true;
+  }
+
+  return false;
 };
