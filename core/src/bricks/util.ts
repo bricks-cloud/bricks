@@ -65,6 +65,10 @@ export const truncateNumbers = (value: string): string => {
 
 // zeroValueFilter prevents values like 0px 0% 0.05px from showing up in generated code
 export const zeroValueFilter = (_: string, value: string): boolean => {
+  if (isEmpty(value)) {
+    return false;
+  }
+
   if (value.endsWith("px")) {
     const num = parseFloat(value.slice(0, -2));
 

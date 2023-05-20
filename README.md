@@ -15,7 +15,7 @@ Bricks is an open source tool for converting Figma designs into high-quality fro
 </p>
 
 
-Check out our [demo video](https://www.loom.com/share/677ef1bc5f2144f6be4d27f4bba3cef3)!
+Check out our [demo video](https://www.loom.com/share/1e7bf5792f6949cb83f2e181762fb2af)!
 
 ## Getting Started
 ### Development Version
