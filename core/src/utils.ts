@@ -20,7 +20,6 @@ export const trackEvent = (eventName: string, eventProperties: any) => {
   track(eventName, isEmpty(eventProperties) ? {} : eventProperties);
 };
 
-
 export const traverseNodes = async (
   node: Node,
   callback: (node: Node) => Promise<boolean>
@@ -54,8 +53,6 @@ export const replaceVariableNameWithinFile = (
     }
   }
 };
-
-
 
 export const createId = () => {
   let id = "";

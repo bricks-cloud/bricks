@@ -68,7 +68,6 @@ export const findOverlappingNodes = (
       startingNode.getPositionalRelationship(targetNode) ===
       PostionalRelationship.OVERLAP
     ) {
-
       overlappingNodes.push(targetNode);
 
       if (!currentPath.has(startingNode.getId())) {

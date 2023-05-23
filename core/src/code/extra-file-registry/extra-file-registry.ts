@@ -1,4 +1,10 @@
-import { NodeType, VectorGroupNode, VectorNode, ImageNode, Node } from "../../bricks/node";
+import {
+  NodeType,
+  VectorGroupNode,
+  VectorNode,
+  ImageNode,
+  Node,
+} from "../../bricks/node";
 import { File } from "../code";
 import { ExportFormat } from "../../design/adapter/node";
 import { nameRegistryGlobalInstance } from "../name-registry/name-registry";
@@ -17,11 +23,14 @@ export class ExtraFileRegistry {
     this.importStatements = [];
   }
 
-
   addImportStatement(node: VectorGroupNode | VectorNode | ImageNode) {
     const id: string = node.getId();
-    if (node.getType() === NodeType.VECTOR || node.getType() === NodeType.VECTOR_GROUP) {
-      const componentName: string = nameRegistryGlobalInstance.getVectorName(id);
+    if (
+      node.getType() === NodeType.VECTOR ||
+      node.getType() === NodeType.VECTOR_GROUP
+    ) {
+      const componentName: string =
+        nameRegistryGlobalInstance.getVectorName(id);
       const path: string = "/assets/" + componentName + ".svg";
       this.importStatements.push({
         node,
@@ -43,8 +52,12 @@ export class ExtraFileRegistry {
 
   async addExportableFile(node: VectorGroupNode | VectorNode | ImageNode) {
     const id: string = node.getId();
-    if (node.getType() === NodeType.VECTOR || node.getType() === NodeType.VECTOR_GROUP) {
-      const path: string = "/assets/" + nameRegistryGlobalInstance.getVectorName(id) + ".svg";
+    if (
+      node.getType() === NodeType.VECTOR ||
+      node.getType() === NodeType.VECTOR_GROUP
+    ) {
+      const path: string =
+        "/assets/" + nameRegistryGlobalInstance.getVectorName(id) + ".svg";
       const content: string = await node.export(ExportFormat.SVG);
       this.files.push({
         content,
@@ -52,9 +65,9 @@ export class ExtraFileRegistry {
       });
     }
 
-
     if (node.getType() === NodeType.IMAGE) {
-      const path: string = "/assets/" + nameRegistryGlobalInstance.getImageName(id) + ".png";
+      const path: string =
+        "/assets/" + nameRegistryGlobalInstance.getImageName(id) + ".png";
       const content: string = await node.export(ExportFormat.PNG);
       this.files.push({
         content,

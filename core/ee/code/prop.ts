@@ -2,22 +2,32 @@ import { isEmpty } from "../../src/utils";
 import { propRegistryGlobalInstance } from "../loop/prop-registry";
 import { PropToPropBinding, DataType } from "../loop/component";
 import { snakeCaseToCamelCase } from "../../src/code/generator/util";
-import { TwcssPropRenderingMap, TwcssPropRenderingMeta } from "../../src/code/generator/tailwindcss/css-to-twcss";
+import {
+  TwcssPropRenderingMap,
+  TwcssPropRenderingMeta,
+} from "../../src/code/generator/tailwindcss/css-to-twcss";
 
 // getVariablePropForTwcss gets variable props for tailwindcss styling classes
-export const getVariablePropForTwcss = (nodeId: string, twcssPropRenderingMap: TwcssPropRenderingMap) => {
+export const getVariablePropForTwcss = (
+  nodeId: string,
+  twcssPropRenderingMap: TwcssPropRenderingMap
+) => {
   let variableProps: string = "";
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
+  const propBindings: PropToPropBinding[] =
+    propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
   if (!isEmpty(propBindings)) {
     for (const propBinding of propBindings) {
       for (const location of propBinding.locations) {
         if (location.type === "css") {
           // @ts-ignore
-          const twcssPropRenderingMeta: TwcssPropRenderingMeta = twcssPropRenderingMap[location.cssKey];
+          const twcssPropRenderingMeta: TwcssPropRenderingMeta =
+            twcssPropRenderingMap[location.cssKey];
           if (!isEmpty(twcssPropRenderingMeta)) {
             // @ts-ignore
-            twcssPropRenderingMeta.filledClassIndexes.add(propBinding.twcssClassIndex);
+            twcssPropRenderingMeta.filledClassIndexes.add(
+              propBinding.twcssClassIndex
+            );
           }
 
           if (propBinding.dataType === DataType.boolean) {
@@ -39,11 +49,13 @@ export const getVariablePropForTwcss = (nodeId: string, twcssPropRenderingMap: T
   return variableProps;
 };
 
-
 // getVariablePropForCss gets variable props for css styling classes
-export const getVariablePropForCss = (nodeId: string): [string, Set<string>] => {
+export const getVariablePropForCss = (
+  nodeId: string
+): [string, Set<string>] => {
   let variableProps: string = "";
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
+  const propBindings: PropToPropBinding[] =
+    propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
   const cssKeyConnectedToProps: Set<string> = new Set<string>();
   if (!isEmpty(propBindings)) {
@@ -54,17 +66,26 @@ export const getVariablePropForCss = (nodeId: string): [string, Set<string>] => 
           const cssKey: string = location.cssKey;
           cssKeyConnectedToProps.add(cssKey);
           if (propBinding.dataType === DataType.boolean) {
-
             if (isEmpty(propBinding.conditionalValue)) {
-              variableProps += ` ...(${propBinding.prop} && {${snakeCaseToCamelCase(cssKey)}: "${propBinding.defaultValue}"}),`;
+              variableProps += ` ...(${
+                propBinding.prop
+              } && {${snakeCaseToCamelCase(cssKey)}: "${
+                propBinding.defaultValue
+              }"}),`;
               continue;
             }
 
-            variableProps += ` ${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop} ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue}",`;
+            variableProps += ` ${snakeCaseToCamelCase(cssKey)}: ${
+              propBinding.prop
+            } ? "${propBinding.defaultValue}" : "${
+              propBinding.conditionalValue
+            }",`;
             continue;
           }
 
-          variableProps += `${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop},`;
+          variableProps += `${snakeCaseToCamelCase(cssKey)}: ${
+            propBinding.prop
+          },`;
         }
       }
     }
@@ -75,7 +96,8 @@ export const getVariablePropForCss = (nodeId: string): [string, Set<string>] => 
 
 // getWidthAndHeightVariableProp gets vairables props for the width and heights of html img tags
 export const getWidthAndHeightVariableProp = (nodeId: string): string => {
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
+  const propBindings: PropToPropBinding[] =
+    propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
   let widthAndHeight: string = "";
 
@@ -117,8 +139,12 @@ export const getWidthAndHeightVariableProp = (nodeId: string): string => {
 };
 
 // getVariableProp gets variable props according to location types such as src and alt
-export const getVariableProp = (nodeId: string, locationType: string): string => {
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
+export const getVariableProp = (
+  nodeId: string,
+  locationType: string
+): string => {
+  const propBindings: PropToPropBinding[] =
+    propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
   if (!isEmpty(propBindings)) {
     for (const propBinding of propBindings) {
@@ -133,10 +159,10 @@ export const getVariableProp = (nodeId: string, locationType: string): string =>
   return "";
 };
 
-
 // getTextVariableProp gets variable props for text in JSX
 export const getTextVariableProp = (nodeId: string): string => {
-  const propBindings: PropToPropBinding[] = propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
+  const propBindings: PropToPropBinding[] =
+    propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
   if (!isEmpty(propBindings)) {
     for (const propBinding of propBindings) {

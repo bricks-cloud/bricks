@@ -1,30 +1,29 @@
 export let aiApplicationRegistryGlobalInstance: AiApplicationRegistry;
 export const instantiateAiApplicationRegistryGlobalInstance = () => {
-    aiApplicationRegistryGlobalInstance = new AiApplicationRegistry();
+  aiApplicationRegistryGlobalInstance = new AiApplicationRegistry();
 };
 
 export enum AiApplication {
-    componentIdentification = "componentIdentification",
-    autoNaming = "autoNaming",
+  componentIdentification = "componentIdentification",
+  autoNaming = "autoNaming",
 }
 
-
 class AiApplicationRegistry {
-    applications: AiApplication[];
+  applications: AiApplication[];
 
-    constructor() {
-        this.applications = [];
-    };
+  constructor() {
+    this.applications = [];
+  }
 
-    addApplication(application: AiApplication) {
-        if (this.applications.includes(application)) {
-            return;
-        }
-
-        this.applications.push(application);
+  addApplication(application: AiApplication) {
+    if (this.applications.includes(application)) {
+      return;
     }
 
-    getApplications(): AiApplication[] {
-        return this.applications;
-    }
+    this.applications.push(application);
+  }
+
+  getApplications(): AiApplication[] {
+    return this.applications;
+  }
 }

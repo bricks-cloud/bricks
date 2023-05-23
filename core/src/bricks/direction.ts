@@ -16,13 +16,32 @@ export enum Direction {
 export const getDirection = (node: Node): Direction => {
   const children: Node[] = node.getChildren();
   if (children.length <= 1) {
-    const targetLine = getContainerLineFromNodes(children, Direction.HORIZONTAL);
+    const targetLine = getContainerLineFromNodes(
+      children,
+      Direction.HORIZONTAL
+    );
     const parentLine = getContainerLineFromNodes([node], Direction.HORIZONTAL);
 
-    const counterTargetLine = getContainerLineFromNodes(children, Direction.VERTICAL);
-    const counterParentLine = getContainerLineFromNodes([node], Direction.VERTICAL);
+    const counterTargetLine = getContainerLineFromNodes(
+      children,
+      Direction.VERTICAL
+    );
+    const counterParentLine = getContainerLineFromNodes(
+      [node],
+      Direction.VERTICAL
+    );
 
-    let useHorizontal: boolean = Math.abs(parentLine.upper - parentLine.lower - (targetLine.upper - targetLine.lower)) > Math.abs(counterParentLine.upper - counterParentLine.lower - (counterTargetLine.upper - counterTargetLine.lower));
+    let useHorizontal: boolean =
+      Math.abs(
+        parentLine.upper -
+          parentLine.lower -
+          (targetLine.upper - targetLine.lower)
+      ) >
+      Math.abs(
+        counterParentLine.upper -
+          counterParentLine.lower -
+          (counterTargetLine.upper - counterTargetLine.lower)
+      );
 
     if (useHorizontal) {
       return Direction.HORIZONTAL;
@@ -33,7 +52,10 @@ export const getDirection = (node: Node): Direction => {
 
   let noVerticalOverlap = true;
   for (let i = 0; i < children.length; i++) {
-    const currentLine = getLineBasedOnDirection(children[i], Direction.HORIZONTAL);
+    const currentLine = getLineBasedOnDirection(
+      children[i],
+      Direction.HORIZONTAL
+    );
     for (let j = 0; j < children.length; j++) {
       if (i === j) {
         continue;
@@ -42,7 +64,8 @@ export const getDirection = (node: Node): Direction => {
         children[j],
         Direction.HORIZONTAL
       );
-      noVerticalOverlap = noVerticalOverlap && !currentLine.overlap(targetLine, 2);
+      noVerticalOverlap =
+        noVerticalOverlap && !currentLine.overlap(targetLine, 2);
     }
   }
 
@@ -54,10 +77,7 @@ export const getDirection = (node: Node): Direction => {
 };
 
 // reorderNodesBasedOnDirection reorders input nodes based on direction in ascending order.
-export const reorderNodesBasedOnDirection = (
-  node,
-  direction: Direction
-) => {
+export const reorderNodesBasedOnDirection = (node, direction: Direction) => {
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
     return;
   }

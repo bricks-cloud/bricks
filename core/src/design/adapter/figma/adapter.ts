@@ -61,12 +61,11 @@ const safelySetWidthAndHeight = (
   // @ts-ignore
   if (!isEmpty(figmaNode?.effects)) {
     // @ts-ignore
-    const dropShadowStrings: string[] = figmaNode.effects
-      .filter(
-        (effect) =>
-          effect.visible &&
-          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"));
-
+    const dropShadowStrings: string[] = figmaNode.effects.filter(
+      (effect) =>
+        effect.visible &&
+        (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW")
+    );
 
     if (dropShadowStrings.length > 0) {
       if (!isEmpty(figmaNode.absoluteBoundingBox)) {
@@ -105,7 +104,10 @@ const safelySetWidthAndHeight = (
       // @ts-ignore
       const renderingHeight: number = figmaNode.absoluteRenderBounds.height;
 
-      if (renderingWidth * 0.5 > boundingWidth || renderingHeight * 0.5 > boundingHeight) {
+      if (
+        renderingWidth * 0.5 > boundingWidth ||
+        renderingHeight * 0.5 > boundingHeight
+      ) {
         // @ts-ignore
         attributes["width"] = `${figmaNode.absoluteRenderBounds.width}px`;
         // @ts-ignore
@@ -146,8 +148,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -335,7 +338,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
         }
       }
 
-      if (strokeTopWeight > 0 && strokeBottomWeight > 0 && strokeLeftWeight > 0 && strokeRightWeight > 0) {
+      if (
+        strokeTopWeight > 0 &&
+        strokeBottomWeight > 0 &&
+        strokeLeftWeight > 0 &&
+        strokeRightWeight > 0
+      ) {
         attributes["border-style"] =
           figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
       } else {
@@ -460,7 +468,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
         }
       }
 
-
       moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
     }
 
@@ -472,7 +479,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-        0.1 ||
+          0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -491,13 +498,12 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-        absoluteBoundingBox.width >
+          absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
       }
     }
-
 
     if (!moreThanOneRow) {
       attributes["min-width"] = `${absoluteBoundingBox.width}px`;
@@ -675,7 +681,9 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   return attributes;
 };
 
-const getBoxCoordinatesFromFigmaNode = (figmaNode: SceneNode): BoxCoordinates => {
+const getBoxCoordinatesFromFigmaNode = (
+  figmaNode: SceneNode
+): BoxCoordinates => {
   let boundingBox = figmaNode.absoluteBoundingBox;
   // // @ts-ignore
 
@@ -772,7 +780,10 @@ export class FigmaNodeAdapter {
       // @ts-ignore
       const renderingHeight: number = this.node.absoluteRenderBounds.height;
 
-      if (renderingWidth * 0.5 > boundingWidth || renderingHeight * 0.5 > boundingHeight) {
+      if (
+        renderingWidth * 0.5 > boundingWidth ||
+        renderingHeight * 0.5 > boundingHeight
+      ) {
         return this.getRenderingBoundsCoordinates();
       }
     }
@@ -800,11 +811,10 @@ export class FigmaNodeAdapter {
   getRenderingBoundsCoordinates(): BoxCoordinates {
     let boundingBox = this.node.absoluteBoundingBox;
 
-    // // @ts-ignore 
+    // // @ts-ignore
     // if (!isEmpty(this.node.rotation)) {
     //   return this.getAbsoluteBoundingBoxCoordinates();
     // }
-
 
     // @ts-ignore
     if (!isEmpty(this.node.absoluteRenderBounds)) {
@@ -1045,7 +1055,10 @@ export const convertFigmaNodesToBricksNodes = (
 
   if (reordered.length === 1) {
     const figmaNode = reordered[0];
-    if ((figmaNode.type === NodeType.RECTANGLE) && !doesNodeContainsAnImage(figmaNode)) {
+    if (
+      figmaNode.type === NodeType.RECTANGLE &&
+      !doesNodeContainsAnImage(figmaNode)
+    ) {
       result.isSingleRectangle = true;
     }
   }
@@ -1122,7 +1135,6 @@ export const convertFigmaNodesToBricksNodes = (
           }
       }
 
-
       newNodes.push(newNode);
     }
   }
@@ -1136,7 +1148,9 @@ export const convertFigmaNodesToBricksNodes = (
     if (!isEmpty(figmaNode?.children)) {
       let isExportableNode: boolean = false;
       //@ts-ignore
-      const feedback: Feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
+      const feedback: Feedback = convertFigmaNodesToBricksNodes(
+        figmaNode.children
+      );
 
       let doNodesHaveNonOverlappingChildren: boolean = true;
       let horizontalOverlap: boolean = areThereOverlappingByDirection(
@@ -1153,7 +1167,9 @@ export const convertFigmaNodesToBricksNodes = (
       );
 
       doNodesHaveNonOverlappingChildren =
-        !horizontalOverlap || !verticalOverlap || feedback.doNodesHaveNonOverlappingChildren;
+        !horizontalOverlap ||
+        !verticalOverlap ||
+        feedback.doNodesHaveNonOverlappingChildren;
 
       if (allNodesAreOfVectorNodeTypes) {
         doNodesHaveNonOverlappingChildren = false;
@@ -1163,9 +1179,7 @@ export const convertFigmaNodesToBricksNodes = (
         if (!doNodesHaveNonOverlappingChildren) {
           isExportableNode = true;
           if (feedback.doNodesContainImage) {
-            newNode = new ImageNode(
-              new FigmaVectorGroupNodeAdapter(figmaNode)
-            );
+            newNode = new ImageNode(new FigmaVectorGroupNodeAdapter(figmaNode));
           } else {
             newNode = new BricksVector(
               new FigmaVectorGroupNodeAdapter(figmaNode)
@@ -1180,7 +1194,8 @@ export const convertFigmaNodesToBricksNodes = (
       result.doNodesContainImage =
         feedback.doNodesContainImage || result.doNodesContainImage;
 
-      result.doNodesHaveNonOverlappingChildren = doNodesHaveNonOverlappingChildren;
+      result.doNodesHaveNonOverlappingChildren =
+        doNodesHaveNonOverlappingChildren;
 
       if (!isExportableNode) {
         newNode.setChildren(feedback.nodes);
@@ -1205,7 +1220,6 @@ const areThereOverlappingByDirection = (
   nodes: readonly SceneNode[],
   direction: Direction
 ): boolean => {
-
   for (let i = 0; i < nodes.length; i++) {
     const currentNode: SceneNode = nodes[i];
     let currentLine = getFigmaLineBasedOnDirection(currentNode, direction);
@@ -1227,9 +1241,11 @@ const areThereOverlappingByDirection = (
   return false;
 };
 
-
 // getFigmaLineBasedOnDirection gets the boundary of a node depending on the input direction.
-export const getFigmaLineBasedOnDirection = (figmaNode: SceneNode, direction: Direction) => {
+export const getFigmaLineBasedOnDirection = (
+  figmaNode: SceneNode,
+  direction: Direction
+) => {
   const coordinates = getBoxCoordinatesFromFigmaNode(figmaNode);
 
   if (direction === Direction.HORIZONTAL) {

@@ -213,17 +213,15 @@ export const figmaFontNameToCssString = (fontName: FontName) => {
   )}`;
 };
 
-
 export const hasShadow = (figmaNode: SceneNode) => {
   // @ts-ignore
   if (!isEmpty(figmaNode?.effects)) {
     // @ts-ignore
-    const dropShadowStrings: string[] = figmaNode.effects
-      .filter(
-        (effect) =>
-          effect.visible &&
-          (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"));
-
+    const dropShadowStrings: string[] = figmaNode.effects.filter(
+      (effect) =>
+        effect.visible &&
+        (effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW")
+    );
 
     if (dropShadowStrings.length > 0) {
       return true;

@@ -140,9 +140,20 @@ export class BaseNode {
   }
 }
 
-function findIntersection(rectangle1: BoxCoordinates, rectangle2: BoxCoordinates): BoxCoordinates {
-  const xOverlap = Math.max(0, Math.min(rectangle1.rightBot.x, rectangle2.rightBot.x) - Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x));
-  const yOverlap = Math.max(0, Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y) - Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y));
+function findIntersection(
+  rectangle1: BoxCoordinates,
+  rectangle2: BoxCoordinates
+): BoxCoordinates {
+  const xOverlap = Math.max(
+    0,
+    Math.min(rectangle1.rightBot.x, rectangle2.rightBot.x) -
+      Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x)
+  );
+  const yOverlap = Math.max(
+    0,
+    Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y) -
+      Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
+  );
 
   if (xOverlap === 0 || yOverlap === 0) {
     return null; // No intersection
@@ -151,36 +162,42 @@ function findIntersection(rectangle1: BoxCoordinates, rectangle2: BoxCoordinates
   const intersection: BoxCoordinates = {
     rightBot: {
       x: Math.max(rectangle1.rightBot.x, rectangle2.rightBot.x),
-      y: Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y)
+      y: Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y),
     },
     rightTop: {
       x: Math.min(rectangle1.rightTop.x, rectangle2.rightTop.x),
-      y: Math.max(rectangle1.rightTop.y, rectangle2.rightTop.y)
+      y: Math.max(rectangle1.rightTop.y, rectangle2.rightTop.y),
     },
     leftBot: {
       x: Math.max(rectangle1.leftBot.x, rectangle2.leftBot.x),
-      y: Math.min(rectangle1.leftBot.y, rectangle2.leftBot.y)
+      y: Math.min(rectangle1.leftBot.y, rectangle2.leftBot.y),
     },
     leftTop: {
       x: Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x),
-      y: Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
+      y: Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y),
     },
   };
 
   return intersection;
 }
 
-
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
   targetCoordinates: BoxCoordinates
 ): boolean => {
-  const intersection: BoxCoordinates = findIntersection(currentCoordinate, targetCoordinates);
+  const intersection: BoxCoordinates = findIntersection(
+    currentCoordinate,
+    targetCoordinates
+  );
 
   if (!isEmpty(intersection)) {
-    const intersectionWidth: number = Math.abs(intersection.leftTop.x - intersection.rightBot.x);
-    const intersectionHeight: number = Math.abs(intersection.leftTop.y - intersection.rightBot.y);
+    const intersectionWidth: number = Math.abs(
+      intersection.leftTop.x - intersection.rightBot.x
+    );
+    const intersectionHeight: number = Math.abs(
+      intersection.leftTop.y - intersection.rightBot.y
+    );
 
     if (intersectionWidth < 2 || intersectionHeight < 2) {
       return false;
@@ -343,7 +360,8 @@ export class GroupNode extends BaseNode {
     this.children = children;
 
     if (!isEmpty(this.node)) {
-      const absBoundingBox: BoxCoordinates = this.node.getAbsoluteBoundingBoxCoordinates();
+      const absBoundingBox: BoxCoordinates =
+        this.node.getAbsoluteBoundingBoxCoordinates();
       this.cssAttributes["width"] = `${Math.abs(
         absBoundingBox.rightBot.x - absBoundingBox.leftTop.x
       )}px`;
@@ -365,7 +383,6 @@ export class GroupNode extends BaseNode {
     const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
     return [width, height];
   }
-
 
   getAbsBoundingBox() {
     if (!isEmpty(this.node)) {
@@ -394,10 +411,7 @@ export class GroupNode extends BaseNode {
       targetBox = targetNode.getAbsBoundingBox();
     }
 
-    return computePositionalRelationship(
-      currentBox,
-      targetBox
-    );
+    return computePositionalRelationship(currentBox, targetBox);
   }
 
   areThereOverflowingChildren(): boolean {
@@ -517,10 +531,7 @@ export class VisibleNode extends BaseNode {
       targetBox = targetNode.getAbsBoundingBox();
     }
 
-    return computePositionalRelationship(
-      currentBox,
-      targetBox
-    );
+    return computePositionalRelationship(currentBox, targetBox);
   }
 
   getOriginalId(): string {

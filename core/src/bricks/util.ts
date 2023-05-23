@@ -46,7 +46,6 @@ export const marignFilter = (key: string, _: string): boolean => {
   return false;
 };
 
-
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
@@ -119,7 +118,6 @@ export const filterAttributes = (
   if (option.excludeBackgroundColor) {
     filters.push(backgroundColorFilter);
   }
-
 
   if (option.absolutePositioningFilter) {
     filters.push(absolutePositioningFilter);

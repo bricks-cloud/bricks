@@ -371,9 +371,7 @@ const getYOffSetFromBoxShadow = (boxShadowValue: string): number => {
   return 1;
 };
 
-const findClosestTwcssDropShadowClassUsingPixel = (
-  cssValue: string,
-) => {
+const findClosestTwcssDropShadowClassUsingPixel = (cssValue: string) => {
   let closestTwClass = "";
   const dropShadowParts: string[] = cssValue.split("),");
 
@@ -391,7 +389,6 @@ const findClosestTwcssDropShadowClassUsingPixel = (
 
     newShadowParts.push(dropShadowParts[i]);
   }
-
 
   let largestRadius: number = -Infinity;
   let largestYOffset: number = -Infinity;
@@ -427,7 +424,6 @@ const findClosestTwcssDropShadowClassUsingPixel = (
 
   return "shadow" + "-" + closestTwClass;
 };
-
 
 // findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
 const findClosestTwcssFontWeight = (fontWeight: string): string => {
@@ -645,11 +641,8 @@ export const getTwcssClass = (
     }
 
     case "border-radius": {
-      const [borderRadiusTwSize, smallestDiff] = findClosestTwcssClassUsingPixel(
-        cssValue,
-        twBorderRadiusMap,
-        "none"
-      );
+      const [borderRadiusTwSize, smallestDiff] =
+        findClosestTwcssClassUsingPixel(cssValue, twBorderRadiusMap, "none");
 
       if (smallestDiff > 2) {
         return `rounded-[${cssValue}]`;
@@ -747,7 +740,6 @@ export const getTwcssClass = (
 
     case "bottom": {
       return renderAbsolutePosition("bottom-", cssValue);
-
     }
 
     case "left": {
@@ -1076,7 +1068,6 @@ const findClosestZIndex = (cssValue: string) => {
 
   return twcssClass;
 };
-
 
 const findClosestTwcssRotate = (cssValue: string) => {
   const start: number = cssValue.indexOf("(") + 1;

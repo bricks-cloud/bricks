@@ -2,7 +2,10 @@ import { Node, NodeType } from "./node";
 import { Attributes } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { cssStrToNum } from "../code/generator/util";
-import { replacedParentAnnotation, replacedChildAnnotation } from "./annotation";
+import {
+  replacedParentAnnotation,
+  replacedChildAnnotation,
+} from "./annotation";
 
 export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
@@ -10,13 +13,19 @@ export const removeNode = (node: Node): Node => {
     const child = children[0];
 
     if (haveSimlarWidthAndHeight(node, child)) {
-      if (node.getType() === NodeType.IMAGE || node.getType() === NodeType.VECTOR) {
+      if (
+        node.getType() === NodeType.IMAGE ||
+        node.getType() === NodeType.VECTOR
+      ) {
         const cssAttributes: Attributes = {
           ...node.getCssAttributes(),
           ...child.getCssAttributes(),
         };
 
-        const positionalCssAttributes: Attributes = mergeAttributes(node.getPositionalCssAttributes(), child.getPositionalCssAttributes());
+        const positionalCssAttributes: Attributes = mergeAttributes(
+          node.getPositionalCssAttributes(),
+          child.getPositionalCssAttributes()
+        );
 
         node.setCssAttributes(cssAttributes);
         node.setPositionalCssAttributes(positionalCssAttributes);
@@ -31,7 +40,10 @@ export const removeNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(node.getPositionalCssAttributes(), child.getPositionalCssAttributes());
+      const positionalCssAttributes: Attributes = mergeAttributes(
+        node.getPositionalCssAttributes(),
+        child.getPositionalCssAttributes()
+      );
 
       child.setCssAttributes(cssAttributes);
       child.setPositionalCssAttributes(positionalCssAttributes);
@@ -49,7 +61,10 @@ export const removeChildrenNode = (node: Node): Node => {
   let newChildren: Node[] = [];
   for (let i = 0; i < children.length; i++) {
     const child: Node = children[i];
-    if (child.getType() === NodeType.IMAGE || child.getType() === NodeType.VECTOR) {
+    if (
+      child.getType() === NodeType.IMAGE ||
+      child.getType() === NodeType.VECTOR
+    ) {
       newChildren.push(child);
       continue;
     }
@@ -60,7 +75,10 @@ export const removeChildrenNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(node.getPositionalCssAttributes(), node.getPositionalCssAttributes());
+      const positionalCssAttributes: Attributes = mergeAttributes(
+        node.getPositionalCssAttributes(),
+        node.getPositionalCssAttributes()
+      );
 
       node.setCssAttributes(cssAttributes);
       node.setPositionalCssAttributes(positionalCssAttributes);
@@ -75,7 +93,10 @@ export const removeChildrenNode = (node: Node): Node => {
   return node;
 };
 
-const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean => {
+const haveSimlarWidthAndHeight = (
+  currentNode: Node,
+  targetNode: Node
+): boolean => {
   const currentWidth: string = currentNode.getACssAttribute("width");
   const targetWidth: string = targetNode.getACssAttribute("width");
   let similarWidth: boolean = false;
@@ -84,7 +105,9 @@ const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean 
     return false;
   }
 
-  let diffInWidth: number = Math.abs(cssStrToNum(currentWidth) - cssStrToNum(targetWidth));
+  let diffInWidth: number = Math.abs(
+    cssStrToNum(currentWidth) - cssStrToNum(targetWidth)
+  );
   if (diffInWidth <= 1) {
     similarWidth = true;
   }
@@ -97,11 +120,12 @@ const haveSimlarWidthAndHeight = (currentNode: Node, targetNode: Node): boolean 
   }
 
   let similarHeight: boolean = false;
-  let diffInHeight: number = Math.abs(cssStrToNum(currentHeight) - cssStrToNum(targetHeight));
+  let diffInHeight: number = Math.abs(
+    cssStrToNum(currentHeight) - cssStrToNum(targetHeight)
+  );
   if (diffInHeight <= 1) {
     similarHeight = true;
   }
-
 
   return similarHeight && similarWidth;
 };
@@ -110,7 +134,12 @@ const filterAttributes = (attribtues: Attributes): Attributes => {
   const result = {};
 
   Object.entries(attribtues).forEach(([key, value]) => {
-    if (key === "flex-direction" || key === "display" || key === "justify-content" || key === "align-items") {
+    if (
+      key === "flex-direction" ||
+      key === "display" ||
+      key === "justify-content" ||
+      key === "align-items"
+    ) {
       return;
     }
 
@@ -120,8 +149,18 @@ const filterAttributes = (attribtues: Attributes): Attributes => {
   return result;
 };
 
-const mergeAttributes = (parentPosAttributes: Attributes, childPosAttributes: Attributes): Attributes => {
-  if (parentPosAttributes["display"] !== childPosAttributes["display"] || parentPosAttributes["flex-direction"] !== childPosAttributes["flex-direction"] || parentPosAttributes["align-items"] !== childPosAttributes["align-items"] || parentPosAttributes["justify-content"] !== childPosAttributes["justify-content"]) {
+const mergeAttributes = (
+  parentPosAttributes: Attributes,
+  childPosAttributes: Attributes
+): Attributes => {
+  if (
+    parentPosAttributes["display"] !== childPosAttributes["display"] ||
+    parentPosAttributes["flex-direction"] !==
+      childPosAttributes["flex-direction"] ||
+    parentPosAttributes["align-items"] !== childPosAttributes["align-items"] ||
+    parentPosAttributes["justify-content"] !==
+      childPosAttributes["justify-content"]
+  ) {
     return {
       ...filterAttributes(parentPosAttributes),
       ...childPosAttributes,
@@ -134,12 +173,13 @@ const mergeAttributes = (parentPosAttributes: Attributes, childPosAttributes: At
   };
 };
 
-
-export const removeCompletelyOverlappingNodes = (node: Node, parentNode: Node) => {
+export const removeCompletelyOverlappingNodes = (
+  node: Node,
+  parentNode: Node
+) => {
   if (isEmpty(node)) {
     return;
   }
-
 
   let children: Node[] = node.getChildren();
   if (children.length === 0) {

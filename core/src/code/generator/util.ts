@@ -27,12 +27,10 @@ export const getExtensionFromFilePath = (path: string) => {
   return parts[parts.length - 1];
 };
 
-
 const isNumeric = (str: string): boolean => {
-  if (typeof str != "string") return false; // we only process strings!  
+  if (typeof str != "string") return false; // we only process strings!
   return !isNaN(parseFloat(str)); // ...and ensure strings of whitespace fail
 };
-
 
 export const cssStrToNum = (value: string): number => {
   if (isEmpty(value)) {

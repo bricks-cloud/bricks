@@ -10,7 +10,11 @@ enum RelativePoisition {
 }
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
-export const getLineBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+export const getLineBasedOnDirection = (
+  node: Node,
+  direction: Direction,
+  useBoundingBox: boolean = false
+) => {
   const coordinates = selectBox(node, useBoundingBox);
 
   if (direction === Direction.HORIZONTAL) {
@@ -20,9 +24,12 @@ export const getLineBasedOnDirection = (node: Node, direction: Direction, useBou
   return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
 };
 
-
 // getLineUsingRenderingBoxBasedOnDirection gets the rendering boundary of a node depending on the input direction.
-export const getLineUsingRenderingBoxBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+export const getLineUsingRenderingBoxBasedOnDirection = (
+  node: Node,
+  direction: Direction,
+  useBoundingBox: boolean = false
+) => {
   const coordinates = node.getAbsRenderingBox();
 
   if (direction === Direction.HORIZONTAL) {
@@ -166,4 +173,3 @@ export const getContainerRenderingLineFromNodes = (
 
   return new Line(lower, upper);
 };
-

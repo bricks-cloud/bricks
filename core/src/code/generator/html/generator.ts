@@ -98,7 +98,10 @@ export class Generator {
 
         return await this.generateHtmlFromNodes(
           children,
-          [`<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`, `</${htmlTag}>`],
+          [
+            `<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`,
+            `</${htmlTag}>`,
+          ],
           option
         );
       }
@@ -302,8 +305,7 @@ export class Generator {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
 
-    const cssAttribtues: Attributes =
-      node.getCssAttributes();
+    const cssAttribtues: Attributes = node.getCssAttributes();
 
     if (
       positionalCssAttribtues["position"] === "absolute" ||
@@ -543,11 +545,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-        cssAttributes,
-        option,
-        undefined,
-        parentCssAttributes
-      )}`
+          cssAttributes,
+          option,
+          undefined,
+          parentCssAttributes
+        )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;

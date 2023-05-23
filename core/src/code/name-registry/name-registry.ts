@@ -6,7 +6,7 @@ export const instantiateNameRegistryGlobalInstance = () => {
 };
 
 type IdToNameMap = {
-  [id: string]: string,
+  [id: string]: string;
 };
 
 class NameRegistry {

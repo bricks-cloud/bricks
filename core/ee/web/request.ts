@@ -38,9 +38,11 @@ export const predictText = async (idTextMap: Record<string, string>) => {
   return response.json() as Promise<Record<string, string>>;
 };
 
-
 export const getNameMap = async (): Promise<NameMap> => {
-  if (isEmpty(codeSampleRegistryGlobalInstance) || isEmpty(codeSampleRegistryGlobalInstance.getCodeSamples())) {
+  if (
+    isEmpty(codeSampleRegistryGlobalInstance) ||
+    isEmpty(codeSampleRegistryGlobalInstance.getCodeSamples())
+  ) {
     return {};
   }
 
@@ -49,15 +51,18 @@ export const getNameMap = async (): Promise<NameMap> => {
       process.env.ML_BACKEND_API_ENDPOINT + "/generate/name",
       // "http://localhost:8080/generate/name",
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           codeSamples: codeSampleRegistryGlobalInstance.getCodeSamples(),
-          uiFramework: codeSampleRegistryGlobalInstance.getUiFramework() as string,
-          cssFramework: codeSampleRegistryGlobalInstance.getCssFramework() as string,
+          uiFramework:
+            codeSampleRegistryGlobalInstance.getUiFramework() as string,
+          cssFramework:
+            codeSampleRegistryGlobalInstance.getCssFramework() as string,
           userId: figma.currentUser.id,
           username: figma.currentUser.name,
         }),
-      });
+      }
+    );
 
     const text: string = await response.text();
     const parsedArr: NameMap[] = JSON.parse(text);
@@ -71,10 +76,10 @@ export const getNameMap = async (): Promise<NameMap> => {
       parsedNameMapArr.push(nameMapStr);
     }
 
-    const consolidatedNameMap: NameMap = getConsolidateNameMap(parsedNameMapArr);
+    const consolidatedNameMap: NameMap =
+      getConsolidateNameMap(parsedNameMapArr);
     dedupNames(consolidatedNameMap);
     return consolidatedNameMap;
-
   } catch (error) {
     console.log("error: ", error);
   }
@@ -113,7 +118,7 @@ const getConsolidateNameMap = (parsedNameMapArr: NameMap[]): NameMap => {
     let dataFieldCounter: number = 1;
     let propCounter: number = 1;
 
-    Object.entries((nameMap)).forEach(([oldName, newName]) => {
+    Object.entries(nameMap).forEach(([oldName, newName]) => {
       if (nonDuplicateDataFields.has(newName)) {
         let dedupedName: string = newName + dataFieldCounter;
         consolidatedNameMap[oldName] = dedupedName;

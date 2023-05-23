@@ -185,7 +185,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -211,7 +211,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -227,14 +227,15 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
-      return convertCssClassesToInlineStyle({
-        ...filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningFilter: true,
-        }),
-        ...filterAttributes(node.getPositionalCssAttributes(), {
-          marginFilter: true,
-        }),
-      },
+      return convertCssClassesToInlineStyle(
+        {
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
         option,
         node.getId()
       );

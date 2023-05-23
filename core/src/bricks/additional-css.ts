@@ -92,7 +92,11 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
 const UpdateNodeWidthToMinWidth = (node: Node) => {
   const positionalCssAttributes: Attributes = node.getPositionalCssAttributes();
   const cssAttributes: Attributes = node.getCssAttributes();
-  if (positionalCssAttributes["flex-direction"] === "row" && !isEmpty(positionalCssAttributes["padding-left"]) && !isEmpty(positionalCssAttributes["padding-right"])) {
+  if (
+    positionalCssAttributes["flex-direction"] === "row" &&
+    !isEmpty(positionalCssAttributes["padding-left"]) &&
+    !isEmpty(positionalCssAttributes["padding-right"])
+  ) {
     const children: Node[] = node.getChildren();
 
     for (const child of children) {
@@ -127,7 +131,6 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
         current.addPositionalCssAttributes({
           "z-index": zIndex,
         });
-
       }
     }
 
@@ -151,8 +154,14 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
       continue;
     }
 
-    const currentLine: Line = getLineUsingRenderingBoxBasedOnDirection(child, direction);
-    const prevLine: Line = getLineUsingRenderingBoxBasedOnDirection(prevChild, direction);
+    const currentLine: Line = getLineUsingRenderingBoxBasedOnDirection(
+      child,
+      direction
+    );
+    const prevLine: Line = getLineUsingRenderingBoxBasedOnDirection(
+      prevChild,
+      direction
+    );
 
     if (currentLine.overlap(prevLine, 2)) {
       if (child.getACssAttribute("box-shadow")) {
@@ -180,20 +189,24 @@ export const getPaddingInPixels = (
   let paddingLeft: number = 0;
   let paddingRight: number = 0;
 
-  const targetLine = getContainerLineFromNodes(node.getChildren(), direction, true);
+  const targetLine = getContainerLineFromNodes(
+    node.getChildren(),
+    direction,
+    true
+  );
   const parentLine = getContainerLineFromNodes([node], direction, true);
 
   const perpendicularTargetLine = getContainerLineFromNodes(
     node.getChildren(),
     getOppositeDirection(direction),
-    true,
+    true
   );
 
   // const boundingBoxPerpendicularTargetLine = getContainerLineFromNodes(node.getChildren(), direction, true);
   const perpendicularParentLine = getContainerLineFromNodes(
     [node],
     getOppositeDirection(direction),
-    true,
+    true
   );
 
   if (direction === Direction.VERTICAL) {
@@ -298,7 +311,7 @@ const setMarginsForChildren = (
     const perpendicularParentLine = getLineBasedOnDirection(
       parentNode,
       getOppositeDirection(direction),
-      true,
+      true
     );
 
     let prevTarget = children[i];
@@ -367,10 +380,10 @@ const setMarginsForChildren = (
       }
 
       targetNode.addPositionalCssAttributes({
-        ...((marginTop > 0) && { "margin-top": `${marginTop}px` }),
-        ...((marginLeft > 0) && { "margin-left": `${marginLeft}px` }),
-        ...((marginBot > 0) && { "margin-bottom": `${marginBot}px` }),
-        ...((marginRight > 0) && { "margin-right": `${marginRight}px` }),
+        ...(marginTop > 0 && { "margin-top": `${marginTop}px` }),
+        ...(marginLeft > 0 && { "margin-left": `${marginLeft}px` }),
+        ...(marginBot > 0 && { "margin-bottom": `${marginBot}px` }),
+        ...(marginRight > 0 && { "margin-right": `${marginRight}px` }),
       });
       continue;
     }
@@ -429,10 +442,10 @@ const setMarginsForChildren = (
     }
 
     targetNode.addPositionalCssAttributes({
-      ...((marginTop > 0) && { "margin-top": `${marginTop}px` }),
-      ...((marginLeft > 0) && { "margin-left": `${marginLeft}px` }),
-      ...((marginBot > 0) && { "margin-bottom": `${marginBot}px` }),
-      ...((marginRight > 0) && { "margin-right": `${marginRight}px` }),
+      ...(marginTop > 0 && { "margin-top": `${marginTop}px` }),
+      ...(marginLeft > 0 && { "margin-left": `${marginLeft}px` }),
+      ...(marginBot > 0 && { "margin-bottom": `${marginBot}px` }),
+      ...(marginRight > 0 && { "margin-right": `${marginRight}px` }),
     });
   }
 };
@@ -451,7 +464,6 @@ export const addAdditionalCssAttributes = (node: Node) => {
     const imageComponentName: string =
       nameRegistryGlobalInstance.getImageName(id);
 
-
     let extension: string = "png";
     if (node.getType() === NodeType.VECTOR) {
       extension = "svg";
@@ -465,7 +477,7 @@ export const addAdditionalCssAttributes = (node: Node) => {
   if (node.getType() === NodeType.IMAGE) {
     if (!isEmpty(node.getACssAttribute("border-radius"))) {
       node.addCssAttributes({
-        "overflow": "hidden",
+        overflow: "hidden",
       });
     }
     return;
@@ -479,14 +491,30 @@ export const addAdditionalCssAttributes = (node: Node) => {
     return;
   }
 
-  const childrenContainerLineY = getContainerRenderingLineFromNodes(node.getChildren(), Direction.HORIZONTAL);
-  const childrenHeight = Math.abs(childrenContainerLineY.upper - childrenContainerLineY.lower);
-  const childrenContainerLineX = getContainerRenderingLineFromNodes(node.getChildren(), Direction.VERTICAL);
-  const childrenWidth = Math.abs(childrenContainerLineX.upper - childrenContainerLineX.lower);
+  const childrenContainerLineY = getContainerRenderingLineFromNodes(
+    node.getChildren(),
+    Direction.HORIZONTAL
+  );
+  const childrenHeight = Math.abs(
+    childrenContainerLineY.upper - childrenContainerLineY.lower
+  );
+  const childrenContainerLineX = getContainerRenderingLineFromNodes(
+    node.getChildren(),
+    Direction.VERTICAL
+  );
+  const childrenWidth = Math.abs(
+    childrenContainerLineX.upper - childrenContainerLineX.lower
+  );
 
-  const containerLineY = getContainerRenderingLineFromNodes([node], Direction.HORIZONTAL);
+  const containerLineY = getContainerRenderingLineFromNodes(
+    [node],
+    Direction.HORIZONTAL
+  );
   const height = Math.abs(containerLineY.upper - containerLineY.lower);
-  const containerLineX = getContainerRenderingLineFromNodes([node], Direction.VERTICAL);
+  const containerLineX = getContainerRenderingLineFromNodes(
+    [node],
+    Direction.VERTICAL
+  );
   const width = Math.abs(containerLineX.upper - containerLineX.lower);
 
   const borderRadius: string = node.getACssAttribute("border-radius");
@@ -495,34 +523,44 @@ export const addAdditionalCssAttributes = (node: Node) => {
   }
 
   const borderRadiusNum: number = parseInt(borderRadius.slice(0, -2));
-  if (childrenHeight < height - borderRadiusNum || childrenWidth < width - borderRadiusNum) {
+  if (
+    childrenHeight < height - borderRadiusNum ||
+    childrenWidth < width - borderRadiusNum
+  ) {
     return;
   }
 
   node.addCssAttributes({
-    "overflow": "hidden",
+    overflow: "hidden",
   });
 };
 
 const adjustNodeHeightAndWidthCssValue = (node: Node) => {
   const attributes: Attributes = node.getCssAttributes();
   if (!isEmpty(attributes["box-shadow"])) {
-    const width: number = Math.abs(node.getAbsBoundingBox().leftTop.x - node.getAbsBoundingBox().rightBot.x);
-    const height: number = Math.abs(node.getAbsBoundingBox().leftTop.y - node.getAbsBoundingBox().rightBot.y);
+    const width: number = Math.abs(
+      node.getAbsBoundingBox().leftTop.x - node.getAbsBoundingBox().rightBot.x
+    );
+    const height: number = Math.abs(
+      node.getAbsBoundingBox().leftTop.y - node.getAbsBoundingBox().rightBot.y
+    );
     attributes["width"] = `${width}px`;
     attributes["height"] = `${height}px`;
   }
 
   if (node.getType() === NodeType.VECTOR) {
-    const width: number = Math.abs(node.getAbsRenderingBox().leftTop.x - node.getAbsRenderingBox().rightBot.x);
-    const height: number = Math.abs(node.getAbsRenderingBox().leftTop.y - node.getAbsRenderingBox().rightBot.y);
+    const width: number = Math.abs(
+      node.getAbsRenderingBox().leftTop.x - node.getAbsRenderingBox().rightBot.x
+    );
+    const height: number = Math.abs(
+      node.getAbsRenderingBox().leftTop.y - node.getAbsRenderingBox().rightBot.y
+    );
     attributes["width"] = `${width}px`;
     attributes["height"] = `${height}px`;
   }
 
   node.setCssAttributes(attributes);
 };
-
 
 const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
   if (!isEmpty(node.getPositionalCssAttributes())) {
@@ -603,7 +641,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
         child.addCssAttributes(attributes);
 
-
         if (alignItems === "center" && child.getType() === NodeType.TEXT) {
           let moreThanOneRow: boolean = false;
           const textNode: TextNode = child as TextNode;
@@ -621,8 +658,8 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
           moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
 
           if (!moreThanOneRow) {
-            delete (childAttributes["width"]);
-            delete (childAttributes["min-width"]);
+            delete childAttributes["width"];
+            delete childAttributes["min-width"];
             child.setCssAttributes(childAttributes);
           }
         }
@@ -751,13 +788,19 @@ export const getPositionalCssAttributes = (
       // const right = Math.abs(currentBox.rightBot.x - targetBox.rightBot.x);
 
       childAttributes["position"] = "absolute";
-      if (currentBox.leftTop.y < targetBox.leftTop.y && currentBox.leftTop.y > targetBox.rightBot.y) {
+      if (
+        currentBox.leftTop.y < targetBox.leftTop.y &&
+        currentBox.leftTop.y > targetBox.rightBot.y
+      ) {
         childAttributes["top"] = `-${vertical}px`;
       } else {
         childAttributes["top"] = `${vertical}px`;
       }
 
-      if (currentBox.leftTop.x < targetBox.rightTop.x && currentBox.leftTop.x > targetBox.leftTop.x) {
+      if (
+        currentBox.leftTop.x < targetBox.rightTop.x &&
+        currentBox.leftTop.x > targetBox.leftTop.x
+      ) {
         childAttributes["left"] = `-${horizontal}px`;
       } else {
         childAttributes["left"] = `${horizontal}px`;
@@ -826,8 +869,12 @@ const getJustifyContentValue = (
     const targetLine = targetLines[0];
     const mid = parentLine.getMid();
 
-    const touchingStart: boolean = parentLine.lower + 2 >= targetLine.lower && targetLine.lower >= parentLine.lower - 2;
-    const touchingEnd: boolean = parentLine.upper + 2 >= targetLine.upper && targetLine.upper >= parentLine.upper - 2;
+    const touchingStart: boolean =
+      parentLine.lower + 2 >= targetLine.lower &&
+      targetLine.lower >= parentLine.lower - 2;
+    const touchingEnd: boolean =
+      parentLine.upper + 2 >= targetLine.upper &&
+      targetLine.upper >= parentLine.upper - 2;
 
     if (touchingStart && touchingEnd) {
       return JustifyContent.CENTER;
@@ -996,7 +1043,6 @@ const getAlignItemsValue = (
     }
   }
 
-
   if (noGapItems === targetLines.length) {
     for (const targetLine of targetLines) {
       const leftGap = Math.abs(parentLine.lower - targetLine.lower);
@@ -1012,11 +1058,17 @@ const getAlignItemsValue = (
   }
 
   if (noGapItems !== 0 && numberOfItemsInTheMiddle === 0) {
-    if (numberOfItemsTippingLeftStrict !== 0 && numberOfItemsTippingRightStrict === 0) {
+    if (
+      numberOfItemsTippingLeftStrict !== 0 &&
+      numberOfItemsTippingRightStrict === 0
+    ) {
       return AlignItems.FLEX_START;
     }
 
-    if (numberOfItemsTippingRightStrict !== 0 && numberOfItemsTippingLeftStrict === 0) {
+    if (
+      numberOfItemsTippingRightStrict !== 0 &&
+      numberOfItemsTippingLeftStrict === 0
+    ) {
       return AlignItems.FLEX_END;
     }
   }
