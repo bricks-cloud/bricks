@@ -10,7 +10,11 @@ enum RelativePoisition {
 }
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
-export const getLineBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+export const getLineBasedOnDirection = (
+  node: Node,
+  direction: Direction,
+  useBoundingBox: boolean = false
+) => {
   const coordinates = selectBox(node, useBoundingBox);
 
   if (direction === Direction.HORIZONTAL) {
@@ -20,9 +24,12 @@ export const getLineBasedOnDirection = (node: Node, direction: Direction, useBou
   return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
 };
 
-
 // getLineUsingRenderingBoxBasedOnDirection gets the rendering boundary of a node depending on the input direction.
-export const getLineUsingRenderingBoxBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+export const getLineUsingRenderingBoxBasedOnDirection = (
+  node: Node,
+  direction: Direction,
+  useBoundingBox: boolean = false
+) => {
   const coordinates = node.getAbsRenderingBox();
 
   if (direction === Direction.HORIZONTAL) {
@@ -79,24 +86,12 @@ export class Line {
     return distanceFromUpper - distanceFromLower;
   };
 
-  overlapStrict(l: Line): boolean {
-    if (this.lower > l.upper) {
+  overlap(l: Line, buffer: number): boolean {
+    if (this.lower + buffer > l.upper) {
       return false;
     }
 
-    if (this.upper < l.lower) {
-      return false;
-    }
-
-    return true;
-  }
-
-  overlap(l: Line): boolean {
-    if (this.lower + 2 > l.upper) {
-      return false;
-    }
-
-    if (this.upper - 2 < l.lower) {
+    if (this.upper - buffer < l.lower) {
       return false;
     }
 
@@ -111,7 +106,7 @@ export const getLinesFromNodes = (
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
-    const renderingBox = selectBox(node);
+    const renderingBox = selectBox(node, true);
 
     if (direction === Direction.VERTICAL) {
       lines.push(new Line(renderingBox.leftTop.x, renderingBox.rightBot.x));
@@ -178,4 +173,3 @@ export const getContainerRenderingLineFromNodes = (
 
   return new Line(lower, upper);
 };
-

@@ -46,7 +46,6 @@ export const marignFilter = (key: string, _: string): boolean => {
   return false;
 };
 
-
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
@@ -69,8 +68,13 @@ export const zeroValueFilter = (_: string, value: string): boolean => {
     return false;
   }
 
-  if (value.endsWith("px")) {
-    const num = parseFloat(value.slice(0, -2));
+  let nonNegativeNum: string = value;
+  if (value.startsWith("-")) {
+    nonNegativeNum = value.substring(1);
+  }
+
+  if (nonNegativeNum.endsWith("px")) {
+    const num = parseFloat(nonNegativeNum.slice(0, -2));
 
     if (toOneDecimal(num) === 0) {
       return false;
@@ -114,7 +118,6 @@ export const filterAttributes = (
   if (option.excludeBackgroundColor) {
     filters.push(backgroundColorFilter);
   }
-
 
   if (option.absolutePositioningFilter) {
     filters.push(absolutePositioningFilter);

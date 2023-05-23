@@ -1,44 +1,45 @@
 type DataFieldToPropBinding = {
-    fieldName: string,
-    propName: string,
+  fieldName: string;
+  propName: string;
 };
 
 type DataArr = {
-    id: string,
-    name: string;
-    fieldToPropBindings: DataFieldToPropBinding[];
-    data: any[],
+  id: string;
+  name: string;
+  fieldToPropBindings: DataFieldToPropBinding[];
+  data: any[];
 };
 
-
 type IdToDataArrayMap = {
-    [id: string]: DataArr;
+  [id: string]: DataArr;
 };
 
 export let dataArrRegistryGlobalInstance: DataArrRegistry;
 
 export const instantiateDataArrRegistryGlobalInstance = () => {
-    dataArrRegistryGlobalInstance = new DataArrRegistry();
+  dataArrRegistryGlobalInstance = new DataArrRegistry();
 };
 
 class DataArrRegistry {
-    idToDataArrayMap: IdToDataArrayMap;
+  idToDataArrayMap: IdToDataArrayMap;
 
-    constructor() {
-        this.idToDataArrayMap = {};
-    }
+  constructor() {
+    this.idToDataArrayMap = {};
+  }
 
-    getDataArray(id: string): DataArr {
-        return this.idToDataArrayMap[id];
-    }
+  getDataArray(id: string): DataArr {
+    return this.idToDataArrayMap[id];
+  }
 }
 
-export const generateProps = (propBindings: DataFieldToPropBinding[]): string => {
-    let props: string = "";
-  
-    for (const binding of propBindings) {
-      props += ` ${binding.propName}={${binding.fieldName}}`;
-    }
-  
-    return props.trim();
-  };
+export const generateProps = (
+  propBindings: DataFieldToPropBinding[]
+): string => {
+  let props: string = "";
+
+  for (const binding of propBindings) {
+    props += ` ${binding.propName}={${binding.fieldName}}`;
+  }
+
+  return props.trim();
+};

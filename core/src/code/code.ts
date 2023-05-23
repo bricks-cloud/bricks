@@ -26,5 +26,5 @@ export interface Option {
 }
 
 export type NameMap = {
-  [oldName: string]: string,
+  [oldName: string]: string;
 };

@@ -4,13 +4,12 @@ export const tailwindTextDecorationMap = {
   none: "no-underline",
 };
 
-
 export const twcssDropShadowToSumMap = {
-  "sm": "3px",
+  sm: "3px",
   "": "4px",
-  "md": "10px",
-  "lg": "25px",
-  "xl": "45px",
+  md: "10px",
+  lg: "25px",
+  xl: "45px",
   "2xl": "75px",
 };
 
@@ -34,7 +33,6 @@ export const twcssZIndexMap = {
   "z-40": 40,
   "z-50": 50,
 };
-
 
 export const twHeightMap = {
   "h-0": "0px",
@@ -450,7 +448,7 @@ export const twLetterSpacingMap = {
   "tracking-widest": "0.1em",
 };
 
-export const twFontWeightMap: { [key: string]: number; } = {
+export const twFontWeightMap: { [key: string]: number } = {
   "font-thin": 100,
   "font-extralight": 200,
   "font-light": 300,

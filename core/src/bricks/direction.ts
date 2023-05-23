@@ -2,6 +2,7 @@ import { Node } from "./node";
 import { getContainerLineFromNodes, getLineBasedOnDirection } from "./line";
 import { BoxCoordinates } from "../design/adapter/node";
 import { selectBox } from "./additional-css";
+import { absolutePositioningAnnotation } from "./overlap";
 
 // Direction represents the way how elements are positioned within a Bricks node.
 // VERTICAL direction means that elements are organized in row. It corresponds to the CSS property flex-direction: row.
@@ -15,13 +16,32 @@ export enum Direction {
 export const getDirection = (node: Node): Direction => {
   const children: Node[] = node.getChildren();
   if (children.length <= 1) {
-    const targetLine = getContainerLineFromNodes(children, Direction.HORIZONTAL);
+    const targetLine = getContainerLineFromNodes(
+      children,
+      Direction.HORIZONTAL
+    );
     const parentLine = getContainerLineFromNodes([node], Direction.HORIZONTAL);
 
-    const counterTargetLine = getContainerLineFromNodes(children, Direction.VERTICAL);
-    const counterParentLine = getContainerLineFromNodes([node], Direction.VERTICAL);
+    const counterTargetLine = getContainerLineFromNodes(
+      children,
+      Direction.VERTICAL
+    );
+    const counterParentLine = getContainerLineFromNodes(
+      [node],
+      Direction.VERTICAL
+    );
 
-    let useHorizontal: boolean = Math.abs(parentLine.upper - parentLine.lower - (targetLine.upper - targetLine.lower)) > Math.abs(counterParentLine.upper - counterParentLine.lower - (counterTargetLine.upper - counterTargetLine.lower));
+    let useHorizontal: boolean =
+      Math.abs(
+        parentLine.upper -
+          parentLine.lower -
+          (targetLine.upper - targetLine.lower)
+      ) >
+      Math.abs(
+        counterParentLine.upper -
+          counterParentLine.lower -
+          (counterTargetLine.upper - counterTargetLine.lower)
+      );
 
     if (useHorizontal) {
       return Direction.HORIZONTAL;
@@ -32,7 +52,10 @@ export const getDirection = (node: Node): Direction => {
 
   let noVerticalOverlap = true;
   for (let i = 0; i < children.length; i++) {
-    const currentLine = getLineBasedOnDirection(children[i], Direction.HORIZONTAL);
+    const currentLine = getLineBasedOnDirection(
+      children[i],
+      Direction.HORIZONTAL
+    );
     for (let j = 0; j < children.length; j++) {
       if (i === j) {
         continue;
@@ -41,7 +64,8 @@ export const getDirection = (node: Node): Direction => {
         children[j],
         Direction.HORIZONTAL
       );
-      noVerticalOverlap = noVerticalOverlap && !currentLine.overlap(targetLine);
+      noVerticalOverlap =
+        noVerticalOverlap && !currentLine.overlap(targetLine, 2);
     }
   }
 
@@ -53,12 +77,15 @@ export const getDirection = (node: Node): Direction => {
 };
 
 // reorderNodesBasedOnDirection reorders input nodes based on direction in ascending order.
-export const reorderNodesBasedOnDirection = (
-  nodes: Node[],
-  direction: Direction
-) => {
+export const reorderNodesBasedOnDirection = (node, direction: Direction) => {
+  if (node.hasAnnotation(absolutePositioningAnnotation)) {
+    return;
+  }
+
+  const children: Node[] = node.getChildren();
+
   if (direction === Direction.VERTICAL) {
-    nodes.sort((a: Node, b: Node): number => {
+    children.sort((a: Node, b: Node): number => {
       const abox: BoxCoordinates = selectBox(a);
       const bbox: BoxCoordinates = selectBox(b);
 
@@ -70,7 +97,7 @@ export const reorderNodesBasedOnDirection = (
     return;
   }
 
-  nodes.sort((a: Node, b: Node): number => {
+  children.sort((a: Node, b: Node): number => {
     const abox: BoxCoordinates = selectBox(a);
     const bbox: BoxCoordinates = selectBox(b);
 

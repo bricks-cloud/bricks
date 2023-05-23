@@ -1,5 +1,9 @@
 import { isEmpty } from "../../../utils";
-import { ImportedComponentMeta, InFileDataMeta, InFileComponentMeta } from "../html/generator";
+import {
+  ImportedComponentMeta,
+  InFileDataMeta,
+  InFileComponentMeta,
+} from "../html/generator";
 import { getExtensionFromFilePath } from "../util";
 
 export class Generator {
@@ -9,17 +13,13 @@ export class Generator {
     isCssFileNeeded: boolean = false,
     importComponents: ImportedComponentMeta[],
     inFileData: InFileDataMeta[],
-    inFileComponents: InFileComponentMeta[],
+    inFileComponents: InFileComponentMeta[]
   ): string {
-
     let importStatements: string[] = [`import React from "react";`];
 
     for (const importComponent of importComponents) {
       const extension = getExtensionFromFilePath(importComponent.importPath);
-      if (
-        extension === "png" &&
-        !isEmpty(importComponent.node.getChildren())
-      ) {
+      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
         continue;
       }
 
@@ -34,12 +34,12 @@ export class Generator {
 
     let inFileComponentsCode: string = "";
     inFileComponents.forEach((inFileComponent: InFileComponentMeta) => {
-      inFileComponentsCode += (inFileComponent.componentCode + "\n\n");
+      inFileComponentsCode += inFileComponent.componentCode + "\n\n";
     });
 
     let inFileDataCode: string = "";
     inFileData.forEach((inFileData: InFileDataMeta) => {
-      inFileComponentsCode += (inFileData.dataCode + "\n\n");
+      inFileComponentsCode += inFileData.dataCode + "\n\n";
     });
 
     const mainComponent = `const ${componentName} = () => (${content});`;
@@ -59,4 +59,3 @@ export class Generator {
     );
   }
 }
-

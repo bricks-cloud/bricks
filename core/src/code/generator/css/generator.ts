@@ -111,7 +111,13 @@ export class Generator {
 export const buildCssFileContent = (fontUrl: string) => {
   let fontImportStatements = "";
   if (!isEmpty(fontUrl)) {
-    fontImportStatements = `@import url("${fontUrl}");`;
+    fontImportStatements = `@import url("${fontUrl}");\n\n
+    button {
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+    `;
   }
 
   const file = fontImportStatements;
@@ -179,7 +185,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -205,7 +211,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId(),
+          node.getId()
         );
       }
 
@@ -221,14 +227,15 @@ const getPropsFromNode = (node: Node, option: Option): string => {
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
-      return convertCssClassesToInlineStyle({
-        ...filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningFilter: true,
-        }),
-        ...filterAttributes(node.getPositionalCssAttributes(), {
-          marginFilter: true,
-        }),
-      },
+      return convertCssClassesToInlineStyle(
+        {
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
         option,
         node.getId()
       );

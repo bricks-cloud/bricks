@@ -9,15 +9,27 @@ import { getNameMap } from "../ee/web/request";
 import { instantiateNameRegistryGlobalInstance } from "./code/name-registry/name-registry";
 import { instantiateOptionRegistryGlobalInstance } from "./code/option-registry/option-registry";
 import { instantiateFontsRegistryGlobalInstance } from "./code/generator/tailwindcss/fonts-registry";
-import { removeChildrenNode, removeCompletelyOverlappingNodes, removeNode } from "./bricks/remove-node";
+import {
+  removeChildrenNode,
+  removeCompletelyOverlappingNodes,
+  removeNode,
+} from "./bricks/remove-node";
 import { isEmpty, replaceVariableNameWithinFile, trackEvent } from "./utils";
 import { instantiateCodeSampleRegistryGlobalInstance } from "../ee/loop/code-sample-registry";
 import { instantiateDataArrRegistryGlobalInstance } from "../ee/loop/data-array-registry";
 import { instantiatePropRegistryGlobalInstance } from "../ee/loop/prop-registry";
 import { instantiateComponentRegistryGlobalInstance } from "../ee/loop/component-registry";
 import { annotateNodeForHtmlTag } from "../ee/cv/component-recognition";
-import { instantiateAiApplicationRegistryGlobalInstance, AiApplication, aiApplicationRegistryGlobalInstance } from "../ee/ui/ai-application-registry";
-import { EVENT_AI_CODE_GEN_SUCCESS, EVENT_AI_COMPONENT_IDENTIFICATION_SUCCESS, EVENT_AI_GET_NAME_SUCCESS } from "./analytic/amplitude";
+import {
+  instantiateAiApplicationRegistryGlobalInstance,
+  AiApplication,
+  aiApplicationRegistryGlobalInstance,
+} from "../ee/ui/ai-application-registry";
+import {
+  EVENT_AI_CODE_GEN_SUCCESS,
+  EVENT_AI_COMPONENT_IDENTIFICATION_SUCCESS,
+  EVENT_AI_GET_NAME_SUCCESS,
+} from "./analytic/amplitude";
 import { removeCssFromNode } from "./bricks/remove-css";
 
 export const convertToCode = async (
@@ -37,7 +49,6 @@ export const convertToCode = async (
     dedupedNodes.push(newNode);
   }
 
-
   let startingNode: Node =
     dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
@@ -54,7 +65,6 @@ export const convertToCode = async (
 
   return await generateCodingFiles(startingNode, option);
 };
-
 
 export const convertToCodeWithAi = async (
   figmaNodes: readonly SceneNode[],
@@ -107,7 +117,9 @@ export const convertToCodeWithAi = async (
   });
 
   if (!isEmpty(Object.values(nameMap))) {
-    aiApplicationRegistryGlobalInstance.addApplication(AiApplication.autoNaming);
+    aiApplicationRegistryGlobalInstance.addApplication(
+      AiApplication.autoNaming
+    );
   }
   replaceVariableNameWithinFile(files, nameMap);
 

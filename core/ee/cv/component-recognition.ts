@@ -1,7 +1,10 @@
 import { Node, NodeType } from "../../src/bricks/node";
 import { ExportFormat } from "../../src/design/adapter/node";
 import { traverseNodes } from "../../src/utils";
-import { AiApplication, aiApplicationRegistryGlobalInstance } from "../ui/ai-application-registry";
+import {
+  AiApplication,
+  aiApplicationRegistryGlobalInstance,
+} from "../ui/ai-application-registry";
 import { predictImage } from "../web/request";
 
 export const annotateNodeForHtmlTag = async (startingNode: Node) => {
@@ -48,11 +51,12 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
     await traverseNodes(startingNode, async (node) => {
       if (node.node) {
         const originalId = node.node.getOriginalId();
-        const predictedHtmlTag =
-          imagePredictions[originalId];
+        const predictedHtmlTag = imagePredictions[originalId];
 
         if (predictedHtmlTag) {
-          aiApplicationRegistryGlobalInstance.addApplication(AiApplication.componentIdentification);
+          aiApplicationRegistryGlobalInstance.addApplication(
+            AiApplication.componentIdentification
+          );
           node.addAnnotations("htmlTag", predictedHtmlTag);
           return predictedHtmlTag !== "button";
         }
