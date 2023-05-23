@@ -743,33 +743,6 @@ export class FigmaNodeAdapter {
   getAbsoluteBoundingBoxCoordinates(): BoxCoordinates {
     let boundingBox = this.node.absoluteBoundingBox;
 
-    // // @ts-ignore
-    // if (!isEmpty(this.node.rotation)) {
-    //   const leftTop: Coordinate = {
-    //     x: this.node.absoluteTransform[0][2],
-    //     y: this.node.absoluteTransform[1][2]
-    //   };
-
-    //   return {
-    //     leftTop: {
-    //       x: leftTop.x,
-    //       y: leftTop.y,
-    //     },
-    //     leftBot: {
-    //       x: leftTop.x,
-    //       y: leftTop.y + this.node.height,
-    //     },
-    //     rightTop: {
-    //       x: leftTop.x + this.node.width,
-    //       y: leftTop.y,
-    //     },
-    //     rightBot: {
-    //       x: leftTop.x + this.node.width,
-    //       y: leftTop.y + this.node.height,
-    //     },
-    //   };
-    // }
-
     // @ts-ignore
     if (!isEmpty(this.node.absoluteRenderBounds)) {
       const boundingWidth: number = this.node.absoluteBoundingBox.width;
@@ -810,11 +783,6 @@ export class FigmaNodeAdapter {
 
   getRenderingBoundsCoordinates(): BoxCoordinates {
     let boundingBox = this.node.absoluteBoundingBox;
-
-    // // @ts-ignore
-    // if (!isEmpty(this.node.rotation)) {
-    //   return this.getAbsoluteBoundingBoxCoordinates();
-    // }
 
     // @ts-ignore
     if (!isEmpty(this.node.absoluteRenderBounds)) {

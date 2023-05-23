@@ -130,10 +130,6 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "get-last-reset") {
-    if (figma.currentUser.id === "624412189236026359") {
-      await figma.clientStorage.setAsync("limit", 6);
-    }
-
     const reset: number = await figma.clientStorage.getAsync("last-reset");
 
     figma.ui.postMessage({
