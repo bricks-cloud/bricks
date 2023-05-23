@@ -79,24 +79,12 @@ export class Line {
     return distanceFromUpper - distanceFromLower;
   };
 
-  overlapStrict(l: Line): boolean {
-    if (this.lower > l.upper) {
+  overlap(l: Line, buffer: number): boolean {
+    if (this.lower + buffer > l.upper) {
       return false;
     }
 
-    if (this.upper < l.lower) {
-      return false;
-    }
-
-    return true;
-  }
-
-  overlap(l: Line): boolean {
-    if (this.lower + 2 > l.upper) {
-      return false;
-    }
-
-    if (this.upper - 2 < l.lower) {
+    if (this.upper - buffer < l.lower) {
       return false;
     }
 
@@ -111,7 +99,7 @@ export const getLinesFromNodes = (
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
-    const renderingBox = selectBox(node);
+    const renderingBox = selectBox(node, true);
 
     if (direction === Direction.VERTICAL) {
       lines.push(new Line(renderingBox.leftTop.x, renderingBox.rightBot.x));

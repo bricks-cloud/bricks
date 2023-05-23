@@ -1,5 +1,6 @@
 import { Identify, identify, track } from "@amplitude/analytics-browser";
 import { Node } from "./bricks/node";
+import uuid from "react-native-uuid";
 import { NameMap, File } from "./code/code";
 
 export const isEmpty = (value: any): boolean => {
@@ -52,4 +53,17 @@ export const replaceVariableNameWithinFile = (
       file.content = content;
     }
   }
+};
+
+
+
+export const createId = () => {
+  let id = "";
+  try {
+    id = uuid.v1() as string;
+  } catch {
+    id = "id" + Math.random().toString(16).slice(2);
+  }
+
+  return id;
 };

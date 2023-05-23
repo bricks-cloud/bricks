@@ -22,6 +22,7 @@ import {
   figmaLineHeightToCssString,
   figmaLetterSpacingToCssString,
   figmaFontNameToCssString,
+  hasShadow,
 } from "./util";
 import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
@@ -1044,7 +1045,7 @@ export const convertFigmaNodesToBricksNodes = (
 
   if (reordered.length === 1) {
     const figmaNode = reordered[0];
-    if (figmaNode.type === NodeType.RECTANGLE && !doesNodeContainsAnImage(figmaNode)) {
+    if ((figmaNode.type === NodeType.RECTANGLE) && !doesNodeContainsAnImage(figmaNode)) {
       result.isSingleRectangle = true;
     }
   }
@@ -1056,6 +1057,10 @@ export const convertFigmaNodesToBricksNodes = (
 
     if (figmaNode.visible) {
       if (!EXPORTABLE_NODE_TYPES.includes(figmaNode.type)) {
+        result.areAllNodesExportable = false;
+      }
+
+      if (hasShadow(figmaNode)) {
         result.areAllNodesExportable = false;
       }
 
@@ -1134,21 +1139,21 @@ export const convertFigmaNodesToBricksNodes = (
       const feedback: Feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
 
       let doNodesHaveNonOverlappingChildren: boolean = true;
-      let horizontalNonOverlap: boolean = areThereNonOverlappingByDirection(
+      let horizontalOverlap: boolean = areThereOverlappingByDirection(
         //@ts-ignore
         figmaNode?.children,
         Direction.HORIZONTAL
       );
 
       //@ts-ignore
-      let verticalNonOverlap: boolean = areThereNonOverlappingByDirection(
+      let verticalOverlap: boolean = areThereOverlappingByDirection(
         //@ts-ignore
         figmaNode?.children,
         Direction.VERTICAL
       );
 
       doNodesHaveNonOverlappingChildren =
-        horizontalNonOverlap || verticalNonOverlap || feedback.doNodesHaveNonOverlappingChildren;
+        !horizontalOverlap || !verticalOverlap || feedback.doNodesHaveNonOverlappingChildren;
 
       if (allNodesAreOfVectorNodeTypes) {
         doNodesHaveNonOverlappingChildren = false;
@@ -1196,7 +1201,7 @@ export const convertFigmaNodesToBricksNodes = (
   return result;
 };
 
-const areThereNonOverlappingByDirection = (
+const areThereOverlappingByDirection = (
   nodes: readonly SceneNode[],
   direction: Direction
 ): boolean => {
@@ -1205,24 +1210,17 @@ const areThereNonOverlappingByDirection = (
     const currentNode: SceneNode = nodes[i];
     let currentLine = getFigmaLineBasedOnDirection(currentNode, direction);
 
-    let nonOverlap: boolean = true;
     for (let j = 0; j < nodes.length; j++) {
       const targetNode: SceneNode = nodes[j];
       if (i === j) {
         continue;
       }
 
-
       const targetLine = getFigmaLineBasedOnDirection(targetNode, direction);
 
-      if (currentLine.overlapStrict(targetLine)) {
-        nonOverlap = false;
-        break;
+      if (currentLine.overlap(targetLine, -4)) {
+        return true;
       }
-    }
-
-    if (nonOverlap) {
-      return true;
     }
   }
 

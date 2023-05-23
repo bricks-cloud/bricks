@@ -28,15 +28,15 @@ export const selectBox = (
     return node.getAbsBoundingBox();
   }
 
+  if (useBoundingBox) {
+    return node.getAbsBoundingBox();
+  }
+
   if (node.getType() === NodeType.VISIBLE) {
     return node.getAbsBoundingBox();
   }
 
   if (node.getType() === NodeType.IMAGE) {
-    return node.getAbsBoundingBox();
-  }
-
-  if (useBoundingBox) {
     return node.getAbsBoundingBox();
   }
 
@@ -78,13 +78,32 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   }
 
   const direction = getDirection(node);
-  reorderNodesBasedOnDirection(node.children, direction);
+  reorderNodesBasedOnDirection(node, direction);
   node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
   adjustChildrenHeightAndWidthCssValue(node);
   adjustChildrenPositionalCssValue(node, direction);
+  UpdateNodeWidthToMinWidth(node);
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child);
+  }
+};
+
+const UpdateNodeWidthToMinWidth = (node: Node) => {
+  const positionalCssAttributes: Attributes = node.getPositionalCssAttributes();
+  const cssAttributes: Attributes = node.getCssAttributes();
+  if (positionalCssAttributes["flex-direction"] === "row" && !isEmpty(positionalCssAttributes["padding-left"]) && !isEmpty(positionalCssAttributes["padding-right"])) {
+    const children: Node[] = node.getChildren();
+
+    for (const child of children) {
+      if (!isEmpty(child.getACssAttribute("min-width"))) {
+        const width: string = cssAttributes["width"];
+        cssAttributes["min-width"] = width;
+        delete cssAttributes["width"];
+        node.setCssAttributes(cssAttributes);
+        break;
+      }
+    }
   }
 };
 
@@ -94,13 +113,17 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
     return;
   }
 
-  const zIndexArr: string[] = ["50", "40", "30", "20", "10"];
+  const zIndexArr: string[] = ["10", "20", "30", "40", "50"];
 
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
-    if (children.length <= 5) {
+    if (children.length <= 6) {
       for (let i = 0; i < children.length; i++) {
+        if (i === 0) {
+          continue;
+        }
+
         const current: Node = children[i];
-        const zIndex: string = zIndexArr[zIndexArr.length - children.length + i];
+        const zIndex: string = zIndexArr[i - 1];
         current.addPositionalCssAttributes({
           "z-index": zIndex,
         });
@@ -131,7 +154,7 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
     const currentLine: Line = getLineUsingRenderingBoxBasedOnDirection(child, direction);
     const prevLine: Line = getLineUsingRenderingBoxBasedOnDirection(prevChild, direction);
 
-    if (currentLine.overlapStrict(prevLine)) {
+    if (currentLine.overlap(prevLine, 2)) {
       if (child.getACssAttribute("box-shadow")) {
         child.addCssAttributes({
           "z-index": "10",
@@ -440,9 +463,11 @@ export const addAdditionalCssAttributes = (node: Node) => {
   }
 
   if (node.getType() === NodeType.IMAGE) {
-    node.addCssAttributes({
-      "overflow": "hidden",
-    });
+    if (!isEmpty(node.getACssAttribute("border-radius"))) {
+      node.addCssAttributes({
+        "overflow": "hidden",
+      });
+    }
     return;
   }
 
@@ -543,9 +568,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingBox = child.getAbsRenderingBox();
         const boundingBox = child.getAbsBoundingBox();
 
-        const renderingWidth = Math.abs(
-          renderingBox.rightBot.x - renderingBox.leftTop.x
-        );
         const boundingWidth = Math.abs(
           boundingBox.rightBot.x - boundingBox.leftTop.x
         );
@@ -562,9 +584,9 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         if (!isCssValueEmpty(widthCssVal)) {
           const width = Math.trunc(parseInt(widthCssVal.slice(0, -2), 10));
 
-          if (width > maxWidth) {
-            attributes["width"] = `${renderingWidth}px`;
-          }
+          // if (width > maxWidth) {
+          //   attributes["width"] = `${renderingWidth}px`;
+          // }
 
           if (width < maxWidth && boundingWidth <= maxWidth) {
             attributes["width"] = `${boundingWidth}px`;
@@ -616,9 +638,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
         const renderingBox = child.getAbsRenderingBox();
         const boundingBox = child.getAbsBoundingBox();
 
-        const renderingHeight = Math.abs(
-          renderingBox.rightBot.y - renderingBox.leftTop.y
-        );
         const boundingHeight = Math.abs(
           boundingBox.rightBot.y - boundingBox.leftTop.y
         );
@@ -635,9 +654,9 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
 
         if (!isCssValueEmpty(heightCssVal)) {
           const height = parseInt(heightCssVal.slice(0, -2), 10);
-          if (height > maxHeight) {
-            attributes["height"] = `${renderingHeight}px`;
-          }
+          // if (height > maxHeight) {
+          //   attributes["height"] = `${renderingHeight}px`;
+          // }
 
           if (height < maxHeight && boundingHeight <= maxHeight) {
             attributes["height"] = `${boundingHeight}px`;
@@ -717,32 +736,40 @@ export const getPositionalCssAttributes = (
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
-    return attributes;
+    return positionalCssAttributes;
   }
 
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
     attributes["position"] = "relative";
 
-    const currentBox = selectBox(node);
+    const currentBox = selectBox(node, true);
     for (const child of node.getChildren()) {
       const childAttributes: Attributes = {};
-      const targetBox = selectBox(child);
-      const top = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
-      const bottom = Math.abs(currentBox.rightBot.y - targetBox.rightBot.y);
-      const left = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
-      const right = Math.abs(currentBox.rightBot.x - targetBox.rightBot.x);
+      const targetBox = selectBox(child, true);
+      const vertical = Math.abs(currentBox.leftTop.y - targetBox.leftTop.y);
+      const horizontal = Math.abs(currentBox.leftTop.x - targetBox.leftTop.x);
+      // const right = Math.abs(currentBox.rightBot.x - targetBox.rightBot.x);
 
       childAttributes["position"] = "absolute";
-      childAttributes["top"] = `${top}px`;
-      childAttributes["bottom"] = `${bottom}px`;
-      childAttributes["right"] = `${right}px`;
-      childAttributes["left"] = `${left}px`;
+      if (currentBox.leftTop.y < targetBox.leftTop.y && currentBox.leftTop.y > targetBox.rightBot.y) {
+        childAttributes["top"] = `-${vertical}px`;
+      } else {
+        childAttributes["top"] = `${vertical}px`;
+      }
 
+      if (currentBox.leftTop.x < targetBox.rightTop.x && currentBox.leftTop.x > targetBox.leftTop.x) {
+        childAttributes["left"] = `-${horizontal}px`;
+      } else {
+        childAttributes["left"] = `${horizontal}px`;
+      }
 
       child.addPositionalCssAttributes(childAttributes);
     }
 
-    return attributes;
+    return {
+      ...positionalCssAttributes,
+      ...attributes,
+    };
   }
 
   attributes["display"] = "flex";
@@ -780,7 +807,10 @@ export const getPositionalCssAttributes = (
     paddings
   );
 
-  return attributes;
+  return {
+    ...positionalCssAttributes,
+    ...attributes,
+  };
 };
 
 // getJustifyContentValue determines the value of justify-content css property given a node and flex-direction.

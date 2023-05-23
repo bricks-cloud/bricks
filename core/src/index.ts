@@ -47,6 +47,8 @@ export const convertToCode = async (
   removeCompletelyOverlappingNodes(startingNode, null);
   removeChildrenNode(startingNode);
 
+
+
   instantiateRegistries(startingNode, option);
 
   addAdditionalCssAttributesToNodes(startingNode);

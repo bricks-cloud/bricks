@@ -1,12 +1,11 @@
 import { Node, NodeType, TextNode } from "../../src/bricks/node";
-import { isEmpty } from "../../src/utils";
+import { createId, isEmpty } from "../../src/utils";
 import { CssFramework } from "../../src/code/code";
 import { getTwcssClass } from "../../src/code/generator/tailwindcss/css-to-twcss";
 import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
 import { areAllNodesSimilar } from "./loop";
 import { nameRegistryGlobalInstance } from "../../src/code/name-registry/name-registry";
 import { IdToPropBindingMap, propRegistryGlobalInstance } from "./prop-registry";
-import uuid from "react-native-uuid";
 import { shouldUseAsBackgroundImage } from "../../src/bricks/util";
 
 type PropLocation = {
@@ -109,7 +108,7 @@ export class Component {
   idToInstanceIdMapping: IdToInstanceIdMapping;
 
   constructor() {
-    this.id = uuid.v1() as string;
+    this.id = createId();
     this.propNames = [];
     this.instanceIdToDataBindings = {};
     this.idToPropBindings = {};
@@ -154,7 +153,7 @@ export class Component {
   setBindingsForTailwindCss(bindings: ComponentProperties) {
     this.bindings = bindings;
 
-    const dataArrId = uuid.v1() as string;
+    const dataArrId = createId();
     const dataArr: DataArr = {
       id: dataArrId,
       name: nameRegistryGlobalInstance.getDataArrName(dataArrId),
@@ -259,7 +258,7 @@ export class Component {
   setBindingsForCss(bindings: ComponentProperties) {
     this.bindings = bindings;
 
-    const dataArrId = uuid.v1() as string;
+    const dataArrId = createId();
     const dataArr: DataArr = {
       id: dataArrId,
       name: nameRegistryGlobalInstance.getDataArrName(dataArrId),
@@ -446,7 +445,7 @@ export const gatherPropsFromVectorNodes = (nodes: Node[], instanceIds: string[])
     }
   }
 
-  const id: string = uuid.v1() as string;
+  const id: string = createId();
   const prop: Property = {
     type: "src",
     name: nameRegistryGlobalInstance.getPropName(id),
@@ -454,7 +453,7 @@ export const gatherPropsFromVectorNodes = (nodes: Node[], instanceIds: string[])
     bindings: [],
   };
 
-  const altId: string = uuid.v1() as string;
+  const altId: string = createId();
   const altProp: Property = {
     type: "alt",
     name: nameRegistryGlobalInstance.getPropName(altId),
@@ -502,7 +501,7 @@ export const gatherPropsFromImageNodes = (nodes: Node[], instanceIds: string[]):
     }
   }
 
-  const id: string = uuid.v1() as string;
+  const id: string = createId();
   const prop: Property = {
     type: "src",
     name: nameRegistryGlobalInstance.getPropName(id),
@@ -510,7 +509,7 @@ export const gatherPropsFromImageNodes = (nodes: Node[], instanceIds: string[]):
     bindings: [],
   };
 
-  const altId: string = uuid.v1() as string;
+  const altId: string = createId();
   const altProp: Property = {
     type: "alt",
     name: nameRegistryGlobalInstance.getPropName(altId),
@@ -556,7 +555,7 @@ export const gatherTextPropsFromNodes = (nodes: Node[], instanceIds: string[]): 
     }
   }
 
-  const id: string = uuid.v1() as string;
+  const id: string = createId();
   const prop: Property = {
     type: "text",
     name: nameRegistryGlobalInstance.getPropName(id),
@@ -618,12 +617,12 @@ export const gatherCssPropsFromNodes = (potentiallyRepeatedNode: Node[], instanc
           return;
         }
 
-        const id: string = uuid.v1() as string;
+        const id: string = createId();
         const prop = {
           type: "css",
           name: nameRegistryGlobalInstance.getPropName(id),
           cssKey,
-          id: uuid.v1() as string,
+          id: createId(),
           bindings: [],
         };
 
@@ -669,14 +668,8 @@ export const gatherCssPropsFromNodes = (potentiallyRepeatedNode: Node[], instanc
     );
   }
 
-  Object.entries(properties).forEach(([id, { cssKey, bindings }]) => {
+  Object.entries(properties).forEach(([id, { bindings }]) => {
     let firstBinding: PropValueBinding = bindings[0];
-    if (!shouldUseAsBackgroundImage(sampleNode) && (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR)) {
-      if (cssKey !== "width" && cssKey !== "height") {
-        delete properties[id];
-        return;
-      }
-    }
 
     for (const binding of bindings) {
       if (binding.value !== firstBinding.value) {
@@ -717,7 +710,7 @@ export const gatherTwcssPropsFromNodes = (potentiallyRepeatedNode: Node[], insta
 
         const twcssClasses: string[] = getTwcssClass(cssKey, cssValue, node.getCssAttributes()).split(" ");
         for (let i = 0; i < twcssClasses.length; i++) {
-          const id: string = uuid.v1() as string;
+          const id: string = createId();
           const prop = {
             type: "css",
             name: nameRegistryGlobalInstance.getPropName(id),
@@ -773,14 +766,7 @@ export const gatherTwcssPropsFromNodes = (potentiallyRepeatedNode: Node[], insta
     );
   }
 
-  Object.entries(properties).forEach(([id, { cssKey, bindings }]) => {
-    if (!shouldUseAsBackgroundImage(sampleNode) && (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR)) {
-      if (cssKey !== "width" && cssKey !== "height") {
-        delete properties[id];
-        return;
-      }
-    }
-
+  Object.entries(properties).forEach(([id, { bindings }]) => {
     let firstBinding: PropValueBinding = bindings[0];
     for (const binding of bindings) {
       if (binding.value !== firstBinding.value) {

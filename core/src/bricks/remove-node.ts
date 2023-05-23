@@ -2,13 +2,30 @@ import { Node, NodeType } from "./node";
 import { Attributes } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { cssStrToNum } from "../code/generator/util";
-import { replacedParentAnnotation } from "./annotation";
+import { replacedParentAnnotation, replacedChildAnnotation } from "./annotation";
 
 export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
   if (children.length === 1) {
     const child = children[0];
+
     if (haveSimlarWidthAndHeight(node, child)) {
+      if (node.getType() === NodeType.IMAGE || node.getType() === NodeType.VECTOR) {
+        const cssAttributes: Attributes = {
+          ...node.getCssAttributes(),
+          ...child.getCssAttributes(),
+        };
+
+        const positionalCssAttributes: Attributes = mergeAttributes(node.getPositionalCssAttributes(), child.getPositionalCssAttributes());
+
+        node.setCssAttributes(cssAttributes);
+        node.setPositionalCssAttributes(positionalCssAttributes);
+        node.addAnnotations(replacedChildAnnotation, true);
+
+        node.setChildren([]);
+        return removeNode(node);
+      }
+
       const cssAttributes: Attributes = {
         ...node.getCssAttributes(),
         ...child.getCssAttributes(),

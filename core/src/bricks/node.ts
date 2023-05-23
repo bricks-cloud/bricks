@@ -1,4 +1,3 @@
-import uuid from "react-native-uuid";
 import {
   Node as AdaptedNode,
   TextNode as AdaptedTextNode,
@@ -10,7 +9,7 @@ import {
   ImageNode as AdaptedImageNode,
   StyledTextSegment,
 } from "../design/adapter/node";
-import { isEmpty } from "../utils";
+import { createId, isEmpty } from "../utils";
 import { selectBox } from "./additional-css";
 import { filterAttributes } from "./util";
 
@@ -53,7 +52,7 @@ export class BaseNode {
   annotations: Annotations = {};
 
   constructor() {
-    this.id = uuid.v1() as string;
+    this.id = createId();
   }
 
   addChildren(children: Node[]) {

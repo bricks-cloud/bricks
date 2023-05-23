@@ -111,7 +111,13 @@ export class Generator {
 export const buildCssFileContent = (fontUrl: string) => {
   let fontImportStatements = "";
   if (!isEmpty(fontUrl)) {
-    fontImportStatements = `@import url("${fontUrl}");`;
+    fontImportStatements = `@import url("${fontUrl}");\n\n
+    button {
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+    `;
   }
 
   const file = fontImportStatements;

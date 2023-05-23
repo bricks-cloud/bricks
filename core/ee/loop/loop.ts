@@ -1,7 +1,6 @@
 
-import uuid from "react-native-uuid";
 import { Node, NodeType, TextNode } from "../../src/bricks/node";
-import { isEmpty } from "../../src/utils";
+import { createId, isEmpty } from "../../src/utils";
 import { Component, gatherPropsFromSimilarNodes } from "./component";
 import { componentRegistryGlobalInstance } from "./component-registry";
 import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
@@ -37,7 +36,7 @@ const registerComponentForConsecutiveNodes = (nodes: Node[]): boolean => {
   const component: Component = new Component();
 
   const instanceIds: string[] = nodes.map((node) => {
-    const instanceId: string = uuid.v1() as string;
+    const instanceId: string = createId();
     component.addIdtoInstanceIdMapping(node.getId(), instanceId);
 
     return instanceId;

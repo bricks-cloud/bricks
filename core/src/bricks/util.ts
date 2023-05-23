@@ -69,8 +69,13 @@ export const zeroValueFilter = (_: string, value: string): boolean => {
     return false;
   }
 
-  if (value.endsWith("px")) {
-    const num = parseFloat(value.slice(0, -2));
+  let nonNegativeNum: string = value;
+  if (value.startsWith("-")) {
+    nonNegativeNum = value.substring(1);
+  }
+
+  if (nonNegativeNum.endsWith("px")) {
+    const num = parseFloat(nonNegativeNum.slice(0, -2));
 
     if (toOneDecimal(num) === 0) {
       return false;
