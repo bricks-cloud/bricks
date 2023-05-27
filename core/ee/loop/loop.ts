@@ -246,6 +246,14 @@ const areTwoNodesSimilar = (
   currentNode: Node,
   targetNode: Node
 ): [boolean, string] => {
+  if (isEmpty(currentNode)) {
+    return [false, "current node is empty"];
+  }
+
+  if (isEmpty(targetNode)) {
+    return [false, "target node is empty"];
+  }
+
   if (
     currentNode.getACssAttribute("display") !==
     targetNode.getACssAttribute("display")

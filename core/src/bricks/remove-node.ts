@@ -30,8 +30,8 @@ export const removeNode = (node: Node): Node => {
         node.setCssAttributes(cssAttributes);
         node.setPositionalCssAttributes(positionalCssAttributes);
         node.addAnnotations(replacedChildAnnotation, true);
-
         node.setChildren([]);
+
         return removeNode(node);
       }
 
@@ -156,10 +156,10 @@ const mergeAttributes = (
   if (
     parentPosAttributes["display"] !== childPosAttributes["display"] ||
     parentPosAttributes["flex-direction"] !==
-      childPosAttributes["flex-direction"] ||
+    childPosAttributes["flex-direction"] ||
     parentPosAttributes["align-items"] !== childPosAttributes["align-items"] ||
     parentPosAttributes["justify-content"] !==
-      childPosAttributes["justify-content"]
+    childPosAttributes["justify-content"]
   ) {
     return {
       ...filterAttributes(parentPosAttributes),

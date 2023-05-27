@@ -11,6 +11,7 @@ import {
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
+import { extractLinearGradientParamsFromTransform } from "@figma-plugin/helpers";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -28,6 +29,7 @@ import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
 import { StyledTextSegment } from "../node";
 import { Line } from "../../../bricks/line";
+import { calculateAngle, getGradientAxisLength, stringifyGradientColors } from "./gradient";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -43,6 +45,83 @@ enum NodeType {
   COMPONENT = "COMPONENT",
   BOOLEAN_OPERATION = "BOOLEAN_OPERATION",
 }
+
+
+const setBackgroundColor = (
+  figmaNode: SceneNode,
+  attributes: Attributes) => {
+
+  // @ts-ignore
+  if (isEmpty(figmaNode.fills)) {
+    return;
+  }
+
+  // @ts-ignore
+  const fills = figmaNode.fills;
+  if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
+    // background color
+    const solidPaint = fills.find(
+      (fill) => fill.type === "SOLID"
+    ) as SolidPaint;
+    if (solidPaint) {
+      attributes["background-color"] = colorToStringWithOpacity(
+        solidPaint.color,
+        solidPaint.opacity
+      );
+    }
+
+
+    const linearGradientPaint = fills.find(
+      (fill) => fill.type === "GRADIENT_LINEAR"
+    ) as GradientPaint;
+
+    if (linearGradientPaint) {
+      const transform: number[][] = linearGradientPaint.gradientTransform;
+      const width: number = figmaNode.absoluteBoundingBox.width;
+      const height: number = figmaNode.absoluteBoundingBox.height;
+
+
+      const { start, end } = extractLinearGradientParamsFromTransform(width, height, linearGradientPaint.gradientTransform);
+      let actualAngle = calculateAngle(start, end);
+      const cssAngle: number = actualAngle + 90;
+
+
+      let arbitraryLineLength: number = width;
+      let beginningExtraLength: number = height;
+
+      if (actualAngle === 90) {
+        arbitraryLineLength = height;
+      } else if (actualAngle < 90) {
+        beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+        arbitraryLineLength = height / Math.cos((90 - actualAngle) * Math.PI / 180);
+      } else if (actualAngle === 0 || actualAngle === 180) {
+        arbitraryLineLength = width / 2;
+      } else if (actualAngle < 180) {
+        arbitraryLineLength = width / 2 / Math.cos((180 - actualAngle) * Math.PI / 180);
+      }
+
+      console.log("arbitraryLineLength: ", actualAngle);
+      console.log("arbitraryLineLength: ", arbitraryLineLength);
+      console.log("arbitraryLineLength: ", getGradientAxisLength(start, end));
+
+      const gradientAxisLength: number = getGradientAxisLength(start, end);
+      let chosenAxisLength: number = gradientAxisLength > arbitraryLineLength ? gradientAxisLength : arbitraryLineLength;
+
+      let endingExtraLength = gradientAxisLength > arbitraryLineLength ? 0 : arbitraryLineLength - gradientAxisLength;
+      chosenAxisLength += beginningExtraLength;
+
+      // @ts-ignore
+      console.log("linearGradientPaint.gradientHandlePositions: ", extractLinearGradientParamsFromTransform(figmaNode.width, figmaNode.height, linearGradientPaint.gradientTransform));
+      console.log("chosenAxisLength: ", chosenAxisLength);
+      console.log("chosenAxisLength: ", beginningExtraLength);
+
+      let degStr: string = `${cssAngle}deg,`;
+
+      attributes["background"] = `linear-gradient(${degStr}${stringifyGradientColors(linearGradientPaint.gradientStops, gradientAxisLength, chosenAxisLength, beginningExtraLength, endingExtraLength)})`;
+      console.log(attributes["background-color"]);
+    }
+  }
+};
 
 const safelySetWidthAndHeight = (
   nodeType: string,
@@ -148,9 +227,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -274,20 +352,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     figmaNode.type === NodeType.ELLIPSE
   ) {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
-
-    const fills = figmaNode.fills;
-    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
-      // background color
-      const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID"
-      ) as SolidPaint;
-      if (solidPaint) {
-        attributes["background-color"] = colorToStringWithOpacity(
-          solidPaint.color,
-          solidPaint.opacity
-        );
-      }
-    }
+    setBackgroundColor(figmaNode, attributes);
   }
 
   if (
@@ -392,19 +457,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes["backdrop-filter"] = `blur(${backgroundBlur.radius}px)`;
     }
 
-    const fills = figmaNode.fills;
-    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
-      // background color
-      const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID"
-      ) as SolidPaint;
-      if (solidPaint) {
-        attributes["background-color"] = colorToStringWithOpacity(
-          solidPaint.color,
-          solidPaint.opacity
-        );
-      }
-    }
+    setBackgroundColor(figmaNode, attributes);
   }
 
   if (figmaNode.type === NodeType.TEXT) {
@@ -479,7 +532,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-          0.1 ||
+        0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -498,7 +551,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-          absoluteBoundingBox.width >
+        absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;

@@ -212,7 +212,7 @@ const UI = () => {
     if (pluginMessage.type === "get-last-reset") {
       // 86400000 is one day
 
-      resetLimit();
+      // resetLimit();
 
       if (
         !!pluginMessage.reset &&
