@@ -1,7 +1,7 @@
 # Frequently Asked Questions
 - [Frequently Asked Questions](#frequently-asked-questions)
   - ["Generate Code" button is greyed out](#generate-code-button-is-greyed-out)
-  - [I closed the webview window. How can I reopen it?](#i-closed-the-webview-window-how-can-i-reopen-it)
+  - [I closed the webview window in VSCode extension. How can I reopen it?](#i-closed-the-webview-window-in-vscode-extension-how-can-i-reopen-it)
   - [Preview within VSCode extension or localhost:4000 is not working](#preview-within-vscode-extension-or-localhost4000-is-not-working)
   - [Figma plugin is stuck on the loading screen](#figma-plugin-is-stuck-on-the-loading-screen)
   - [Generated components are very different from the design](#generated-components-are-very-different-from-the-design)
@@ -13,7 +13,7 @@
 <img src="../assets/vscode-extension-activation.gif" width="500" />
 </p>
 
-## I closed the webview window. How can I reopen it?
+## I closed the webview window in VSCode extension. How can I reopen it?
 - You would have to regenerate the component. We are adding a new feature that would allow developers to reopen the webview pannel.
 
 ## Preview within VSCode extension or localhost:4000 is not working
