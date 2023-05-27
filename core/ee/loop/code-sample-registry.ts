@@ -15,7 +15,7 @@ class CodeSampleRegistry {
     this.codeSamples = [];
     this.cssFramework = optionRegistryGlobalInstance.getOption().cssFramework;
     this.uiFramework = optionRegistryGlobalInstance.getOption().uiFramework;
-  };
+  }
 
   addCodeSample(code: string) {
     this.codeSamples.push(code);

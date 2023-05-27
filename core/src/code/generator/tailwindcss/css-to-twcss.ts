@@ -371,9 +371,7 @@ const getYOffSetFromBoxShadow = (boxShadowValue: string): number => {
   return 1;
 };
 
-const findClosestTwcssDropShadowClassUsingPixel = (
-  cssValue: string,
-) => {
+const findClosestTwcssDropShadowClassUsingPixel = (cssValue: string) => {
   let closestTwClass = "";
   const dropShadowParts: string[] = cssValue.split("),");
 
@@ -391,7 +389,6 @@ const findClosestTwcssDropShadowClassUsingPixel = (
 
     newShadowParts.push(dropShadowParts[i]);
   }
-
 
   let largestRadius: number = -Infinity;
   let largestYOffset: number = -Infinity;
@@ -428,7 +425,6 @@ const findClosestTwcssDropShadowClassUsingPixel = (
   return "shadow" + "-" + closestTwClass;
 };
 
-
 // findClosestTwcssFontWeight finds the closest tailwincss font weight given the css font weight
 const findClosestTwcssFontWeight = (fontWeight: string): string => {
   const givenFontWeight = parseInt(fontWeight);
@@ -452,7 +448,7 @@ const findClosestTwcssFontWeight = (fontWeight: string): string => {
 
 // findClosestTwcssSize finds the closest size in tailwindcss given css value.
 const findClosestTwcssSize = (cssSize: string): string => {
-  const regexExecResult = /^([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
+  const regexExecResult = /([0-9]\d*(?:\.\d+)?)(px|rem)$/.exec(cssSize);
 
   let twSize = "";
 
@@ -645,11 +641,8 @@ export const getTwcssClass = (
     }
 
     case "border-radius": {
-      const [borderRadiusTwSize, smallestDiff] = findClosestTwcssClassUsingPixel(
-        cssValue,
-        twBorderRadiusMap,
-        "none"
-      );
+      const [borderRadiusTwSize, smallestDiff] =
+        findClosestTwcssClassUsingPixel(cssValue, twBorderRadiusMap, "none");
 
       if (smallestDiff > 2) {
         return `rounded-[${cssValue}]`;
@@ -742,19 +735,19 @@ export const getTwcssClass = (
     }
 
     case "top": {
-      return renderTwcssProperty("top-", findClosestTwcssSize(cssValue));
+      return renderAbsolutePosition("top-", cssValue);
     }
 
     case "bottom": {
-      return renderTwcssProperty("bottom-", findClosestTwcssSize(cssValue));
+      return renderAbsolutePosition("bottom-", cssValue);
     }
 
     case "left": {
-      return renderTwcssProperty("left-", findClosestTwcssSize(cssValue));
+      return renderAbsolutePosition("left-", cssValue);
     }
 
     case "right": {
-      return renderTwcssProperty("right-", findClosestTwcssSize(cssValue));
+      return renderAbsolutePosition("right-", cssValue);
     }
 
     case "flex-direction": {
@@ -1076,7 +1069,6 @@ const findClosestZIndex = (cssValue: string) => {
   return twcssClass;
 };
 
-
 const findClosestTwcssRotate = (cssValue: string) => {
   const start: number = cssValue.indexOf("(") + 1;
   const end: number = cssValue.indexOf("d");
@@ -1114,4 +1106,12 @@ const findClosestTwcssRotate = (cssValue: string) => {
   }
 
   return rotatePrefix + twcssClass;
+};
+
+const renderAbsolutePosition = (prefix: string, cssValue: string) => {
+  if (cssValue.startsWith("-")) {
+    return renderTwcssProperty("-" + prefix, findClosestTwcssSize(cssValue));
+  }
+
+  return renderTwcssProperty(prefix, findClosestTwcssSize(cssValue));
 };

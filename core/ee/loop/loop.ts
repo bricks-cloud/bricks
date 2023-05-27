@@ -1,7 +1,5 @@
-
-import uuid from "react-native-uuid";
 import { Node, NodeType, TextNode } from "../../src/bricks/node";
-import { isEmpty } from "../../src/utils";
+import { createId, isEmpty } from "../../src/utils";
 import { Component, gatherPropsFromSimilarNodes } from "./component";
 import { componentRegistryGlobalInstance } from "./component-registry";
 import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
@@ -10,7 +8,9 @@ import { replacedParentAnnotation } from "../../src/bricks/annotation";
 import { StyledTextSegment } from "../../src/design/adapter/node";
 
 export const registerRepeatedComponents = (node: Node) => {
-  if (optionRegistryGlobalInstance.getOption().uiFramework === UiFramework.react) {
+  if (
+    optionRegistryGlobalInstance.getOption().uiFramework === UiFramework.react
+  ) {
     registerComponentFromNodes(node);
   }
 };
@@ -24,7 +24,11 @@ export const registerComponentFromNodes = (node: Node) => {
   const children: Node[] = node.getChildren();
 
   for (const child of children) {
-    if (!isEmpty(componentRegistryGlobalInstance.getComponentByNodeId(child.getId()))) {
+    if (
+      !isEmpty(
+        componentRegistryGlobalInstance.getComponentByNodeId(child.getId())
+      )
+    ) {
       return;
     }
 
@@ -32,12 +36,11 @@ export const registerComponentFromNodes = (node: Node) => {
   }
 };
 
-
 const registerComponentForConsecutiveNodes = (nodes: Node[]): boolean => {
   const component: Component = new Component();
 
   const instanceIds: string[] = nodes.map((node) => {
-    const instanceId: string = uuid.v1() as string;
+    const instanceId: string = createId();
     component.addIdtoInstanceIdMapping(node.getId(), instanceId);
 
     return instanceId;
@@ -51,36 +54,70 @@ const registerComponentForConsecutiveNodes = (nodes: Node[]): boolean => {
 
   component.setBindings(bindings);
   for (const node of nodes) {
-    componentRegistryGlobalInstance.addNodeIdToComponentMapping(node.getId(), component);
+    componentRegistryGlobalInstance.addNodeIdToComponentMapping(
+      node.getId(),
+      component
+    );
   }
 
   componentRegistryGlobalInstance.registerComponent(component);
   return true;
 };
 
-const checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes = (currentNode: Node, modelNode: Node): [boolean, string, Node[]] => {
-  let [result, reason]: [boolean, string] = areTwoNodesSimilar(currentNode, modelNode);
+const checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes = (
+  currentNode: Node,
+  modelNode: Node
+): [boolean, string, Node[]] => {
+  let [result, reason]: [boolean, string] = areTwoNodesSimilar(
+    currentNode,
+    modelNode
+  );
 
   const modelNodeChildren: Node[] = modelNode.getChildren();
   const currentNodeChildren: Node[] = currentNode.getChildren();
 
-  if (currentNode.hasAnnotation(replacedParentAnnotation) && modelNode.hasAnnotation(replacedParentAnnotation) && modelNodeChildren.length === 1 && currentNodeChildren.length === 1) {
-    const [altResult, altReason] = areTwoNodesSimilar(currentNodeChildren[0], modelNodeChildren[0]);
+  if (
+    currentNode.hasAnnotation(replacedParentAnnotation) &&
+    modelNode.hasAnnotation(replacedParentAnnotation) &&
+    modelNodeChildren.length === 1 &&
+    currentNodeChildren.length === 1
+  ) {
+    const [altResult, altReason] = areTwoNodesSimilar(
+      currentNodeChildren[0],
+      modelNodeChildren[0]
+    );
     if (altResult) {
-      return [altResult, altReason, [modelNodeChildren[0], currentNodeChildren[0]]];
+      return [
+        altResult,
+        altReason,
+        [modelNodeChildren[0], currentNodeChildren[0]],
+      ];
     }
   }
 
-
-  if (!result && currentNode.hasAnnotation(replacedParentAnnotation) && modelNodeChildren.length === 1) {
-    const [altResult, altReason] = areTwoNodesSimilar(currentNode, modelNodeChildren[0]);
+  if (
+    !result &&
+    currentNode.hasAnnotation(replacedParentAnnotation) &&
+    modelNodeChildren.length === 1
+  ) {
+    const [altResult, altReason] = areTwoNodesSimilar(
+      currentNode,
+      modelNodeChildren[0]
+    );
     if (altResult) {
       return [altResult, altReason, [modelNodeChildren[0], currentNode]];
     }
   }
 
-  if (!result && modelNode.hasAnnotation(replacedParentAnnotation) && currentNodeChildren.length === 1) {
-    const [altResult, altReason] = areTwoNodesSimilar(currentNodeChildren[0], modelNode);
+  if (
+    !result &&
+    modelNode.hasAnnotation(replacedParentAnnotation) &&
+    currentNodeChildren.length === 1
+  ) {
+    const [altResult, altReason] = areTwoNodesSimilar(
+      currentNodeChildren[0],
+      modelNode
+    );
     if (altResult) {
       return [altResult, altReason, [modelNode, currentNodeChildren[0]]];
     }
@@ -108,10 +145,13 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
       continue;
     }
 
-    const [result, _]: [boolean, string, Node[]] = checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes(currentNode, modelNode);
+    const [result, _]: [boolean, string, Node[]] =
+      checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes(
+        currentNode,
+        modelNode
+      );
 
     if (!result) {
-
       modelNode = currentNode;
 
       if (consecutiveNodes.length > 2) {
@@ -155,7 +195,10 @@ export const areAllNodesSimilar = (nodes: Node[]): [boolean, Node[]] => {
       continue;
     }
 
-    const [result, _]: [boolean, string] = areTwoNodesSimilar(prevNode, nodes[i]);
+    const [result, _]: [boolean, string] = areTwoNodesSimilar(
+      prevNode,
+      nodes[i]
+    );
 
     if (!result) {
       firstPassFailed = true;
@@ -175,7 +218,11 @@ export const areAllNodesSimilar = (nodes: Node[]): [boolean, Node[]] => {
       continue;
     }
 
-    const [result, _, [modelNode, currentNode]]: [boolean, string, Node[]] = checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes(prevNode, nodes[i]);
+    const [result, _, [modelNode, currentNode]]: [boolean, string, Node[]] =
+      checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes(
+        prevNode,
+        nodes[i]
+      );
 
     if (!result) {
       return [false, []];
@@ -195,20 +242,35 @@ export const areAllNodesSimilar = (nodes: Node[]): [boolean, Node[]] => {
   return [true, similarNodes];
 };
 
-const areTwoNodesSimilar = (currentNode: Node, targetNode: Node): [boolean, string] => {
-  if (currentNode.getACssAttribute("display") !== targetNode.getACssAttribute("display")) {
+const areTwoNodesSimilar = (
+  currentNode: Node,
+  targetNode: Node
+): [boolean, string] => {
+  if (
+    currentNode.getACssAttribute("display") !==
+    targetNode.getACssAttribute("display")
+  ) {
     return [false, "display not the same"];
   }
 
-  if (currentNode.getACssAttribute("flex-direction") !== targetNode.getACssAttribute("flex-direction")) {
+  if (
+    currentNode.getACssAttribute("flex-direction") !==
+    targetNode.getACssAttribute("flex-direction")
+  ) {
     return [false, "flex direction not the same"];
   }
 
-  if (currentNode.getACssAttribute("justify-content") !== targetNode.getACssAttribute("justify-content")) {
+  if (
+    currentNode.getACssAttribute("justify-content") !==
+    targetNode.getACssAttribute("justify-content")
+  ) {
     return [false, "justify content not the same"];
   }
 
-  if (currentNode.getACssAttribute("align-items") !== targetNode.getACssAttribute("align-items")) {
+  if (
+    currentNode.getACssAttribute("align-items") !==
+    targetNode.getACssAttribute("align-items")
+  ) {
     return [false, "align-items not the same"];
   }
 
@@ -219,7 +281,10 @@ const areTwoNodesSimilar = (currentNode: Node, targetNode: Node): [boolean, stri
     return [targetNode.getType() === NodeType.VECTOR, "both nodes are vectors"];
   }
 
-  const [result, reason]: [boolean, string] = doTwoNodesHaveTheSameType(currentNode, targetNode);
+  const [result, reason]: [boolean, string] = doTwoNodesHaveTheSameType(
+    currentNode,
+    targetNode
+  );
   if (!result) {
     return [false, reason];
   }
@@ -232,14 +297,19 @@ const areTwoNodesSimilar = (currentNode: Node, targetNode: Node): [boolean, stri
     const currentNode = currentChildren[i];
     const targetNode = targetChildren[i];
 
-    const [result, reason]: [boolean, string] = doTwoNodesHaveTheSameType(currentNode, targetNode);
+    const [result, reason]: [boolean, string] = doTwoNodesHaveTheSameType(
+      currentNode,
+      targetNode
+    );
     if (!result) {
       return [false, "children nodes do not have the same type: " + reason];
     }
   }
 
-  const [currentWidth, currentHeight] = currentNode.getAbsBoundingBoxWidthAndHeight();
-  const [targetWidth, taregtHeight] = currentNode.getAbsBoundingBoxWidthAndHeight();
+  const [currentWidth, currentHeight] =
+    currentNode.getAbsBoundingBoxWidthAndHeight();
+  const [targetWidth, taregtHeight] =
+    currentNode.getAbsBoundingBoxWidthAndHeight();
 
   if (currentWidth === targetWidth) {
     return [true, "similar widths"];
@@ -252,12 +322,18 @@ const areTwoNodesSimilar = (currentNode: Node, targetNode: Node): [boolean, stri
   return [true, "passes all the checks"];
 };
 
-const doTwoNodesHaveTheSameType = (currentNode: Node, targetNode: Node): [boolean, string] => {
+const doTwoNodesHaveTheSameType = (
+  currentNode: Node,
+  targetNode: Node
+): [boolean, string] => {
   if (currentNode.getType() === NodeType.TEXT) {
     if (targetNode.getType() !== NodeType.TEXT) {
       return [false, "text node type mismatch"];
     }
-    return detectTextNodeSimilarities(currentNode as TextNode, targetNode as TextNode);
+    return detectTextNodeSimilarities(
+      currentNode as TextNode,
+      targetNode as TextNode
+    );
   }
 
   if (currentNode.getType() === NodeType.IMAGE) {
@@ -270,7 +346,6 @@ const doTwoNodesHaveTheSameType = (currentNode: Node, targetNode: Node): [boolea
   return [true, "similar types"];
 };
 
-
 const isVectorGroup = (node: Node): boolean => {
   if (node.getType() === NodeType.VECTOR_GROUP) {
     return true;
@@ -282,7 +357,10 @@ const isVectorGroup = (node: Node): boolean => {
 
   let result: boolean = true;
   for (const child of node.getChildren()) {
-    if (child.getType() === NodeType.TEXT || child.getType() === NodeType.IMAGE) {
+    if (
+      child.getType() === NodeType.TEXT ||
+      child.getType() === NodeType.IMAGE
+    ) {
       return false;
     }
 
@@ -292,12 +370,17 @@ const isVectorGroup = (node: Node): boolean => {
   return result;
 };
 
-const detectTextNodeSimilarities = (currentNode: TextNode, targetNode: TextNode): [boolean, string] => {
+const detectTextNodeSimilarities = (
+  currentNode: TextNode,
+  targetNode: TextNode
+): [boolean, string] => {
   let largestTargetFontSize: number = -Infinity;
   let largestCurrentFontSize: number = -Infinity;
 
-  const targetSegments: StyledTextSegment[] = targetNode.getStyledTextSegments();
-  const currentSegments: StyledTextSegment[] = currentNode.getStyledTextSegments();
+  const targetSegments: StyledTextSegment[] =
+    targetNode.getStyledTextSegments();
+  const currentSegments: StyledTextSegment[] =
+    currentNode.getStyledTextSegments();
   const targetFontFamilies: Set<string> = new Set<string>();
 
   if (targetSegments.length !== currentSegments.length) {
@@ -307,7 +390,7 @@ const detectTextNodeSimilarities = (currentNode: TextNode, targetNode: TextNode)
   for (const targetSegment of targetSegments) {
     if (targetSegment.fontSize > largestTargetFontSize) {
       largestTargetFontSize = targetSegment.fontSize;
-    };
+    }
     targetFontFamilies.add(targetSegment.fontFamily);
   }
 
@@ -317,14 +400,17 @@ const detectTextNodeSimilarities = (currentNode: TextNode, targetNode: TextNode)
       if (!targetFontFamilies.has(currentSegment.fontFamily)) {
         return [false, "font families not the same"];
       }
-    };
+    }
   }
 
-  if (largestCurrentFontSize > largestTargetFontSize + 4 || largestCurrentFontSize < largestTargetFontSize - 4) {
-    return [false, "font sizes are not similar"];;
+  if (
+    largestCurrentFontSize > largestTargetFontSize + 4 ||
+    largestCurrentFontSize < largestTargetFontSize - 4
+  ) {
+    return [false, "font sizes are not similar"];
   }
 
-  return [true, "similar text nodes"];;
+  return [true, "similar text nodes"];
 };
 
 export const extractDataFromRepeatedComponents = (nodes: Node[]): any => {
