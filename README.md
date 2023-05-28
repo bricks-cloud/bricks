@@ -14,16 +14,17 @@ Bricks is an open source tool for converting Figma designs into high-quality fro
    <a href="https://github.com/bricks-cloud/bricks/commits/main"><img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/m/bricks-cloud/bricks?color=8b55e3"/></a>
 </p>
 
-
 Check out our [demo video](https://www.loom.com/share/1e7bf5792f6949cb83f2e181762fb2af)!
 
 ## Getting Started
+
 ### Development Version
 
 #### **VSCode extension**:
-1. Make sure that you have installed [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install). 
-2. Clone our [VSCode extension](https://github.com/bricks-cloud/d2c-vscode). 
-3. Run `yarn install` in the repository's root directory. 
+
+1. Make sure that you have installed [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install).
+2. Clone our [VSCode extension](https://github.com/bricks-cloud/d2c-vscode).
+3. Run `yarn install` in the repository's root directory.
 4. Click on "Run" and select "Start Debugging" to start the VSCode extension in development mode.
 5. Click on "Activate Bricks" in VSCode's status bar in the right corner.
 6. Proceed to start the Figma plugin.
@@ -33,15 +34,17 @@ Check out our [demo video](https://www.loom.com/share/1e7bf5792f6949cb83f2e18176
 </p>
 
 #### **Figma plugin**:
-1. Install [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install). 
-2. Run `yarn install` in the repository's root directory. 
+
+1. Install [Node.js](https://nodejs.org/en/) and [Yarn 1](https://classic.yarnpkg.com/en/docs/install).
+2. Run `yarn install` in the repository's root directory.
 3. Right Click in Figma -> "Plugins" -> "Development" -> "Manage plugins in development"
 4. Click on "+" -> import plugin from manifest -> Select bricks/figma/dist/manifest.json file to import the plugin
 5. Click on "Run" and select "In-development version" to start the Figma plugin in development mode.
 6. After activating Bricks' VSCode extension, start selecting components and click on "Generate" button to start generating code.
 
 ### Production Version
-1. Install [Node.js](https://nodejs.org/en/). 
+
+1. Install [Node.js](https://nodejs.org/en/).
 2. Install both the [VSCode extension](https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode) and the [Figma plugin](https://www.figma.com/community/plugin/1178847414663679049/Bricks---Copilot-for-UI-Engineering).
 3. Click on "Activate Bricks" in VSCode's status bar in the right corner to activate the extension.
 4. In Figma, select components to convert to code.
@@ -51,6 +54,7 @@ Check out our [demo video](https://www.loom.com/share/1e7bf5792f6949cb83f2e18176
 8. When you’re happy with the code, just drop it into your codebase 👏
 
 ## Project Structure
+
 Bricks is composed of a number of components. Below is a description of each component:
 
 - `figma`: the Figma plugin for Bricks.
@@ -58,9 +62,11 @@ Bricks is composed of a number of components. Below is a description of each com
 - `core`: engine that converts Figma nodes into coding files.
 
 ## License
+
 Distributed under the Apache 2.0 License and Bricks Enterprise License. See `LICENSE` for more information.
 
 ## Get in Touch
+
 Email: spike@bricks-tech.com
 
 <a href="https://discord.gg/NM6aeBeqCD"><img src="https://img.shields.io/badge/discord-bricks-blue?logo=discord&labelColor=2EB67D" alt="Join Bricks on Discord"></a>

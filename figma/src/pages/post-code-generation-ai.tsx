@@ -22,7 +22,8 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
     if (isEmpty(aiApplications)) {
       return (
         <p className="font-vietnam text-black font-bold text-base mb-4 text-start">
-          We didnt detect any looped components, buttons, or links so we switched to instant version. No credits have been deducted.
+          We didnt detect any looped components, buttons, or links so we
+          switched to instant version. No credits have been deducted.
         </p>
       );
     }

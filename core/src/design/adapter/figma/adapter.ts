@@ -29,7 +29,11 @@ import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
 import { StyledTextSegment } from "../node";
 import { Line } from "../../../bricks/line";
-import { calculateAngle, getGradientAxisLength, stringifyGradientColors } from "./gradient";
+import {
+  calculateAngle,
+  getGradientAxisLength,
+  stringifyGradientColors,
+} from "./gradient";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -46,11 +50,7 @@ enum NodeType {
   BOOLEAN_OPERATION = "BOOLEAN_OPERATION",
 }
 
-
-const setBackgroundColor = (
-  figmaNode: SceneNode,
-  attributes: Attributes) => {
-
+const setBackgroundColor = (figmaNode: SceneNode, attributes: Attributes) => {
   // @ts-ignore
   if (isEmpty(figmaNode.fills)) {
     return;
@@ -70,7 +70,6 @@ const setBackgroundColor = (
       );
     }
 
-
     const linearGradientPaint = fills.find(
       (fill) => fill.type === "GRADIENT_LINEAR"
     ) as GradientPaint;
@@ -79,16 +78,21 @@ const setBackgroundColor = (
       const width: number = figmaNode.absoluteBoundingBox.width;
       const height: number = figmaNode.absoluteBoundingBox.height;
 
-
-      const { start, end } = extractLinearGradientParamsFromTransform(width, height, linearGradientPaint.gradientTransform);
+      const { start, end } = extractLinearGradientParamsFromTransform(
+        width,
+        height,
+        linearGradientPaint.gradientTransform
+      );
       let actualAngle = Math.abs(calculateAngle(start, end));
-
 
       let arbitraryLineLength: number = width;
       let beginningExtraLength: number = height;
 
-      let hypotenuse: number = Math.round(Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height, 2)));
-      let referenceAngle: number = Math.acos(2 / width / hypotenuse) * 180 / Math.PI;
+      let hypotenuse: number = Math.round(
+        Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height, 2))
+      );
+      let referenceAngle: number =
+        (Math.acos(2 / width / hypotenuse) * 180) / Math.PI;
 
       if (end[1] > start[1]) {
         if (actualAngle === 90) {
@@ -97,15 +101,27 @@ const setBackgroundColor = (
         } else if (actualAngle === 0 || actualAngle === 180) {
           arbitraryLineLength = width / 2;
           beginningExtraLength = width / 2;
-        } else if (actualAngle === referenceAngle || actualAngle === (180 - referenceAngle)) {
+        } else if (
+          actualAngle === referenceAngle ||
+          actualAngle === 180 - referenceAngle
+        ) {
           arbitraryLineLength = hypotenuse;
-          beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+          beginningExtraLength =
+            (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
         } else if (actualAngle < 90) {
-          beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
-          arbitraryLineLength = hypotenuse * Math.cos(Math.abs(referenceAngle - actualAngle) * Math.PI / 180);
+          beginningExtraLength =
+            (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
+          arbitraryLineLength =
+            hypotenuse *
+            Math.cos((Math.abs(referenceAngle - actualAngle) * Math.PI) / 180);
         } else if (actualAngle < 180) {
-          beginningExtraLength = width / 2 * Math.cos((actualAngle - 90) * Math.PI / 180);
-          arbitraryLineLength = hypotenuse * Math.cos(Math.abs(180 - referenceAngle - actualAngle) * Math.PI / 180);
+          beginningExtraLength =
+            (width / 2) * Math.cos(((actualAngle - 90) * Math.PI) / 180);
+          arbitraryLineLength =
+            hypotenuse *
+            Math.cos(
+              (Math.abs(180 - referenceAngle - actualAngle) * Math.PI) / 180
+            );
         }
       } else {
         if (actualAngle === 90) {
@@ -115,16 +131,23 @@ const setBackgroundColor = (
           beginningExtraLength = width / 2;
           arbitraryLineLength = width / 2;
         } else if (actualAngle < 90) {
-          beginningExtraLength = hypotenuse * Math.cos(Math.abs(referenceAngle - actualAngle) * Math.PI / 180);
+          beginningExtraLength =
+            hypotenuse *
+            Math.cos((Math.abs(referenceAngle - actualAngle) * Math.PI) / 180);
           actualAngle = -actualAngle;
-          arbitraryLineLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+          arbitraryLineLength =
+            (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
         } else if (actualAngle < 180) {
-          beginningExtraLength = hypotenuse * Math.cos(Math.abs(180 - referenceAngle - actualAngle) * Math.PI / 180);;
+          beginningExtraLength =
+            hypotenuse *
+            Math.cos(
+              (Math.abs(180 - referenceAngle - actualAngle) * Math.PI) / 180
+            );
           actualAngle = -actualAngle;
-          arbitraryLineLength = width / 2 * Math.cos((180 - actualAngle) * Math.PI / 180);
+          arbitraryLineLength =
+            (width / 2) * Math.cos(((180 - actualAngle) * Math.PI) / 180);
         }
       }
-
 
       arbitraryLineLength = Math.abs(arbitraryLineLength);
 
@@ -135,7 +158,14 @@ const setBackgroundColor = (
 
       let degStr: string = `${cssAngle}deg,`;
 
-      attributes["background"] = `linear-gradient(${degStr}${stringifyGradientColors(linearGradientPaint.gradientStops, gradientAxisLength, arbitraryLineLength, beginningExtraLength)})`;
+      attributes[
+        "background"
+      ] = `linear-gradient(${degStr}${stringifyGradientColors(
+        linearGradientPaint.gradientStops,
+        gradientAxisLength,
+        arbitraryLineLength,
+        beginningExtraLength
+      )})`;
       console.log(attributes["background-color"]);
     }
   }
@@ -245,8 +275,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -550,7 +581,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-        0.1 ||
+          0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -569,7 +600,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-        absoluteBoundingBox.width >
+          absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;

@@ -1135,7 +1135,7 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
 
   let closestDirection: string = "b";
   const degrees: number[] = [90, 135, 180, 225, 180, -45, 0, 45];
-  const allDirections: string[] = ["r", "br", "b", "bl", "l", "tl", "t", "tr",];
+  const allDirections: string[] = ["r", "br", "b", "bl", "l", "tl", "t", "tr"];
 
   let smallestDiff: number = Infinity;
 

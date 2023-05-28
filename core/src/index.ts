@@ -43,7 +43,6 @@ export const convertToCode = async (
 
   console.log("converted: ", converted);
 
-
   const dedupedNodes: Node[] = [];
   for (const node of converted) {
     let newNode: Node = removeNode(node);
