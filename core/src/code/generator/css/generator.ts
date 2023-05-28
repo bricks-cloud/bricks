@@ -19,7 +19,6 @@ import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
 import { getVariablePropForCss } from "../../../../ee/code/prop";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
-import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;

@@ -41,8 +41,6 @@ export const convertToCode = async (
     return [];
   }
 
-  console.log("converted: ", converted);
-
   const dedupedNodes: Node[] = [];
   for (const node of converted) {
     let newNode: Node = removeNode(node);
@@ -54,7 +52,6 @@ export const convertToCode = async (
   let startingNode: Node =
     dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
-  console.log("removeChildrenNode: ", startingNode);
 
   groupNodes(startingNode);
 
@@ -66,8 +63,6 @@ export const convertToCode = async (
 
   addAdditionalCssAttributesToNodes(startingNode);
   removeCssFromNode(startingNode);
-
-  console.log("removeCssFromNode: ", startingNode);
 
   return await generateCodingFiles(startingNode, option);
 };

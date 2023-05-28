@@ -154,6 +154,10 @@ const findClosestTwcssColor = (cssColor: string) => {
     return "inherit";
   }
 
+  if (cssColor === "transparent") {
+    return "transparent";
+  }
+
   if (cssColor === "currentColor") {
     return "current";
   }
@@ -663,6 +667,13 @@ export const getTwcssClass = (
     case "background":
       if (cssValue.startsWith("linear-gradient")) {
         return convertLinearGradientToTwcssValues(cssValue);
+      }
+
+      return "";
+
+    case "background-clip":
+      if (cssValue === "text") {
+        return "bg-clip-text";
       }
 
       return "";
