@@ -226,7 +226,7 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const ranOutOfAiCredits =
-    limit === 0 ? (
+    limit === 0 && connectedToVSCode ? (
       <div className="h-16 border-t-2 font-vietnam text-sm text-gray-400 w-full flex justify-center items-start pt-3">
         Ran out of daily AI credits?<span>&nbsp;</span>
         <Tooltip

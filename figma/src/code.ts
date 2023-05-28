@@ -20,7 +20,7 @@ export const trackEvent = (eventName: string, eventProperties: any) => {
   track(eventName, isEmpty(eventProperties) ? {} : eventProperties);
 };
 
-figma.showUI(__html__, { height: 320, width: 350 });
+figma.showUI(__html__, { height: 300, width: 350 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "styled-bricks-nodes") {
