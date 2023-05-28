@@ -76,48 +76,66 @@ const setBackgroundColor = (
     ) as GradientPaint;
 
     if (linearGradientPaint) {
-      const transform: number[][] = linearGradientPaint.gradientTransform;
       const width: number = figmaNode.absoluteBoundingBox.width;
       const height: number = figmaNode.absoluteBoundingBox.height;
 
 
       const { start, end } = extractLinearGradientParamsFromTransform(width, height, linearGradientPaint.gradientTransform);
-      let actualAngle = calculateAngle(start, end);
-      const cssAngle: number = actualAngle + 90;
+      let actualAngle = Math.abs(calculateAngle(start, end));
 
 
       let arbitraryLineLength: number = width;
       let beginningExtraLength: number = height;
 
-      if (actualAngle === 90) {
-        arbitraryLineLength = height;
-      } else if (actualAngle < 90) {
-        beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
-        arbitraryLineLength = height / Math.cos((90 - actualAngle) * Math.PI / 180);
-      } else if (actualAngle === 0 || actualAngle === 180) {
-        arbitraryLineLength = width / 2;
-      } else if (actualAngle < 180) {
-        arbitraryLineLength = width / 2 / Math.cos((180 - actualAngle) * Math.PI / 180);
+      let hypotenuse: number = Math.round(Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height, 2)));
+      let referenceAngle: number = Math.acos(2 / width / hypotenuse) * 180 / Math.PI;
+
+      if (end[1] > start[1]) {
+        if (actualAngle === 90) {
+          arbitraryLineLength = height;
+          beginningExtraLength = 0;
+        } else if (actualAngle === 0 || actualAngle === 180) {
+          arbitraryLineLength = width / 2;
+          beginningExtraLength = width / 2;
+        } else if (actualAngle === referenceAngle || actualAngle === (180 - referenceAngle)) {
+          arbitraryLineLength = hypotenuse;
+          beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+        } else if (actualAngle < 90) {
+          beginningExtraLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+          arbitraryLineLength = hypotenuse * Math.cos(Math.abs(referenceAngle - actualAngle) * Math.PI / 180);
+        } else if (actualAngle < 180) {
+          beginningExtraLength = width / 2 * Math.cos((actualAngle - 90) * Math.PI / 180);
+          arbitraryLineLength = hypotenuse * Math.cos(Math.abs(180 - referenceAngle - actualAngle) * Math.PI / 180);
+        }
+      } else {
+        if (actualAngle === 90) {
+          arbitraryLineLength = 0;
+          beginningExtraLength = height;
+        } else if (actualAngle === 0 || actualAngle === 180) {
+          beginningExtraLength = width / 2;
+          arbitraryLineLength = width / 2;
+        } else if (actualAngle < 90) {
+          beginningExtraLength = hypotenuse * Math.cos(Math.abs(referenceAngle - actualAngle) * Math.PI / 180);
+          actualAngle = -actualAngle;
+          arbitraryLineLength = width / 2 * Math.cos(actualAngle * Math.PI / 180);
+        } else if (actualAngle < 180) {
+          beginningExtraLength = hypotenuse * Math.cos(Math.abs(180 - referenceAngle - actualAngle) * Math.PI / 180);;
+          actualAngle = -actualAngle;
+          arbitraryLineLength = width / 2 * Math.cos((180 - actualAngle) * Math.PI / 180);
+        }
       }
 
-      console.log("arbitraryLineLength: ", actualAngle);
-      console.log("arbitraryLineLength: ", arbitraryLineLength);
-      console.log("arbitraryLineLength: ", getGradientAxisLength(start, end));
 
+      arbitraryLineLength = Math.abs(arbitraryLineLength);
+
+      const cssAngle: number = actualAngle + 90;
       const gradientAxisLength: number = getGradientAxisLength(start, end);
-      let chosenAxisLength: number = gradientAxisLength > arbitraryLineLength ? gradientAxisLength : arbitraryLineLength;
 
-      let endingExtraLength = gradientAxisLength > arbitraryLineLength ? 0 : arbitraryLineLength - gradientAxisLength;
-      chosenAxisLength += beginningExtraLength;
-
-      // @ts-ignore
-      console.log("linearGradientPaint.gradientHandlePositions: ", extractLinearGradientParamsFromTransform(figmaNode.width, figmaNode.height, linearGradientPaint.gradientTransform));
-      console.log("chosenAxisLength: ", chosenAxisLength);
-      console.log("chosenAxisLength: ", beginningExtraLength);
+      arbitraryLineLength += beginningExtraLength;
 
       let degStr: string = `${cssAngle}deg,`;
 
-      attributes["background"] = `linear-gradient(${degStr}${stringifyGradientColors(linearGradientPaint.gradientStops, gradientAxisLength, chosenAxisLength, beginningExtraLength, endingExtraLength)})`;
+      attributes["background"] = `linear-gradient(${degStr}${stringifyGradientColors(linearGradientPaint.gradientStops, gradientAxisLength, arbitraryLineLength, beginningExtraLength)})`;
       console.log(attributes["background-color"]);
     }
   }

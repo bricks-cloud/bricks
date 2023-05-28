@@ -1134,15 +1134,16 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
   }
 
   let closestDirection: string = "b";
-  const degrees: number[] = [0, 45, 90, 135, 180, 225, 270, 315];
-  const allDirections: string[] = ["b", "bl", "l", "tl", "t", "tr", "r", "br"];
-  let smallestDiff: number = Infinity;
+  const degrees: number[] = [90, 135, 180, 225, 180, -45, 0, 45];
+  const allDirections: string[] = ["r", "br", "b", "bl", "l", "tl", "t", "tr",];
 
+  let smallestDiff: number = Infinity;
 
   if (valuesStr[0].endsWith("deg")) {
     const degNum: number = parseInt(valuesStr[0].slice(0, -3));
     if (!isEmpty(degNum)) {
       let index: number = 0;
+
       for (let i = 0; i < degrees.length; i++) {
         const degree: number = degrees[i];
         const diff: number = Math.abs(degree - degNum);
@@ -1157,13 +1158,7 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
       result += `bg-gradient-to-` + closestDirection + " ";
     }
 
-    console.log(valuesStr);
-
     for (let i = 1; i < valuesStr.length; i++) {
-      if (i > 4) {
-        return result;
-      }
-
       const value: string = valuesStr[i];
       const colorAndPercentageStr = value.split(" ");
       const colorInHex: string = colorAndPercentageStr[0];
@@ -1174,7 +1169,7 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
         continue;
       }
 
-      if (i === valuesStr.length - 1 || i === 4) {
+      if (i === valuesStr.length - 1) {
         result += `to-[${colorInHex}] to-${percentage} `;
         continue;
       }
@@ -1185,29 +1180,5 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
     return result.trim();
   }
 
-  result += `bg-gradient-to-` + closestDirection + " ";
-  for (let i = 0; i < valuesStr.length; i++) {
-    if (i > 3) {
-      return result;
-    }
-
-    const value: string = valuesStr[i];
-    const colorAndPercentageStr = value.split(" ");
-    const colorInHex: string = colorAndPercentageStr[0];
-    const percentage: string = colorAndPercentageStr[1];
-
-    if (i === 0) {
-      result += `from-[${colorInHex}] from-${percentage} `;
-      continue;
-    }
-
-    if (i === valuesStr.length - 1 || i === 3) {
-      result += `to-[${colorInHex}] to-${percentage} `;
-      continue;
-    }
-
-    result += `via-[${colorInHex}] via-${percentage} `;
-  }
-
-  return result.trim();
+  return "";
 };

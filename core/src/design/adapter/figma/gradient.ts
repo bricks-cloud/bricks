@@ -40,10 +40,9 @@ const getGradientColors = (gradientStops: readonly ColorStop[]): [string, number
     return results;
 };
 
-export const stringifyGradientColors = (gradientStops: readonly ColorStop[], gradientAxisLength: number, chosenAxisLength: number, beginningExtra: number, endingExtra: number) => {
+export const stringifyGradientColors = (gradientStops: readonly ColorStop[], gradientAxisLength: number, chosenAxisLength: number, beginningExtra: number) => {
     const gradientColors: [string, number][] = getGradientColors(gradientStops);
     let result: string = "";
-    console.log("gradientColors: ", gradientColors);
 
     let cum: number = 0;
 
@@ -52,17 +51,13 @@ export const stringifyGradientColors = (gradientStops: readonly ColorStop[], gra
         result += gradientColor[0] + " ";
 
         let segmentPercentage: number = 0;
-        if (i + 1 < gradientColors.length) {
-            segmentPercentage = gradientColors[i + 1][1] - gradientColor[1];
+        if (i - 1 >= 0) {
+            segmentPercentage = gradientColor[1] - gradientColors[i - 1][1];
         }
 
         let percentage: number = Math.round(gradientAxisLength * segmentPercentage / chosenAxisLength * 100);
         if (i === 0) {
             percentage = Math.round((gradientAxisLength * segmentPercentage + beginningExtra) / chosenAxisLength * 100);
-        }
-
-        if (i === gradientColors.length - 1) {
-            percentage = Math.round((gradientAxisLength * (1 - gradientColor[1]) + endingExtra) / chosenAxisLength * 100);
         }
 
         cum += percentage;
@@ -75,6 +70,3 @@ export const stringifyGradientColors = (gradientStops: readonly ColorStop[], gra
 
     return result;
 };
-
-
-// export const gradientStopsTo
