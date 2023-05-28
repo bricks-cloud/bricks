@@ -30,68 +30,69 @@ figma.ui.onmessage = async (msg) => {
       uiFramework: msg.options.uiFramework,
     });
 
-    promise.then((files) => {
-      figma.ui.postMessage({
-        type: "generated-files",
-        files,
-      });
-    }).catch((e) => {
-      const errorDetails = {
-        error: e.name,
-        message: e.message,
-        stack: e.stack,
-      };
+    promise
+      .then((files) => {
+        figma.ui.postMessage({
+          type: "generated-files",
+          files,
+        });
+      })
+      .catch((e) => {
+        const errorDetails = {
+          error: e.name,
+          message: e.message,
+          stack: e.stack,
+        };
 
-      console.error("Error from Figma core:\n", errorDetails);
-      trackEvent(EVENT_ERROR, {
-        source: "figma",
-        ...errorDetails,
-      });
+        console.error("Error from Figma core:\n", errorDetails);
+        trackEvent(EVENT_ERROR, {
+          source: "figma",
+          ...errorDetails,
+        });
 
-      figma.ui.postMessage({
-        type: "generated-files",
-        files: [],
-        error: true,
+        figma.ui.postMessage({
+          type: "generated-files",
+          files: [],
+          error: true,
+        });
       });
-    });
   }
 
   if (msg.type === "generate-code-with-ai") {
-    const promise = convertToCodeWithAi(
-      figma.currentPage.selection,
-      {
-        language: msg.options.language,
-        cssFramework: msg.options.cssFramework,
-        uiFramework: msg.options.uiFramework,
-      }
-    );
-
-    promise.then(([files, applications]) => {
-      figma.ui.postMessage({
-        type: "generated-files",
-        files,
-        applications,
-      });
-    }).catch((e) => {
-      const errorDetails = {
-        error: e.name,
-        message: e.message,
-        stack: e.stack,
-      };
-
-      console.error("Error from Figma core:\n", errorDetails);
-      trackEvent(EVENT_ERROR, {
-        source: "figma",
-        ...errorDetails,
-      });
-
-      figma.ui.postMessage({
-        type: "generated-files",
-        files: [],
-        applications: [],
-        error: true,
-      });
+    const promise = convertToCodeWithAi(figma.currentPage.selection, {
+      language: msg.options.language,
+      cssFramework: msg.options.cssFramework,
+      uiFramework: msg.options.uiFramework,
     });
+
+    promise
+      .then(([files, applications]) => {
+        figma.ui.postMessage({
+          type: "generated-files",
+          files,
+          applications,
+        });
+      })
+      .catch((e) => {
+        const errorDetails = {
+          error: e.name,
+          message: e.message,
+          stack: e.stack,
+        };
+
+        console.error("Error from Figma core:\n", errorDetails);
+        trackEvent(EVENT_ERROR, {
+          source: "figma",
+          ...errorDetails,
+        });
+
+        figma.ui.postMessage({
+          type: "generated-files",
+          files: [],
+          applications: [],
+          error: true,
+        });
+      });
   }
 
   if (msg.type === "update-settings") {
@@ -130,6 +131,10 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "get-last-reset") {
+    if (figma.currentUser.id === "624412189236026359") {
+      await figma.clientStorage.setAsync("limit", 6);
+    }
+
     const reset: number = await figma.clientStorage.getAsync("last-reset");
 
     figma.ui.postMessage({

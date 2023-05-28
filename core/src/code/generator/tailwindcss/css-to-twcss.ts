@@ -154,6 +154,10 @@ const findClosestTwcssColor = (cssColor: string) => {
     return "inherit";
   }
 
+  if (cssColor === "transparent") {
+    return "transparent";
+  }
+
   if (cssColor === "currentColor") {
     return "current";
   }
@@ -660,6 +664,20 @@ export const getTwcssClass = (
     case "background-color":
       return `bg-${findClosestTwcssColor(cssValue)}`;
 
+    case "background":
+      if (cssValue.startsWith("linear-gradient")) {
+        return convertLinearGradientToTwcssValues(cssValue);
+      }
+
+      return "";
+
+    case "background-clip":
+      if (cssValue === "text") {
+        return "bg-clip-text";
+      }
+
+      return "";
+
     case "background-image":
       return `bg-${getImageFileNameFromUrl(cssValue)}`;
 
@@ -1114,4 +1132,64 @@ const renderAbsolutePosition = (prefix: string, cssValue: string) => {
   }
 
   return renderTwcssProperty(prefix, findClosestTwcssSize(cssValue));
+};
+
+const convertLinearGradientToTwcssValues = (cssValue: string) => {
+  let result: string = "";
+  const start: number = cssValue.indexOf("(");
+  const end: number = cssValue.indexOf(")");
+  const linearGradientValue = cssValue.substring(start + 1, end);
+  const valuesStr: string[] = linearGradientValue.split(",");
+  if (isEmpty(valuesStr)) {
+    return "";
+  }
+
+  let closestDirection: string = "b";
+  const degrees: number[] = [90, 135, 180, 225, 180, -45, 0, 45];
+  const allDirections: string[] = ["r", "br", "b", "bl", "l", "tl", "t", "tr"];
+
+  let smallestDiff: number = Infinity;
+
+  if (valuesStr[0].endsWith("deg")) {
+    const degNum: number = parseInt(valuesStr[0].slice(0, -3));
+    if (!isEmpty(degNum)) {
+      let index: number = 0;
+
+      for (let i = 0; i < degrees.length; i++) {
+        const degree: number = degrees[i];
+        const diff: number = Math.abs(degree - degNum);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          index = i;
+        }
+      }
+
+      closestDirection = allDirections[index];
+
+      result += `bg-gradient-to-` + closestDirection + " ";
+    }
+
+    for (let i = 1; i < valuesStr.length; i++) {
+      const value: string = valuesStr[i];
+      const colorAndPercentageStr = value.split(" ");
+      const colorInHex: string = colorAndPercentageStr[0];
+      const percentage: string = colorAndPercentageStr[1];
+
+      if (i === 1) {
+        result += `from-[${colorInHex}] from-${percentage} `;
+        continue;
+      }
+
+      if (i === valuesStr.length - 1) {
+        result += `to-[${colorInHex}] to-${percentage} `;
+        continue;
+      }
+
+      result += `via-[${colorInHex}] via-${percentage} `;
+    }
+
+    return result.trim();
+  }
+
+  return "";
 };

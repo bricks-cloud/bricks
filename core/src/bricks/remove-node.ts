@@ -30,8 +30,8 @@ export const removeNode = (node: Node): Node => {
         node.setCssAttributes(cssAttributes);
         node.setPositionalCssAttributes(positionalCssAttributes);
         node.addAnnotations(replacedChildAnnotation, true);
-
         node.setChildren([]);
+
         return removeNode(node);
       }
 
@@ -49,6 +49,11 @@ export const removeNode = (node: Node): Node => {
       child.setPositionalCssAttributes(positionalCssAttributes);
       child.addAnnotations(replacedParentAnnotation, true);
 
+      return removeNode(child);
+    }
+
+    if (isNodeTransparent(node)) {
+      child.addAnnotations(replacedParentAnnotation, true);
       return removeNode(child);
     }
   }
@@ -130,6 +135,16 @@ const haveSimlarWidthAndHeight = (
   return similarHeight && similarWidth;
 };
 
+const isNodeTransparent = (node: Node): boolean => {
+  if (node.getType() === NodeType.GROUP || node.getType() === NodeType.VISIBLE) {
+    if (isEmpty(node.getACssAttribute("background-color")) && isEmpty(node.getACssAttribute("background")) && isEmpty(node.getACssAttribute("border-color"))) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const filterAttributes = (attribtues: Attributes): Attributes => {
   const result = {};
 
@@ -156,10 +171,10 @@ const mergeAttributes = (
   if (
     parentPosAttributes["display"] !== childPosAttributes["display"] ||
     parentPosAttributes["flex-direction"] !==
-      childPosAttributes["flex-direction"] ||
+    childPosAttributes["flex-direction"] ||
     parentPosAttributes["align-items"] !== childPosAttributes["align-items"] ||
     parentPosAttributes["justify-content"] !==
-      childPosAttributes["justify-content"]
+    childPosAttributes["justify-content"]
   ) {
     return {
       ...filterAttributes(parentPosAttributes),

@@ -42,9 +42,9 @@ const Home = (props: PropsWithChildren<Props>) => {
   } = props;
   const { setCurrentPage } = useContext(PageContext);
 
-  const handleGenerateCodeButtonClick = () => {
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
+  const handleGenerateCodeButtonClick = async () => {
+    await setIsGeneratingCode(true);
+    await setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {
@@ -76,10 +76,10 @@ const Home = (props: PropsWithChildren<Props>) => {
     );
   };
 
-  const handleGenerateCodeWithAiButtonClick = () => {
-    setIsGeneratingCodeWithAi(true);
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
+  const handleGenerateCodeWithAiButtonClick = async () => {
+    await setIsGeneratingCodeWithAi(true);
+    await setIsGeneratingCode(true);
+    await setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {

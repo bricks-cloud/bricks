@@ -409,17 +409,14 @@ export class Generator {
 
           if (listType === "none") {
             const result = this.wrapTextIfHasAttributes(
-              characters,
+              replaceLeadingWhiteSpaceAndNewLine(characters, option),
               href,
               cssAttributes,
               parentCssAttributes,
               option
             );
 
-            let newStr: string = replaceNewLine(result, option);
-            newStr = replaceLeadingWhiteSpace(newStr, option);
-
-            return newStr;
+            return result;
           }
 
           // create enough lists to match identation
@@ -545,11 +542,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-          cssAttributes,
-          option,
-          undefined,
-          parentCssAttributes
-        )}`
+        cssAttributes,
+        option,
+        undefined,
+        parentCssAttributes
+      )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
@@ -615,32 +612,28 @@ const getAttributeOverrides = (
   };
 };
 
-const replaceNewLine = (str: string, option: Option) => {
-  let newStrParts: string[] = [];
+const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string => {
+  let newStr: string = "";
+  let streak: boolean = true;
   for (let i = 0; i < str.length; i++) {
-    if (str.charAt(i) === "\n") {
-      newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
-    }
-
-    newStrParts.push(str.charAt(i));
-  }
-
-  return newStrParts.join("");
-};
-
-const replaceLeadingWhiteSpace = (str: string, option: Option) => {
-  let newStrParts: string[] = [];
-  for (let i = 0; i < str.length; i++) {
-    if (str.charCodeAt(i) === 160) {
-      newStrParts.push("&nbsp;");
+    if (str.charCodeAt(i) === 160 && streak) {
+      newStr += "&nbsp;";
+      streak = true;
       continue;
     }
 
-    newStrParts.push(str.substring(i));
-    break;
+    streak = false;
+
+    if (str.charAt(i) === "\n") {
+      newStr += (option.uiFramework === "html" ? "<br>" : "<br />");
+      streak = true;
+      continue;
+    }
+
+    newStr += str.charAt(i);
   }
 
-  return newStrParts.join("");
+  return newStr;
 };
 
 const splitByNewLine = (text: string) => {
@@ -710,14 +703,8 @@ const getAltProp = (node: Node): string => {
 };
 
 const escapeHtml = (str: string) => {
-  return str.replace(/[&<>"'{}]/g, function (match) {
+  return str.replace(/["'{}]/g, function (match) {
     switch (match) {
-      case "&":
-        return "&amp;";
-      case "<":
-        return "&lt;";
-      case ">":
-        return "&gt;";
       case '"':
         return "&quot;";
       case "'":

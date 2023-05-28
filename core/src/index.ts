@@ -52,6 +52,7 @@ export const convertToCode = async (
   let startingNode: Node =
     dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
+
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);

@@ -445,7 +445,7 @@ export const gatherPropsFromSimilarNodes = (
 
   const cssProps: ComponentProperties =
     optionRegistryGlobalInstance.getOption().cssFramework ===
-    CssFramework.tailwindcss
+      CssFramework.tailwindcss
       ? gatherTwcssPropsFromNodes(similarNodes, instanceIds)
       : gatherCssPropsFromNodes(similarNodes, instanceIds);
   let componentProps: ComponentProperties = {

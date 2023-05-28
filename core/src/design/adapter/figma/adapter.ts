@@ -11,6 +11,7 @@ import {
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
+import { extractLinearGradientParamsFromTransform } from "@figma-plugin/helpers";
 import {
   colorToString,
   colorToStringWithOpacity,
@@ -28,6 +29,11 @@ import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
 import { StyledTextSegment } from "../node";
 import { Line } from "../../../bricks/line";
+import {
+  calculateAngle,
+  getGradientAxisLength,
+  stringifyGradientColors,
+} from "./gradient";
 
 enum NodeType {
   GROUP = "GROUP",
@@ -43,6 +49,150 @@ enum NodeType {
   COMPONENT = "COMPONENT",
   BOOLEAN_OPERATION = "BOOLEAN_OPERATION",
 }
+
+const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes) => {
+  // @ts-ignore
+  if (isEmpty(figmaNode.fills)) {
+    return;
+  }
+
+  // @ts-ignore
+  const fills = figmaNode.fills;
+
+  const linearGradientPaint = fills.find(
+    (fill) => fill.type === "GRADIENT_LINEAR"
+  ) as GradientPaint;
+
+  if (linearGradientPaint) {
+    const width: number = figmaNode.absoluteBoundingBox.width;
+    const height: number = figmaNode.absoluteBoundingBox.height;
+
+    const { start, end } = extractLinearGradientParamsFromTransform(
+      width,
+      height,
+      linearGradientPaint.gradientTransform
+    );
+    let actualAngle = Math.abs(calculateAngle(start, end));
+
+    let arbitraryLineLength: number = width;
+    let beginningExtraLength: number = height;
+
+    let hypotenuse: number = Math.round(
+      Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height, 2))
+    );
+    let referenceAngle: number =
+      (Math.acos(2 / width / hypotenuse) * 180) / Math.PI;
+
+    if (end[1] > start[1]) {
+      if (actualAngle === 90) {
+        arbitraryLineLength = height;
+        beginningExtraLength = 0;
+      } else if (actualAngle === 0 || actualAngle === 180) {
+        arbitraryLineLength = width / 2;
+        beginningExtraLength = width / 2;
+      } else if (
+        actualAngle === referenceAngle ||
+        actualAngle === 180 - referenceAngle
+      ) {
+        arbitraryLineLength = hypotenuse;
+        beginningExtraLength =
+          (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
+      } else if (actualAngle < 90) {
+        beginningExtraLength =
+          (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
+        arbitraryLineLength =
+          hypotenuse *
+          Math.cos((Math.abs(referenceAngle - actualAngle) * Math.PI) / 180);
+      } else if (actualAngle < 180) {
+        beginningExtraLength =
+          (width / 2) * Math.cos(((actualAngle - 90) * Math.PI) / 180);
+        arbitraryLineLength =
+          hypotenuse *
+          Math.cos(
+            (Math.abs(180 - referenceAngle - actualAngle) * Math.PI) / 180
+          );
+      }
+    } else {
+      if (actualAngle === 90) {
+        arbitraryLineLength = 0;
+        beginningExtraLength = height;
+      } else if (actualAngle === 0 || actualAngle === 180) {
+        beginningExtraLength = width / 2;
+        arbitraryLineLength = width / 2;
+      } else if (actualAngle < 90) {
+        beginningExtraLength =
+          hypotenuse *
+          Math.cos((Math.abs(referenceAngle - actualAngle) * Math.PI) / 180);
+        actualAngle = -actualAngle;
+        arbitraryLineLength =
+          (width / 2) * Math.cos((actualAngle * Math.PI) / 180);
+      } else if (actualAngle < 180) {
+        beginningExtraLength =
+          hypotenuse *
+          Math.cos(
+            (Math.abs(180 - referenceAngle - actualAngle) * Math.PI) / 180
+          );
+        actualAngle = -actualAngle;
+        arbitraryLineLength =
+          (width / 2) * Math.cos(((180 - actualAngle) * Math.PI) / 180);
+      }
+    }
+
+    arbitraryLineLength = Math.abs(arbitraryLineLength);
+
+    const cssAngle: number = actualAngle + 90;
+    const gradientAxisLength: number = getGradientAxisLength(start, end);
+
+    arbitraryLineLength += beginningExtraLength;
+
+    let degStr: string = `${cssAngle}deg,`;
+
+    attributes[
+      "background"
+    ] = `linear-gradient(${degStr}${stringifyGradientColors(
+      linearGradientPaint.gradientStops,
+      gradientAxisLength,
+      arbitraryLineLength,
+      beginningExtraLength
+    )})`;
+
+    if (figmaNode.type === NodeType.TEXT) {
+      attributes[
+        "color"
+      ] = "transparent";
+
+      attributes[
+        "background-clip"
+      ] = "text";
+
+      attributes[
+        "-webkit-background-clip"
+      ] = "text";
+    }
+  }
+};
+
+const setBackgroundColor = (figmaNode: SceneNode, attributes: Attributes) => {
+  // @ts-ignore
+  if (isEmpty(figmaNode.fills)) {
+    return;
+  }
+
+  // @ts-ignore
+  const fills = figmaNode.fills;
+  if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
+    // background color
+    const solidPaint = fills.find(
+      (fill) => fill.type === "SOLID"
+    ) as SolidPaint;
+    if (solidPaint) {
+      attributes["background-color"] = colorToStringWithOpacity(
+        solidPaint.color,
+        solidPaint.opacity
+      );
+    }
+  }
+};
 
 const safelySetWidthAndHeight = (
   nodeType: string,
@@ -148,9 +298,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -274,20 +423,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     figmaNode.type === NodeType.ELLIPSE
   ) {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
-
-    const fills = figmaNode.fills;
-    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
-      // background color
-      const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID"
-      ) as SolidPaint;
-      if (solidPaint) {
-        attributes["background-color"] = colorToStringWithOpacity(
-          solidPaint.color,
-          solidPaint.opacity
-        );
-      }
-    }
+    setBackgroundColor(figmaNode, attributes);
+    setBackgroundGradientColor(figmaNode, attributes);
   }
 
   if (
@@ -392,19 +529,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       attributes["backdrop-filter"] = `blur(${backgroundBlur.radius}px)`;
     }
 
-    const fills = figmaNode.fills;
-    if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
-      // background color
-      const solidPaint = fills.find(
-        (fill) => fill.type === "SOLID"
-      ) as SolidPaint;
-      if (solidPaint) {
-        attributes["background-color"] = colorToStringWithOpacity(
-          solidPaint.color,
-          solidPaint.opacity
-        );
-      }
-    }
+    setBackgroundColor(figmaNode, attributes);
+    setBackgroundGradientColor(figmaNode, attributes);
   }
 
   if (figmaNode.type === NodeType.TEXT) {
@@ -479,7 +605,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-          0.1 ||
+        0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -498,7 +624,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-          absoluteBoundingBox.width >
+        absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
@@ -551,6 +677,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       if (finalColor) {
         attributes["color"] = rgbaToString(finalColor);
       }
+
+      setBackgroundGradientColor(figmaNode, attributes);
     } else if (paints === figma.mixed) {
       const mostCommonPaints = getMostCommonFieldInString(figmaNode, "fills", {
         areVariationsEqual: (paint1, paint2) =>
@@ -970,7 +1098,7 @@ type Feedback = {
 export const convertFigmaNodesToBricksNodes = (
   figmaNodes: readonly SceneNode[]
 ): Feedback => {
-  let reordered = [];
+  let reordered: SceneNode[] = [];
 
   for (let i = 0; i < figmaNodes.length; i++) {
     const figmaNode: SceneNode = figmaNodes[i];
@@ -979,36 +1107,7 @@ export const convertFigmaNodesToBricksNodes = (
     }
   }
 
-  if (reordered.length > 1) {
-    reordered.sort((a, b) => {
-      let wrappedNodeA: Node = new VisibleNode(new FigmaNodeAdapter(a));
-      let wrappedNodeB: Node = new VisibleNode(new FigmaNodeAdapter(b));
-
-      if (
-        computePositionalRelationship(
-          wrappedNodeA.getAbsRenderingBox(),
-          wrappedNodeB.getAbsRenderingBox()
-        ) === PostionalRelationship.INCLUDE
-      ) {
-        return 1;
-      }
-
-      if (
-        computePositionalRelationship(
-          wrappedNodeB.getAbsRenderingBox(),
-          wrappedNodeA.getAbsRenderingBox()
-        ) === PostionalRelationship.INCLUDE
-      ) {
-        return -1;
-      }
-
-      if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
-        return -1;
-      }
-
-      return 1;
-    });
-  }
+  reorderFigmaNodes(reordered);
 
   let result: Feedback = {
     nodes: [],
@@ -1116,9 +1215,7 @@ export const convertFigmaNodesToBricksNodes = (
     if (!isEmpty(figmaNode?.children)) {
       let isExportableNode: boolean = false;
       //@ts-ignore
-      const feedback: Feedback = convertFigmaNodesToBricksNodes(
-        figmaNode.children
-      );
+      const feedback: Feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
 
       let doNodesHaveNonOverlappingChildren: boolean = true;
       let horizontalOverlap: boolean = areThereOverlappingByDirection(
@@ -1221,4 +1318,37 @@ export const getFigmaLineBasedOnDirection = (
   }
 
   return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
+};
+
+export const reorderFigmaNodes = (reordered: SceneNode[]) => {
+  if (reordered.length > 1) {
+    reordered.sort((a, b) => {
+      let wrappedNodeA: Node = new VisibleNode(new FigmaNodeAdapter(a));
+      let wrappedNodeB: Node = new VisibleNode(new FigmaNodeAdapter(b));
+
+      if (
+        computePositionalRelationship(
+          wrappedNodeA.getAbsRenderingBox(),
+          wrappedNodeB.getAbsRenderingBox()
+        ) === PostionalRelationship.INCLUDE
+      ) {
+        return 1;
+      }
+
+      if (
+        computePositionalRelationship(
+          wrappedNodeB.getAbsRenderingBox(),
+          wrappedNodeA.getAbsRenderingBox()
+        ) === PostionalRelationship.INCLUDE
+      ) {
+        return -1;
+      }
+
+      if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
+        return -1;
+      }
+
+      return 1;
+    });
+  }
 };
