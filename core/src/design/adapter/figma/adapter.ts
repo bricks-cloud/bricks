@@ -485,22 +485,22 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
           figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
       } else {
         if (strokeTopWeight > 0) {
-          attributes["border-top"] =
+          attributes["border-top-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeBottomWeight > 0) {
-          attributes["border-bottom"] =
+          attributes["border-bottom-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeLeftWeight > 0) {
-          attributes["border-left"] =
+          attributes["border-left-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeRightWeight > 0) {
-          attributes["border-right"] =
+          attributes["border-right-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
       }

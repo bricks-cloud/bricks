@@ -819,10 +819,10 @@ export const getTwcssClass = (
       }
     }
 
-    case "border-top":
-    case "border-bottom":
-    case "border-left":
-    case "border-right":
+    case "border-top-style":
+    case "border-bottom-style":
+    case "border-left-style":
+    case "border-right-style":
     case "border-style": {
       switch (cssValue) {
         case "solid":
