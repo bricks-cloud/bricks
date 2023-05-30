@@ -203,7 +203,7 @@ export const areAllNodesSimilar = (nodes: Node[]): [boolean, Node[]] => {
   let firstPassFailed: boolean = false;
 
   if (isEmpty(prevNode)) {
-    return [false, []]];
+    return [false, []];
   }
 
   for (let i = 0; i < nodes.length; i++) {
