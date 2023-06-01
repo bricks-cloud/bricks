@@ -52,7 +52,6 @@ export const convertToCode = async (
   let startingNode: Node =
     dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
-
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);
@@ -110,24 +109,24 @@ export const convertToCodeWithAi = async (
   const files: File[] = await generateCodingFiles(startingNode, option);
 
   // ee features
-  let startGetNameMap: number = Date.now();
-  const nameMap: NameMap = await getNameMap();
-  let endGetNameMap: number = Date.now();
-  trackEvent(EVENT_AI_GET_NAME_SUCCESS, {
-    duration: endGetNameMap - startGetNameMap,
-  });
+  // let startGetNameMap: number = Date.now();
+  // const nameMap: NameMap = await getNameMap();
+  // let endGetNameMap: number = Date.now();
+  // trackEvent(EVENT_AI_GET_NAME_SUCCESS, {
+  //   duration: endGetNameMap - startGetNameMap,
+  // });
 
-  if (!isEmpty(Object.values(nameMap))) {
-    aiApplicationRegistryGlobalInstance.addApplication(
-      AiApplication.autoNaming
-    );
-  }
-  replaceVariableNameWithinFile(files, nameMap);
+  // if (!isEmpty(Object.values(nameMap))) {
+  //   aiApplicationRegistryGlobalInstance.addApplication(
+  //     AiApplication.autoNaming
+  //   );
+  // }
+  // replaceVariableNameWithinFile(files, nameMap);
 
-  let end: number = Date.now();
-  trackEvent(EVENT_AI_CODE_GEN_SUCCESS, {
-    duration: end - start,
-  });
+  // let end: number = Date.now();
+  // trackEvent(EVENT_AI_CODE_GEN_SUCCESS, {
+  //   duration: end - start,
+  // });
 
   return [files, aiApplicationRegistryGlobalInstance.getApplications()];
 };
