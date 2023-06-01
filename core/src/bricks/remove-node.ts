@@ -22,7 +22,7 @@ export const removeNode = (node: Node): Node => {
           ...child.getCssAttributes(),
         };
 
-        const positionalCssAttributes: Attributes = mergeAttributes(
+        const positionalCssAttributes: Attributes = mergePositionalAttributes(
           node.getPositionalCssAttributes(),
           child.getPositionalCssAttributes()
         );
@@ -40,7 +40,7 @@ export const removeNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(
+      const positionalCssAttributes: Attributes = mergePositionalAttributes(
         node.getPositionalCssAttributes(),
         child.getPositionalCssAttributes()
       );
@@ -80,7 +80,7 @@ export const removeChildrenNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(
+      const positionalCssAttributes: Attributes = mergePositionalAttributes(
         node.getPositionalCssAttributes(),
         node.getPositionalCssAttributes()
       );
@@ -164,7 +164,7 @@ const filterAttributes = (attribtues: Attributes): Attributes => {
   return result;
 };
 
-const mergeAttributes = (
+const mergePositionalAttributes = (
   parentPosAttributes: Attributes,
   childPosAttributes: Attributes
 ): Attributes => {

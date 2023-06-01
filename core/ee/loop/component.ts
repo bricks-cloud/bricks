@@ -664,9 +664,6 @@ export const gatherCssPropsFromNodes = (
     return properties;
   }
 
-  const sampleNode: Node = potentiallyRepeatedNode[0];
-  const sampleNodeType: NodeType = sampleNode.getType();
-
   let existingCssKeys: Set<string> = new Set<string>();
   for (const node of potentiallyRepeatedNode) {
     Object.keys({

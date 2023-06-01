@@ -98,13 +98,13 @@ export const findDirectionalOverlappingNodes = (
 
     const targetLine = getLineBasedOnDirection(targetNode, direction);
     if (line.overlap(targetLine, 2)) {
-      completePath.push(targetNode);
-      currentPath.add(targetNode.getId());
-
       if (!currentPath.has(startingNode.getId())) {
         completePath.push(startingNode);
         currentPath.add(startingNode.getId());
       }
+
+      completePath.push(targetNode);
+      currentPath.add(targetNode.getId());
     }
   }
 
