@@ -22,6 +22,7 @@ import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
+// import { RadialGradientGlobalRegistry } from "./radient-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -113,7 +114,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
         ...node.getCssAttributes(),
       };
 
-      return convertCssClassesToTwcssClasses(attributes, option, node.getId());
+      return convertCssClassesToTwcssClasses(attributes, option, node, {});
     }
     case NodeType.GROUP:
       return convertCssClassesToTwcssClasses(
@@ -122,7 +123,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         },
         option,
-        node.getId()
+        node
       );
     case NodeType.VISIBLE:
       return convertCssClassesToTwcssClasses(
@@ -131,7 +132,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         },
         option,
-        node.getId()
+        node
       );
 
     case NodeType.IMAGE:
@@ -149,7 +150,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId()
+          node
         );
       }
 
@@ -161,7 +162,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
 
     case NodeType.VECTOR:
@@ -176,7 +177,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId()
+          node
         );
       }
 
@@ -188,7 +189,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
@@ -202,7 +203,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
 
     default:
@@ -218,6 +219,7 @@ export const buildTwcssConfigFileContent = (
   let fontFamilies = "";
   let backgroundImages = "";
   const fontEntries = FontsRegistryGlobalInstance.getFontMetadataInArray();
+  // const radientGradientExists: boolean = RadialGradientGlobalRegistry.getRadialGradientExist();
 
   if (!isEmpty(fontEntries)) {
     fontFamilies = fontEntries
@@ -245,7 +247,7 @@ export const buildTwcssConfigFileContent = (
     });
   }
 
-  const backgroundImagesConfig = !isEmpty(backgroundImages)
+  const backgroundImagesConfig = (!isEmpty(backgroundImages))
     ? `backgroundImage: {
     ${backgroundImages}
   },`
@@ -261,8 +263,9 @@ export const buildTwcssConfigFileContent = (
     content: ["./*.${mainComponentFileExtension}"],
     theme: {
       ${fontFamilyConfig}
-      ${backgroundImagesConfig}
-        extend: {},
+        extend: {
+          ${backgroundImagesConfig}
+        },
       },
       plugins: [],
     };

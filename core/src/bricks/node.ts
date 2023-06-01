@@ -26,6 +26,7 @@ export type Option = {
   absolutePositioningFilter?: boolean;
   marginFilter?: boolean;
   excludeBackgroundColor?: boolean;
+  excludeWidthAndHeight?: boolean;
 };
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
@@ -147,12 +148,12 @@ function findIntersection(
   const xOverlap = Math.max(
     0,
     Math.min(rectangle1.rightBot.x, rectangle2.rightBot.x) -
-      Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x)
+    Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x)
   );
   const yOverlap = Math.max(
     0,
     Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y) -
-      Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
+    Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
   );
 
   if (xOverlap === 0 || yOverlap === 0) {

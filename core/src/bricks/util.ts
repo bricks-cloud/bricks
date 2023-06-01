@@ -13,6 +13,16 @@ export const backgroundColorFilter = (key: string, _: string): boolean => {
   return true;
 };
 
+
+// widthAndHeightFilter filters width and height
+export const widthAndHeightFilter = (key: string, _: string): boolean => {
+  if (key === "width" || key === "height") {
+    return false;
+  }
+
+  return true;
+};
+
 // absolutePositioningFilter filters non absolute positioning related attributes
 export const absolutePositioningFilter = (key: string, _: string): boolean => {
   const absolutePositioningFilters: string[] = [
@@ -21,6 +31,7 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
     "top",
     "left",
     "bottom",
+    "z-index"
   ];
 
   if (absolutePositioningFilters.includes(key)) {
@@ -117,6 +128,10 @@ export const filterAttributes = (
 
   if (option.excludeBackgroundColor) {
     filters.push(backgroundColorFilter);
+  }
+
+  if (option.excludeWidthAndHeight) {
+    filters.push(widthAndHeightFilter);
   }
 
   if (option.absolutePositioningFilter) {

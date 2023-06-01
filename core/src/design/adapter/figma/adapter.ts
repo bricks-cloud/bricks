@@ -170,6 +170,52 @@ const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes
       ] = "text";
     }
   }
+
+  const radialGradientPaint = fills.find(
+    (fill) => fill.type === "GRADIENT_RADIAL"
+  ) as GradientPaint;
+
+
+  if (radialGradientPaint) {
+    const width: number = figmaNode.absoluteBoundingBox.width;
+    const height: number = figmaNode.absoluteBoundingBox.height;
+
+    const { start, end } = extractLinearGradientParamsFromTransform(
+      width,
+      height,
+      radialGradientPaint.gradientTransform
+    );
+
+    let radius: number = Math.round(
+      Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2))
+    );
+
+    const gradientAxisLength: number = getGradientAxisLength(start, end);
+    let arbitraryLineLength: number = gradientAxisLength > radius ? gradientAxisLength : radius;
+
+    attributes[
+      "background"
+    ] = `radial-gradient(${stringifyGradientColors(
+      radialGradientPaint.gradientStops,
+      gradientAxisLength,
+      arbitraryLineLength,
+      0
+    )})`;
+
+    if (figmaNode.type === NodeType.TEXT) {
+      attributes[
+        "color"
+      ] = "transparent";
+
+      attributes[
+        "background-clip"
+      ] = "text";
+
+      attributes[
+        "-webkit-background-clip"
+      ] = "text";
+    }
+  }
 };
 
 const setBackgroundColor = (figmaNode: SceneNode, attributes: Attributes) => {
@@ -231,7 +277,8 @@ const safelySetWidthAndHeight = (
     nodeType === NodeType.FRAME ||
     nodeType === NodeType.IMAGE ||
     nodeType === NodeType.GROUP ||
-    nodeType === NodeType.INSTANCE
+    nodeType === NodeType.INSTANCE ||
+    nodeType === NodeType.RECTANGLE
   ) {
     if (!isEmpty(figmaNode.absoluteBoundingBox)) {
       attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
@@ -419,12 +466,17 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   }
 
   if (
-    figmaNode.type === NodeType.VECTOR ||
     figmaNode.type === NodeType.ELLIPSE
   ) {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);
     setBackgroundGradientColor(figmaNode, attributes);
+  }
+
+  if (
+    figmaNode.type === NodeType.VECTOR
+  ) {
+    safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
   }
 
   if (
@@ -1345,10 +1397,10 @@ export const reorderFigmaNodes = (reordered: SceneNode[]) => {
       }
 
       if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
-        return -1;
+        return 1;
       }
 
-      return 1;
+      return -1;
     });
   }
 };
