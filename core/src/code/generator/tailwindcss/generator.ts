@@ -247,7 +247,7 @@ export const buildTwcssConfigFileContent = (
     });
   }
 
-  const backgroundImagesConfig = (!isEmpty(backgroundImages))
+  const backgroundImagesConfig = !isEmpty(backgroundImages)
     ? `backgroundImage: {
     ${backgroundImages}
   },`

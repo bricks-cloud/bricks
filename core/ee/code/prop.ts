@@ -67,20 +67,25 @@ export const getVariablePropForCss = (
           cssKeyConnectedToProps.add(cssKey);
           if (propBinding.dataType === DataType.boolean) {
             if (isEmpty(propBinding.conditionalValue)) {
-              variableProps.push(` ...(${propBinding.prop
-                } && {${snakeCaseToCamelCase(cssKey)}: "${propBinding.defaultValue
-                }"})`);
+              variableProps.push(
+                ` ...(${propBinding.prop} && {${snakeCaseToCamelCase(
+                  cssKey
+                )}: "${propBinding.defaultValue}"})`
+              );
               continue;
             }
 
-            variableProps.push(` ${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop
-              } ? "${propBinding.defaultValue}" : "${propBinding.conditionalValue
-              }"`);
+            variableProps.push(
+              ` ${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop} ? "${
+                propBinding.defaultValue
+              }" : "${propBinding.conditionalValue}"`
+            );
             continue;
           }
 
-          variableProps.push(`${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop
-            }`);
+          variableProps.push(
+            `${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop}`
+          );
         }
       }
     }

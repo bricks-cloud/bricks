@@ -30,7 +30,7 @@ export type GetPropsFromAttributes = (
   option: Option,
   node: Node,
   // sometimes needed because the value of an attribute can depend on the parent's attributes
-  parentCssAttributes?: Attributes,
+  parentCssAttributes?: Attributes
 ) => string;
 
 export type ImportedComponentMeta = {
@@ -239,7 +239,11 @@ export class Generator {
     const alt: string = getAltProp(node);
     const src = getSrcProp(node);
     let widthAndHeight: string = getWidthAndHeightProp(node);
-    return this.renderImageWithPositionalAttributes(node, `${widthAndHeight} src=${src} alt=${alt}`, option);
+    return this.renderImageWithPositionalAttributes(
+      node,
+      `${widthAndHeight} src=${src} alt=${alt}`,
+      option
+    );
   }
 
   private async generateHtmlElementForImageNode(
@@ -287,22 +291,6 @@ export class Generator {
     props: string,
     option: Option
   ): string {
-    // const positionalCssAttribtues: Attributes =
-    //   node.getPositionalCssAttributes();
-
-    // const cssAttribtues: Attributes = node.getCssAttributes();
-
-    // if (
-    //   positionalCssAttribtues["position"] === "absolute" ||
-    //   positionalCssAttribtues["margin-left"] ||
-    //   positionalCssAttribtues["margin-right"] ||
-    //   positionalCssAttribtues["margin-top"] ||
-    //   positionalCssAttribtues["margin-bottom"] ||
-    //   cssAttribtues["border-radius"]
-    // ) {
-    //   return `<img ${this.getPropsFromNode(node, option)} ${props}/>`;
-    // }
-
     return `<img ${this.getPropsFromNode(node, option)} ${props}/>`;
   }
 
@@ -399,7 +387,7 @@ export class Generator {
               cssAttributes,
               parentCssAttributes,
               option,
-              node,
+              node
             );
 
             return result;
@@ -429,7 +417,7 @@ export class Generator {
                     "list-style-type": listType === "ul" ? "disc" : "decimal",
                   },
                   option,
-                  node,
+                  node
                 );
 
                 resultText += `<${listType} ${listProps}>`;
@@ -486,7 +474,7 @@ export class Generator {
                 cssAttributes,
                 parentCssAttributes,
                 option,
-                node,
+                node
               );
 
               const isLastListItem = listItemIndex === listItemArr.length - 1;
@@ -519,7 +507,7 @@ export class Generator {
     cssAttributes: Attributes,
     parentCssAttributes: Attributes,
     option: Option,
-    node: Node,
+    node: Node
   ) {
     const resultText = escapeHtml(text);
 
@@ -531,11 +519,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-        cssAttributes,
-        option,
-        node,
-        parentCssAttributes,
-      )}`
+          cssAttributes,
+          option,
+          node,
+          parentCssAttributes
+        )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
@@ -601,7 +589,10 @@ const getAttributeOverrides = (
   };
 };
 
-const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string => {
+const replaceLeadingWhiteSpaceAndNewLine = (
+  str: string,
+  option: Option
+): string => {
   let newStr: string = "";
   let streak: boolean = true;
   for (let i = 0; i < str.length; i++) {
@@ -614,7 +605,7 @@ const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string
     streak = false;
 
     if (str.charAt(i) === "\n") {
-      newStr += (option.uiFramework === "html" ? "<br>" : "<br />");
+      newStr += option.uiFramework === "html" ? "<br>" : "<br />";
       streak = true;
       continue;
     }

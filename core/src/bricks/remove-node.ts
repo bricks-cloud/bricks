@@ -136,8 +136,15 @@ const haveSimlarWidthAndHeight = (
 };
 
 const isNodeTransparent = (node: Node): boolean => {
-  if (node.getType() === NodeType.GROUP || node.getType() === NodeType.VISIBLE) {
-    if (isEmpty(node.getACssAttribute("background-color")) && isEmpty(node.getACssAttribute("background")) && isEmpty(node.getACssAttribute("border-color"))) {
+  if (
+    node.getType() === NodeType.GROUP ||
+    node.getType() === NodeType.VISIBLE
+  ) {
+    if (
+      isEmpty(node.getACssAttribute("background-color")) &&
+      isEmpty(node.getACssAttribute("background")) &&
+      isEmpty(node.getACssAttribute("border-color"))
+    ) {
       return true;
     }
   }
@@ -171,10 +178,10 @@ const mergePositionalAttributes = (
   if (
     parentPosAttributes["display"] !== childPosAttributes["display"] ||
     parentPosAttributes["flex-direction"] !==
-    childPosAttributes["flex-direction"] ||
+      childPosAttributes["flex-direction"] ||
     parentPosAttributes["align-items"] !== childPosAttributes["align-items"] ||
     parentPosAttributes["justify-content"] !==
-    childPosAttributes["justify-content"]
+      childPosAttributes["justify-content"]
   ) {
     return {
       ...filterAttributes(parentPosAttributes),

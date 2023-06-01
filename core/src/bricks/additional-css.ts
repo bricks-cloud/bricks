@@ -6,7 +6,13 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node, NodeType, PostionalRelationship, TextNode, computePositionalRelationship } from "./node";
+import {
+  Node,
+  NodeType,
+  PostionalRelationship,
+  TextNode,
+  computePositionalRelationship,
+} from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
@@ -64,7 +70,10 @@ enum RelativePoisition {
 }
 
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
-export const addAdditionalCssAttributesToNodes = (node: Node, startingNode: Node) => {
+export const addAdditionalCssAttributesToNodes = (
+  node: Node,
+  startingNode: Node
+) => {
   if (isEmpty(node)) {
     return;
   }
@@ -90,9 +99,17 @@ export const addAdditionalCssAttributesToNodes = (node: Node, startingNode: Node
   }
 };
 
-const setOverflowHiddenForStartingNode = (targetNode: Node, startingNode: Node) => {
-  if (computePositionalRelationship(targetNode.getAbsBoundingBox(), startingNode.getAbsBoundingBox()) !== PostionalRelationship.INCLUDE) {
-    startingNode.addCssAttributes({ "overflow": "hidden" });
+const setOverflowHiddenForStartingNode = (
+  targetNode: Node,
+  startingNode: Node
+) => {
+  if (
+    computePositionalRelationship(
+      targetNode.getAbsBoundingBox(),
+      startingNode.getAbsBoundingBox()
+    ) !== PostionalRelationship.INCLUDE
+  ) {
+    startingNode.addCssAttributes({ overflow: "hidden" });
   }
 };
 
@@ -842,14 +859,23 @@ export const getPositionalCssAttributes = (
 
 const doPaddingValuesExist = (node: Node): boolean => {
   const cssAttributes: Attributes = node.getCssAttributes();
-  if (!isEmpty(cssAttributes["padding-top"]) || !isEmpty(cssAttributes["padding-bottom"]) || !isEmpty(cssAttributes["padding-left"]) || !isEmpty(cssAttributes["padding-right"])) {
+  if (
+    !isEmpty(cssAttributes["padding-top"]) ||
+    !isEmpty(cssAttributes["padding-bottom"]) ||
+    !isEmpty(cssAttributes["padding-left"]) ||
+    !isEmpty(cssAttributes["padding-right"])
+  ) {
     return true;
   }
 
   return false;
 };
 
-const setPaddingAndMarginValues = (node: Node, direction: Direction, attributes: Attributes) => {
+const setPaddingAndMarginValues = (
+  node: Node,
+  direction: Direction,
+  attributes: Attributes
+) => {
   const justifyContentValue = getJustifyContentValue(node, direction);
   const alignItemsValue = getAlignItemsValue(
     node,

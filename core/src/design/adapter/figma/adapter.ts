@@ -50,7 +50,10 @@ enum NodeType {
   BOOLEAN_OPERATION = "BOOLEAN_OPERATION",
 }
 
-const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes) => {
+const setBackgroundGradientColor = (
+  figmaNode: SceneNode,
+  attributes: Attributes
+) => {
   // @ts-ignore
   if (isEmpty(figmaNode.fills)) {
     return;
@@ -157,24 +160,17 @@ const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes
     )})`;
 
     if (figmaNode.type === NodeType.TEXT) {
-      attributes[
-        "color"
-      ] = "transparent";
+      attributes["color"] = "transparent";
 
-      attributes[
-        "background-clip"
-      ] = "text";
+      attributes["background-clip"] = "text";
 
-      attributes[
-        "-webkit-background-clip"
-      ] = "text";
+      attributes["-webkit-background-clip"] = "text";
     }
   }
 
   const radialGradientPaint = fills.find(
     (fill) => fill.type === "GRADIENT_RADIAL"
   ) as GradientPaint;
-
 
   if (radialGradientPaint) {
     const width: number = figmaNode.absoluteBoundingBox.width;
@@ -191,11 +187,10 @@ const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes
     );
 
     const gradientAxisLength: number = getGradientAxisLength(start, end);
-    let arbitraryLineLength: number = gradientAxisLength > radius ? gradientAxisLength : radius;
+    let arbitraryLineLength: number =
+      gradientAxisLength > radius ? gradientAxisLength : radius;
 
-    attributes[
-      "background"
-    ] = `radial-gradient(${stringifyGradientColors(
+    attributes["background"] = `radial-gradient(${stringifyGradientColors(
       radialGradientPaint.gradientStops,
       gradientAxisLength,
       arbitraryLineLength,
@@ -203,17 +198,11 @@ const setBackgroundGradientColor = (figmaNode: SceneNode, attributes: Attributes
     )})`;
 
     if (figmaNode.type === NodeType.TEXT) {
-      attributes[
-        "color"
-      ] = "transparent";
+      attributes["color"] = "transparent";
 
-      attributes[
-        "background-clip"
-      ] = "text";
+      attributes["background-clip"] = "text";
 
-      attributes[
-        "-webkit-background-clip"
-      ] = "text";
+      attributes["-webkit-background-clip"] = "text";
     }
   }
 };
@@ -345,8 +334,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -465,17 +455,13 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     attributes["transform"] = `rotate(${figmaNode.rotation}deg)`;
   }
 
-  if (
-    figmaNode.type === NodeType.ELLIPSE
-  ) {
+  if (figmaNode.type === NodeType.ELLIPSE) {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);
     setBackgroundGradientColor(figmaNode, attributes);
   }
 
-  if (
-    figmaNode.type === NodeType.VECTOR
-  ) {
+  if (figmaNode.type === NodeType.VECTOR) {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
   }
 
@@ -657,7 +643,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-        0.1 ||
+          0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -676,7 +662,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-        absoluteBoundingBox.width >
+          absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
@@ -1267,7 +1253,9 @@ export const convertFigmaNodesToBricksNodes = (
     if (!isEmpty(figmaNode?.children)) {
       let isExportableNode: boolean = false;
       //@ts-ignore
-      const feedback: Feedback = convertFigmaNodesToBricksNodes(figmaNode.children);
+      const feedback: Feedback = convertFigmaNodesToBricksNodes(
+        figmaNode.children
+      );
 
       let doNodesHaveNonOverlappingChildren: boolean = true;
       let horizontalOverlap: boolean = areThereOverlappingByDirection(

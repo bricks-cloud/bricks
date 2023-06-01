@@ -13,7 +13,6 @@ export const backgroundColorFilter = (key: string, _: string): boolean => {
   return true;
 };
 
-
 // widthAndHeightFilter filters width and height
 export const widthAndHeightFilter = (key: string, _: string): boolean => {
   if (key === "width" || key === "height") {
@@ -31,7 +30,7 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
     "top",
     "left",
     "bottom",
-    "z-index"
+    "z-index",
   ];
 
   if (absolutePositioningFilters.includes(key)) {

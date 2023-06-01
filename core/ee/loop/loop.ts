@@ -73,7 +73,6 @@ const checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes = (
     modelNode
   );
 
-
   if (isEmpty(currentNode) || isEmpty(modelNode)) {
     return [result, reason, [modelNode, currentNode]];
   }
@@ -155,7 +154,6 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
     if (currentNode.getId() === modelNode.getId()) {
       continue;
     }
-
 
     const [result, _]: [boolean, string, Node[]] =
       checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes(

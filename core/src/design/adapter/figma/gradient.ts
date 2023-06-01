@@ -1,5 +1,5 @@
 import { colorToStringWithOpacity } from "./util";
-import matrixInverse from 'matrix-inverse';
+import matrixInverse from "matrix-inverse";
 
 export const calculateAngle = (start: number[], end: number[]): number => {
   const startX: number = start[0];
@@ -68,7 +68,7 @@ export const stringifyGradientColors = (
       percentage = Math.round(
         ((gradientAxisLength * segmentPercentage + beginningExtra) /
           chosenAxisLength) *
-        100
+          100
       );
     }
 
@@ -87,7 +87,7 @@ export const stringifyGradientColors = (
 export function applyMatrixToPoint(matrix: number[][], point: number[]) {
   return [
     point[0] * matrix[0][0] + point[1] * matrix[0][1] + matrix[0][2],
-    point[0] * matrix[1][0] + point[1] * matrix[1][1] + matrix[1][2]
+    point[0] * matrix[1][0] + point[1] * matrix[1][1] + matrix[1][2],
   ];
 }
 
@@ -100,10 +100,10 @@ export function extractLinearGradientParamsFromTransform(
   const mxInv = matrixInverse(transform);
   const startEnd = [
     [0, 0],
-    [0, 1]
+    [0, 1],
   ].map((p) => applyMatrixToPoint(mxInv, p));
   return {
     start: [startEnd[0][0] * shapeWidth, startEnd[0][1] * shapeHeight],
-    end: [startEnd[1][0] * shapeWidth, startEnd[1][1] * shapeHeight]
+    end: [startEnd[1][0] * shapeWidth, startEnd[1][1] * shapeHeight],
   };
 }

@@ -39,7 +39,7 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   attributes: Attributes,
   option: Option,
   node: Node,
-  parentAttributes?: Attributes,
+  parentAttributes?: Attributes
 ) => {
   let classPropName: string = "class";
   let variableProps: string = "";
@@ -60,7 +60,10 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
 
   if (option.uiFramework === UiFramework.react) {
     classPropName = "className";
-    variableProps = getVariablePropForTwcss(node.getId(), twcssPropRenderingMap);
+    variableProps = getVariablePropForTwcss(
+      node.getId(),
+      twcssPropRenderingMap
+    );
   }
 
   let content: string = "";
@@ -113,9 +116,9 @@ const filterContent = (content: string, node: Node) => {
   }
 
   let classNames: string[] = content.split(" ");
-  classNames = classNames.filter((className) => (
-    !className.startsWith("w-") && !className.startsWith("h-")
-  ));
+  classNames = classNames.filter(
+    (className) => !className.startsWith("w-") && !className.startsWith("h-")
+  );
 
   return classNames.join(" ");
 };
@@ -1206,7 +1209,9 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
       if (i === 0) {
         const start: number = colorInRgb.indexOf("(");
         const end: number = colorInRgb.lastIndexOf(")");
-        result += `from-[rgba(${colorInRgb.substring(start + 1, end)})] from-${percentage + "%"} `;
+        result += `from-[rgba(${colorInRgb.substring(start + 1, end)})] from-${
+          percentage + "%"
+        } `;
         continue;
       }
 
@@ -1261,4 +1266,3 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
 
 //   return result.trim();
 // };
-
