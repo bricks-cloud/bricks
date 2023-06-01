@@ -703,7 +703,7 @@ const getAltProp = (node: Node): string => {
 };
 
 const escapeHtml = (str: string) => {
-  return str.replace(/["'{}]/g, function (match) {
+  return str.replace(/["'{} ]/g, function (match) {
     switch (match) {
       case '"':
         return "&quot;";
@@ -713,6 +713,8 @@ const escapeHtml = (str: string) => {
         return "&#123;";
       case "}":
         return "&#125;";
+      case " ":
+        return "&nbsp;";
     }
   });
 };
