@@ -334,9 +334,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -643,7 +642,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-          0.1 ||
+        0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -662,7 +661,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-          absoluteBoundingBox.width >
+        absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
@@ -1254,6 +1253,7 @@ export const convertFigmaNodesToBricksNodes = (
       let isExportableNode: boolean = false;
       //@ts-ignore
       const feedback: Feedback = convertFigmaNodesToBricksNodes(
+        //@ts-ignore
         figmaNode.children
       );
 
