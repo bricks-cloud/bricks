@@ -119,22 +119,10 @@ export class Generator {
       }
 
       case NodeType.GROUP:
-        // this edge case should never happen
+      case NodeType.VISIBLE: {
+        const props = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<${htmlTag}></${htmlTag}>`;
-        }
-
-        const groupNodeClassProps = this.getPropsFromNode(node, option);
-        return await this.generateHtmlFromNodes(
-          node.getChildren(),
-          [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
-          option
-        );
-
-      case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getPropsFromNode(node, option);
-        if (isEmpty(node.getChildren())) {
-          return `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`;
+          return `<${htmlTag} ${props}></${htmlTag}>`;
         }
 
         if (htmlTag === "input") {
@@ -148,20 +136,21 @@ export class Generator {
             textDecendant.addAnnotations("htmlTag", "input");
             return await this.generateHtmlFromNodes(
               node.getChildren(),
-              [`<div ${visibleNodeClassProps}>`, `</div>`],
+              [`<div ${props}>`, `</div>`],
               option
             );
           }
 
           // TODO: style placeholder text
-          return `<input placeholder="${textDecendant.getText()}" ${visibleNodeClassProps}></input>`;
+          return `<input placeholder="${textDecendant.getText()}" ${props}></input>`;
         }
 
         return await this.generateHtmlFromNodes(
           node.getChildren(),
-          [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
+          [`<${htmlTag} ${props}>`, `</${htmlTag}>`],
           option
         );
+      }
 
       // TODO: VECTOR_GROUP node type is deprecated
       case NodeType.VECTOR_GROUP:

@@ -40,14 +40,20 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
     console.log("buttonTextCandidates", buttonTextCandidates);
     console.log("inputTextCandidates", inputTextCandidates);
 
+    const textCandidates = {
+      ...buttonTextCandidates,
+      ...inputTextCandidates,
+    };
+
+    if (Object.keys(textCandidates).length === 0) {
+      return;
+    }
+
     const [
       predictTextResult,
       // predictImagesResult,
     ] = await Promise.allSettled([
-      predictText({
-        ...buttonTextCandidates,
-        ...inputTextCandidates,
-      }),
+      predictText(textCandidates),
       // predictImage(idImageMap),
     ]);
 
@@ -93,7 +99,8 @@ const isButtonCandidate = (node: Node) => {
   const text = textDecendants[0]?.getText();
 
   return (
-    node.getType() === NodeType.VISIBLE &&
+    (node.getType() === NodeType.VISIBLE ||
+      node.getType() === NodeType.GROUP) &&
     textDecendants.length === 1 &&
     hasColor &&
     text?.trim() &&
@@ -109,7 +116,8 @@ const isInputCandidate = (node: Node) => {
   const text = textDecendants[0]?.getText();
 
   return (
-    node.getType() === NodeType.VISIBLE &&
+    (node.getType() === NodeType.VISIBLE ||
+      node.getType() === NodeType.GROUP) &&
     textDecendants.length === 1 &&
     hasColor &&
     text?.trim() &&
