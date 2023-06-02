@@ -1,3 +1,6 @@
+import { colorToStringWithOpacity } from "./util";
+import matrixInverse from "matrix-inverse";
+
 export const calculateAngle = (start: number[], end: number[]): number => {
   const startX: number = start[0];
   const startY: number = start[1];
@@ -24,27 +27,13 @@ export const getGradientAxisLength = (start: number[], end: number[]) => {
   );
 };
 
-const componentToHex = (c: number): string => {
-  var hex = c.toString(16);
-  return hex.length == 1 ? "0" + hex : hex;
-};
-
-const rgbToHex = (color: RGB): string => {
-  return (
-    "#" +
-    componentToHex(Math.round(color.r * 255)) +
-    componentToHex(Math.round(color.g * 255)) +
-    componentToHex(Math.round(color.b * 255))
-  );
-};
-
 const getGradientColors = (
   gradientStops: readonly ColorStop[]
 ): [string, number][] => {
   const results: [string, number][] = [];
   for (const gradientStop of gradientStops) {
     results.push([
-      rgbToHex(gradientStop.color),
+      colorToStringWithOpacity(gradientStop.color, gradientStop.color.a),
       Math.trunc(gradientStop.position * 10) / 10,
     ]);
   }
@@ -84,6 +73,7 @@ export const stringifyGradientColors = (
     }
 
     cum += percentage;
+
     let percentageStr: string = cum.toString() + "%";
     result += percentageStr;
     if (i !== gradientColors.length - 1) {
@@ -93,3 +83,27 @@ export const stringifyGradientColors = (
 
   return result;
 };
+
+export function applyMatrixToPoint(matrix: number[][], point: number[]) {
+  return [
+    point[0] * matrix[0][0] + point[1] * matrix[0][1] + matrix[0][2],
+    point[0] * matrix[1][0] + point[1] * matrix[1][1] + matrix[1][2],
+  ];
+}
+
+export function extractLinearGradientParamsFromTransform(
+  shapeWidth: number,
+  shapeHeight: number,
+  t: Transform
+) {
+  const transform = t.length === 2 ? [...t, [0, 0, 1]] : [...t];
+  const mxInv = matrixInverse(transform);
+  const startEnd = [
+    [0, 0],
+    [0, 1],
+  ].map((p) => applyMatrixToPoint(mxInv, p));
+  return {
+    start: [startEnd[0][0] * shapeWidth, startEnd[0][1] * shapeHeight],
+    end: [startEnd[1][0] * shapeWidth, startEnd[1][1] * shapeHeight],
+  };
+}

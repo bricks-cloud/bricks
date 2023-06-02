@@ -133,7 +133,10 @@ export class Component {
 
     for (const node of nodes) {
       const instanceId: string = this.idToInstanceIdMapping[node.getId()];
-      data.push(this.instanceIdToDataBindings[instanceId]);
+      const correspondingData: Data = this.instanceIdToDataBindings[instanceId];
+      if (!isEmpty(correspondingData)) {
+        data.push(correspondingData);
+      }
     }
 
     return data;
@@ -663,9 +666,6 @@ export const gatherCssPropsFromNodes = (
   if (potentiallyRepeatedNode.length < 3) {
     return properties;
   }
-
-  const sampleNode: Node = potentiallyRepeatedNode[0];
-  const sampleNodeType: NodeType = sampleNode.getType();
 
   let existingCssKeys: Set<string> = new Set<string>();
   for (const node of potentiallyRepeatedNode) {

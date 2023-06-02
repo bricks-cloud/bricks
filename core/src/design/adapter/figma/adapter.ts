@@ -256,7 +256,8 @@ const safelySetWidthAndHeight = (
     nodeType === NodeType.FRAME ||
     nodeType === NodeType.IMAGE ||
     nodeType === NodeType.GROUP ||
-    nodeType === NodeType.INSTANCE
+    nodeType === NodeType.INSTANCE ||
+    nodeType === NodeType.RECTANGLE
   ) {
     if (!isEmpty(figmaNode.absoluteBoundingBox)) {
       attributes["width"] = `${figmaNode.absoluteBoundingBox.width}px`;
@@ -440,8 +441,13 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   // @ts-ignore
   if (!isEmpty(figmaNode.rotation) && figmaNode.rotation !== 0) {
-    // @ts-ignore
-    attributes["transform"] = `rotate(${figmaNode.rotation}deg)`;
+    if (
+      figmaNode.type !== NodeType.VECTOR &&
+      !doesNodeContainsAnImage(figmaNode)
+    ) {
+      // @ts-ignore
+      attributes["transform"] = `rotate(${Math.trunc(figmaNode.rotation)}deg)`;
+    }
   }
 
   if (
@@ -459,6 +465,10 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);
     setBackgroundGradientColor(figmaNode, attributes);
+  }
+
+  if (figmaNode.type === NodeType.VECTOR) {
+    safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
   }
 
   if (
@@ -520,22 +530,22 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
           figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
       } else {
         if (strokeTopWeight > 0) {
-          attributes["border-top"] =
+          attributes["border-top-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeBottomWeight > 0) {
-          attributes["border-bottom"] =
+          attributes["border-bottom-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeLeftWeight > 0) {
-          attributes["border-left"] =
+          attributes["border-left-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
 
         if (strokeRightWeight > 0) {
-          attributes["border-right"] =
+          attributes["border-right-style"] =
             figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
         }
       }
@@ -1400,12 +1410,11 @@ export const reorderFigmaNodes = (reordered: SceneNode[]) => {
       ) {
         return -1;
       }
-
       if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
-        return -1;
+        return 1;
       }
 
-      return 1;
+      return -1;
     });
   }
 };

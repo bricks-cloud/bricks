@@ -4791,6 +4791,11 @@ matrix-inverse@^1.0.1:
   resolved "https://registry.yarnpkg.com/matrix-inverse/-/matrix-inverse-1.0.1.tgz#efb05a29eb913a04fac396731dca683c46eca460"
   integrity sha512-ubaJ6vEJfpsRpOLYLJN3bCW3VbO2t0OtZIfausKiizsPNCvCXsWsLMR8jm4zmi8bSnodp3ht25iqdpSe0wIbxg==
 
+matrix-inverse@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/matrix-inverse/-/matrix-inverse-2.0.0.tgz#2e8db33f8b977bd5e3b03f31d2fae89c2278203b"
+  integrity sha512-iUZfjmnAEDah54qLlj63PYFnZvcCwW+mhfYgf3KrtDn1ruyVE5vFrEeJ77RfsHaqMN/L3ZLnP+5/O2E7bgKEvQ==
+
 mdn-data@2.0.14:
   version "2.0.14"
   resolved "https://registry.yarnpkg.com/mdn-data/-/mdn-data-2.0.14.tgz#7113fc4281917d63ce29b43446f701e68c25ba50"

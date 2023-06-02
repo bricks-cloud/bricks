@@ -73,6 +73,10 @@ const checkWhetherTwoNodesAreSimilarAccountingForRemovedNodes = (
     modelNode
   );
 
+  if (isEmpty(currentNode) || isEmpty(modelNode)) {
+    return [result, reason, [modelNode, currentNode]];
+  }
+
   const modelNodeChildren: Node[] = modelNode.getChildren();
   const currentNodeChildren: Node[] = currentNode.getChildren();
 
@@ -137,10 +141,16 @@ export const registerComponentFromSimilarChildrenNodes = (node: Node) => {
   }
 
   let modelNode: Node = children[0];
+
   const consecutiveNodeIds: Set<string> = new Set<string>();
   let consecutiveNodes: Node[] = [];
   for (let i = 0; i < children.length; i++) {
     const currentNode = children[i];
+
+    if (isEmpty(currentNode) || isEmpty(currentNode)) {
+      return;
+    }
+
     if (currentNode.getId() === modelNode.getId()) {
       continue;
     }
@@ -190,9 +200,17 @@ export const areAllNodesSimilar = (nodes: Node[]): [boolean, Node[]] => {
   const prevNode: Node = nodes[0];
   let firstPassFailed: boolean = false;
 
+  if (isEmpty(prevNode)) {
+    return [false, []];
+  }
+
   for (let i = 0; i < nodes.length; i++) {
     if (i === 0) {
       continue;
+    }
+
+    if (isEmpty(nodes[i])) {
+      return [false, []];
     }
 
     const [result, _]: [boolean, string] = areTwoNodesSimilar(

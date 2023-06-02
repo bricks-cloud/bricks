@@ -13,6 +13,15 @@ export const backgroundColorFilter = (key: string, _: string): boolean => {
   return true;
 };
 
+// widthAndHeightFilter filters width and height
+export const widthAndHeightFilter = (key: string, _: string): boolean => {
+  if (key === "width" || key === "height") {
+    return false;
+  }
+
+  return true;
+};
+
 // absolutePositioningFilter filters non absolute positioning related attributes
 export const absolutePositioningFilter = (key: string, _: string): boolean => {
   const absolutePositioningFilters: string[] = [
@@ -21,6 +30,7 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
     "top",
     "left",
     "bottom",
+    "z-index",
   ];
 
   if (absolutePositioningFilters.includes(key)) {
@@ -119,6 +129,10 @@ export const filterAttributes = (
     filters.push(backgroundColorFilter);
   }
 
+  if (option.excludeWidthAndHeight) {
+    filters.push(widthAndHeightFilter);
+  }
+
   if (option.absolutePositioningFilter) {
     filters.push(absolutePositioningFilter);
   }
@@ -204,4 +218,11 @@ export const shouldUseAsBackgroundImage = (node: Node): boolean => {
   }
 
   return false;
+};
+
+export const doChildrenOverflowParent = (node: Node) => {
+  const [boundingWidth, boundingHeight]: number[] = node.getAbsBoundingBoxWidthAndHeight();
+  const [renderingWidth, renderingHeight]: number[] = node.getRenderingBoxWidthAndHeight();
+
+  return renderingWidth > boundingWidth || renderingHeight > boundingHeight;
 };

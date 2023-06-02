@@ -6,6 +6,7 @@ import {
   replacedParentAnnotation,
   replacedChildAnnotation,
 } from "./annotation";
+import { doChildrenOverflowParent } from "./util";
 
 export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
@@ -22,7 +23,7 @@ export const removeNode = (node: Node): Node => {
           ...child.getCssAttributes(),
         };
 
-        const positionalCssAttributes: Attributes = mergeAttributes(
+        const positionalCssAttributes: Attributes = mergePositionalAttributes(
           node.getPositionalCssAttributes(),
           child.getPositionalCssAttributes()
         );
@@ -40,7 +41,7 @@ export const removeNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(
+      const positionalCssAttributes: Attributes = mergePositionalAttributes(
         node.getPositionalCssAttributes(),
         child.getPositionalCssAttributes()
       );
@@ -52,7 +53,11 @@ export const removeNode = (node: Node): Node => {
       return removeNode(child);
     }
 
-    if (isNodeTransparent(node)) {
+    if (shouldNodeBeRemoved(node)) {
+      if (doChildrenOverflowParent(node)) {
+        child.addCssAttributes(node.cssAttributes);
+      }
+
       child.addAnnotations(replacedParentAnnotation, true);
       return removeNode(child);
     }
@@ -80,9 +85,9 @@ export const removeChildrenNode = (node: Node): Node => {
         ...child.getCssAttributes(),
       };
 
-      const positionalCssAttributes: Attributes = mergeAttributes(
+      const positionalCssAttributes: Attributes = mergePositionalAttributes(
         node.getPositionalCssAttributes(),
-        node.getPositionalCssAttributes()
+        child.getPositionalCssAttributes()
       );
 
       node.setCssAttributes(cssAttributes);
@@ -135,9 +140,20 @@ const haveSimlarWidthAndHeight = (
   return similarHeight && similarWidth;
 };
 
-const isNodeTransparent = (node: Node): boolean => {
-  if (node.getType() === NodeType.GROUP || node.getType() === NodeType.VISIBLE) {
-    if (isEmpty(node.getACssAttribute("background-color")) && isEmpty(node.getACssAttribute("background")) && isEmpty(node.getACssAttribute("border-color"))) {
+const shouldNodeBeRemoved = (node: Node): boolean => {
+  if (
+    node.getType() === NodeType.GROUP ||
+    node.getType() === NodeType.VISIBLE
+  ) {
+    if (node.getChildren().length !== 1) {
+      return false;
+    }
+
+    if (
+      isEmpty(node.getACssAttribute("background-color")) &&
+      isEmpty(node.getACssAttribute("background")) &&
+      isEmpty(node.getACssAttribute("border-color"))
+    ) {
       return true;
     }
   }
@@ -164,7 +180,7 @@ const filterAttributes = (attribtues: Attributes): Attributes => {
   return result;
 };
 
-const mergeAttributes = (
+const mergePositionalAttributes = (
   parentPosAttributes: Attributes,
   childPosAttributes: Attributes
 ): Attributes => {

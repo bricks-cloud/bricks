@@ -141,7 +141,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         },
         option,
-        node.getId()
+        node
       );
     case NodeType.GROUP:
       return convertCssClassesToInlineStyle(
@@ -150,7 +150,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           ...node.getCssAttributes(),
         },
         option,
-        node.getId()
+        node
       );
     case NodeType.VISIBLE:
       const attribtues: Attributes = node.getCssAttributes();
@@ -167,7 +167,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
         },
         option,
-        node.getId()
+        node
       );
     case NodeType.IMAGE:
       if (isEmpty(node.getChildren())) {
@@ -184,7 +184,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId()
+          node
         );
       }
 
@@ -196,7 +196,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
     case NodeType.VECTOR:
       if (isEmpty(node.getChildren())) {
@@ -210,7 +210,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
             }),
           },
           option,
-          node.getId()
+          node
         );
       }
 
@@ -222,7 +222,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
     // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
@@ -236,7 +236,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
           }),
         },
         option,
-        node.getId()
+        node
       );
   }
 };
@@ -245,14 +245,16 @@ const getPropsFromNode = (node: Node, option: Option): string => {
 const convertCssClassesToInlineStyle = (
   attributes: Attributes,
   option: Option,
-  id?: string
+  node: Node
 ) => {
   let inlineStyle: string = "";
+  const cssEntries: [string, string][] = Object.entries(attributes);
+
   if (option.uiFramework === UiFramework.react) {
-    let [variableProps, cssKeyConnectedToProps]: [string, Set<string>] =
-      getVariablePropForCss(id);
+    let [variableProps, cssKeyConnectedToProps]: [string[], Set<string>] =
+      getVariablePropForCss(node.getId());
     const lines: string[] = [];
-    Object.entries(attributes).forEach(([key, value]) => {
+    cssEntries.forEach(([key, value]) => {
       if (cssKeyConnectedToProps.has(key)) {
         return;
       }
@@ -260,25 +262,78 @@ const convertCssClassesToInlineStyle = (
       lines.push(`${snakeCaseToCamelCase(key)}: "${value}"`);
     });
 
+    variableProps = filterStyles(variableProps, node);
+
+    if (isEmpty(variableProps) && isEmpty(lines)) {
+      return "";
+    }
+
     if (isEmpty(variableProps)) {
-      return `style=${`{{${lines.join(",")}}}`}`;
+      return `style=${`{{${placeBackgroundAtTheBeginning(lines, option)}}}`}`;
     }
 
     if (isEmpty(lines)) {
-      return `style=${`{{${variableProps}}}`}`;
+      return `style=${`{{${placeBackgroundAtTheBeginning(
+        variableProps,
+        option
+      )}}}`}`;
     }
 
-    inlineStyle = `{{${lines.join(",") + "," + variableProps}}}`;
+    inlineStyle = `{{${placeBackgroundAtTheBeginning(
+      [...lines, ...variableProps],
+      option
+    )}}}`;
 
     return `style=${inlineStyle}`;
   }
 
   const lines: string[] = [];
-  Object.entries(attributes).forEach(([key, value]) => {
+  cssEntries.forEach(([key, value]) => {
     lines.push(`${key}: ${value}`);
   });
+
+  if (isEmpty(lines)) {
+    return "";
+  }
 
   inlineStyle = `${lines.join("; ")}`;
 
   return `style="${inlineStyle}"`;
+};
+
+const filterStyles = (styles: string[], node: Node) => {
+  const type: NodeType = node.getType();
+  if (type !== NodeType.VECTOR && type !== NodeType.IMAGE) {
+    return styles;
+  }
+
+  if (!isEmpty(node.getChildren())) {
+    return styles;
+  }
+
+  return styles.filter(
+    (style) => !style.startsWith("width") && !style.startsWith("height")
+  );
+};
+
+const placeBackgroundAtTheBeginning = (
+  styles: string[],
+  option: Option
+): string => {
+  styles.sort((a, b): number => {
+    if (a.startsWith("background")) {
+      return -1;
+    }
+
+    if (b.startsWith("background")) {
+      return 1;
+    }
+    return 0;
+  });
+
+  if (option.uiFramework === UiFramework.react) {
+    return styles.join(",");
+  }
+
+  return styles.join(";");
 };

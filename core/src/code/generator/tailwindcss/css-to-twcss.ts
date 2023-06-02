@@ -22,6 +22,8 @@ import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import { Option, UiFramework } from "../../code";
 import { getVariablePropForTwcss } from "../../../../ee/code/prop";
 import { GetPropsFromAttributes } from "../html/generator";
+import { Node, NodeType } from "../../../bricks/node";
+// import { RadialGradientGlobalRegistry } from "./radient-registry";
 
 export type TwcssPropRenderingMeta = {
   numberOfTwcssClasses: number;
@@ -36,7 +38,7 @@ export type TwcssPropRenderingMap = {
 export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   attributes: Attributes,
   option: Option,
-  id?: string,
+  node: Node,
   parentAttributes?: Attributes
 ) => {
   let classPropName: string = "class";
@@ -58,7 +60,10 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
 
   if (option.uiFramework === UiFramework.react) {
     classPropName = "className";
-    variableProps = getVariablePropForTwcss(id, twcssPropRenderingMap);
+    variableProps = getVariablePropForTwcss(
+      node.getId(),
+      twcssPropRenderingMap
+    );
   }
 
   let content: string = "";
@@ -87,6 +92,7 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   });
 
   content += variableProps;
+  content = filterContent(content, node);
 
   if (isEmpty(content)) {
     return "";
@@ -97,6 +103,24 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   }
 
   return `${classPropName}="${content.trim()}"`;
+};
+
+const filterContent = (content: string, node: Node) => {
+  const type: NodeType = node.getType();
+  if (type !== NodeType.VECTOR && type !== NodeType.IMAGE) {
+    return content;
+  }
+
+  if (!isEmpty(node.getChildren())) {
+    return content;
+  }
+
+  let classNames: string[] = content.split(" ");
+  classNames = classNames.filter(
+    (className) => !className.startsWith("w-") && !className.startsWith("h-")
+  );
+
+  return classNames.join(" ");
 };
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
@@ -677,6 +701,11 @@ export const getTwcssClass = (
         return convertLinearGradientToTwcssValues(cssValue);
       }
 
+      if (cssValue.startsWith("radial-gradient")) {
+        // tailwindcss does not support radial gradient as for now
+        // return convertRadialGradientToTwcssValues(cssValue);
+      }
+
       return "";
 
     case "background-clip":
@@ -827,10 +856,10 @@ export const getTwcssClass = (
       }
     }
 
-    case "border-top":
-    case "border-bottom":
-    case "border-left":
-    case "border-right":
+    case "border-top-style":
+    case "border-bottom-style":
+    case "border-left-style":
+    case "border-right-style":
     case "border-style": {
       switch (cssValue) {
         case "solid":
@@ -1128,7 +1157,7 @@ const findClosestTwcssRotate = (cssValue: string) => {
   }
 
   if (Math.abs(minDiff) > 3) {
-    return rotatePrefix + "rotate" + `[${num}deg]`;
+    return rotatePrefix + "rotate-" + `[${num}deg]`;
   }
 
   return rotatePrefix + twcssClass;
@@ -1145,9 +1174,11 @@ const renderAbsolutePosition = (prefix: string, cssValue: string) => {
 const convertLinearGradientToTwcssValues = (cssValue: string) => {
   let result: string = "";
   const start: number = cssValue.indexOf("(");
-  const end: number = cssValue.indexOf(")");
+  const end: number = cssValue.lastIndexOf(")");
   const linearGradientValue = cssValue.substring(start + 1, end);
-  const valuesStr: string[] = linearGradientValue.split(",");
+  const valuesStr: string[] = linearGradientValue.split("%,");
+  const angleStr: string[] = linearGradientValue.split(",");
+
   if (isEmpty(valuesStr)) {
     return "";
   }
@@ -1158,8 +1189,8 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
 
   let smallestDiff: number = Infinity;
 
-  if (valuesStr[0].endsWith("deg")) {
-    const degNum: number = parseInt(valuesStr[0].slice(0, -3));
+  if (angleStr[0].endsWith("deg")) {
+    const degNum: number = parseInt(angleStr[0].slice(0, -3));
     if (!isEmpty(degNum)) {
       let index: number = 0;
 
@@ -1177,23 +1208,29 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
       result += `bg-gradient-to-` + closestDirection + " ";
     }
 
-    for (let i = 1; i < valuesStr.length; i++) {
+    for (let i = 0; i < valuesStr.length; i++) {
       const value: string = valuesStr[i];
       const colorAndPercentageStr = value.split(" ");
-      const colorInHex: string = colorAndPercentageStr[0];
+      const colorInRgb: string = colorAndPercentageStr[0];
       const percentage: string = colorAndPercentageStr[1];
 
-      if (i === 1) {
-        result += `from-[${colorInHex}] from-${percentage} `;
+      if (i === 0) {
+        const start: number = colorInRgb.indexOf("(");
+        const end: number = colorInRgb.lastIndexOf(")");
+        result += `from-[rgba(${colorInRgb.substring(start + 1, end)})] from-${
+          percentage + "%"
+        } `;
         continue;
       }
 
       if (i === valuesStr.length - 1) {
-        result += `to-[${colorInHex}] to-${percentage} `;
+        const percentage: string = colorAndPercentageStr[1];
+
+        result += `to-[${colorInRgb}] to-${percentage} `;
         continue;
       }
 
-      result += `via-[${colorInHex}] via-${percentage} `;
+      result += `via-[${colorInRgb}] via-${percentage + "%"} `;
     }
 
     return result.trim();
@@ -1201,3 +1238,39 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
 
   return "";
 };
+
+// const convertRadialGradientToTwcssValues = (cssValue: string) => {
+//   let result: string = "";
+//   const start: number = cssValue.indexOf("(");
+//   const end: number = cssValue.lastIndexOf(")");
+//   const radialGradientValue = cssValue.substring(start + 1, end);
+//   const valuesStr: string[] = radialGradientValue.split("%,");
+//   if (isEmpty(valuesStr)) {
+//     return "";
+//   }
+
+//   if (RadialGradientGlobalRegistry.getRadialGradientExist()) {
+//     result += `bg-gradient-radial `;
+//   }
+
+//   for (let i = 0; i < valuesStr.length; i++) {
+//     const value: string = valuesStr[i];
+//     const colorAndPercentageStr = value.split(" ");
+//     const colorInRgb: string = colorAndPercentageStr[0];
+//     const percentage: string = colorAndPercentageStr[1];
+
+//     if (i === 0) {
+//       result += `from-[${colorInRgb}] from-${percentage + "%"} `;
+//       continue;
+//     }
+
+//     if (i === valuesStr.length - 1) {
+//       result += `to-[${colorInRgb}] to-${percentage} `;
+//       continue;
+//     }
+
+//     result += `via-[${colorInRgb}] via-${percentage + "%"} `;
+//   }
+
+//   return result.trim();
+// };

@@ -28,7 +28,7 @@ type GetPropsFromNode = (node: Node, option: Option) => string;
 export type GetPropsFromAttributes = (
   attributes: Attributes,
   option: Option,
-  id?: string,
+  node: Node,
   // sometimes needed because the value of an attribute can depend on the parent's attributes
   parentCssAttributes?: Attributes
 ) => string;
@@ -111,7 +111,7 @@ export class Generator {
         return await this.generateHtmlFromNodes(
           children,
           [
-            `<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`,
+            `<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} &nbsp;`,
             `</${htmlTag}>`,
           ],
           option
@@ -158,11 +158,7 @@ export class Generator {
         const vectorGroupCodeString =
           await this.generateHtmlElementForVectorNode(vectorGroupNode, option);
 
-        return this.renderNodeWithPositionalAttributes(
-          vectorGroupNode,
-          vectorGroupCodeString,
-          option
-        );
+        return vectorGroupCodeString;
 
       case NodeType.VECTOR:
         const vectorNode = node as VectorGroupNode;
@@ -172,11 +168,7 @@ export class Generator {
         );
 
         if (isEmpty(node.getChildren())) {
-          return this.renderNodeWithPositionalAttributes(
-            vectorNode,
-            vectorCodeString,
-            option
-          );
+          return vectorCodeString;
         }
 
         const vectorNodeClassProps = this.getPropsFromNode(node, option);
@@ -266,16 +258,13 @@ export class Generator {
     option: Option
   ): Promise<string> {
     const alt: string = getAltProp(node);
-
-    if (option.uiFramework === UiFramework.react) {
-      const src = getSrcProp(node);
-
-      let widthAndHeight: string = getWidthAndHeightProp(node);
-
-      return `<img ${widthAndHeight} src=${src} alt=${alt} />`;
-    }
-
-    return await node.export(ExportFormat.SVG);
+    const src = getSrcProp(node);
+    let widthAndHeight: string = getWidthAndHeightProp(node);
+    return this.renderImageWithPositionalAttributes(
+      node,
+      `${widthAndHeight} src=${src} alt=${alt}`,
+      option
+    );
   }
 
   private async generateHtmlElementForImageNode(
@@ -298,18 +287,18 @@ export class Generator {
         }
 
         return [
-          this.renderNodeWithPositionalAttributes(
+          this.renderImageWithPositionalAttributes(
             node,
-            `<img src=${srcValue} alt=${alt} ${widthAndHeight}/>`,
+            `src=${srcValue} alt=${alt} ${widthAndHeight}`,
             option
           ),
         ];
       }
 
       return [
-        this.renderNodeWithPositionalAttributes(
+        this.renderImageWithPositionalAttributes(
           node,
-          `<img src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}/>`,
+          `src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}`,
           option
         ),
       ];
@@ -318,28 +307,12 @@ export class Generator {
     return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
-  renderNodeWithPositionalAttributes(
+  renderImageWithPositionalAttributes(
     node: ImageNode | VectorNode | VectorGroupNode,
-    inner: string,
+    props: string,
     option: Option
   ): string {
-    const positionalCssAttribtues: Attributes =
-      node.getPositionalCssAttributes();
-
-    const cssAttribtues: Attributes = node.getCssAttributes();
-
-    if (
-      positionalCssAttribtues["position"] === "absolute" ||
-      positionalCssAttribtues["margin-left"] ||
-      positionalCssAttribtues["margin-right"] ||
-      positionalCssAttribtues["margin-top"] ||
-      positionalCssAttribtues["margin-bottom"] ||
-      cssAttribtues["border-radius"]
-    ) {
-      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
-    }
-
-    return inner;
+    return `<img ${this.getPropsFromNode(node, option)} ${props}/>`;
   }
 
   async generateCodeFromRepeatedComponents(
@@ -360,9 +333,10 @@ export class Generator {
     const sample: object = data[0];
     const generatedComponent = await this.generateHtml(nodes[0], option);
 
-    let componentCodeString: string = `const ${component.getName()} = ({
-      ${component.getPropNames().join(",")}
-    }) => (
+    const propNames: string = component.getPropNames().join(",");
+    let propBinding: string = isEmpty(propNames) ? `` : `{${propNames}}`;
+
+    let componentCodeString: string = `const ${component.getName()} = (${propBinding}) => (
       ${generatedComponent}
     );`;
 
@@ -434,7 +408,8 @@ export class Generator {
               href,
               cssAttributes,
               parentCssAttributes,
-              option
+              option,
+              node
             );
 
             return result;
@@ -463,7 +438,8 @@ export class Generator {
                     "margin-left": "40px",
                     "list-style-type": listType === "ul" ? "disc" : "decimal",
                   },
-                  option
+                  option,
+                  node
                 );
 
                 resultText += `<${listType} ${listProps}>`;
@@ -508,7 +484,7 @@ export class Generator {
 
               const lastListItem =
                 listItemArr[listItemIndex - 1] ||
-                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1]?.characters ||
                 "";
               if (hasOpenListItem && lastListItem.endsWith("\n")) {
                 result += "</li><li>";
@@ -519,7 +495,8 @@ export class Generator {
                 href,
                 cssAttributes,
                 parentCssAttributes,
-                option
+                option,
+                node
               );
 
               const isLastListItem = listItemIndex === listItemArr.length - 1;
@@ -551,7 +528,8 @@ export class Generator {
     href: string,
     cssAttributes: Attributes,
     parentCssAttributes: Attributes,
-    option: Option
+    option: Option,
+    node: Node
   ) {
     const resultText = escapeHtml(text);
 
@@ -565,7 +543,7 @@ export class Generator {
       ? ` ${this.getPropsFromAttributes(
           cssAttributes,
           option,
-          undefined,
+          node,
           parentCssAttributes
         )}`
       : "";

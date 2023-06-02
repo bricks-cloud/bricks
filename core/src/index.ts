@@ -31,6 +31,7 @@ import {
   EVENT_AI_GET_NAME_SUCCESS,
 } from "./analytic/amplitude";
 import { removeCssFromNode } from "./bricks/remove-css";
+// import { instantiateRadialRadientRegistryGlobalInstance } from "./code/generator/tailwindcss/radient-registry";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
@@ -60,7 +61,7 @@ export const convertToCode = async (
 
   instantiateRegistries(startingNode, option);
 
-  addAdditionalCssAttributesToNodes(startingNode);
+  addAdditionalCssAttributesToNodes(startingNode, startingNode);
   removeCssFromNode(startingNode);
 
   return await generateCodingFiles(startingNode, option);
@@ -95,7 +96,8 @@ export const convertToCodeWithAi = async (
 
   instantiateRegistries(startingNode, option);
 
-  addAdditionalCssAttributesToNodes(startingNode);
+  addAdditionalCssAttributesToNodes(startingNode, startingNode);
+  removeCssFromNode(startingNode);
 
   // ee features
   let startAnnotateHtmlTag: number = Date.now();
@@ -134,6 +136,7 @@ export const convertToCodeWithAi = async (
 const instantiateRegistries = (startingNode: Node, option: Option) => {
   instantiateOptionRegistryGlobalInstance(option);
   instantiateFontsRegistryGlobalInstance(startingNode);
+  // instantiateRadialRadientRegistryGlobalInstance(startingNode);
   instantiateNameRegistryGlobalInstance();
   instantiateAiApplicationRegistryGlobalInstance();
 
