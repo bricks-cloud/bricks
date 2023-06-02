@@ -22,7 +22,7 @@ export const predictImage = async (idImageMap: Record<string, string>) => {
 
 export const predictText = async (idTextMap: Record<string, string>) => {
   const response = await fetch(
-    process.env.ML_BACKEND_API_ENDPOINT + "/predict/text",
+    process.env.ML_BACKEND_API_ENDPOINT + "/predict/text-beta",
     // "http://localhost:8080/predict/text",
     {
       method: "POST",
