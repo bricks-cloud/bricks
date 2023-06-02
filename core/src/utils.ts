@@ -1,5 +1,5 @@
 import { Identify, identify, track } from "@amplitude/analytics-browser";
-import { Node } from "./bricks/node";
+import { Node, TextNode, NodeType } from "./bricks/node";
 import uuid from "react-native-uuid";
 import { NameMap, File } from "./code/code";
 
@@ -31,8 +31,30 @@ export const traverseNodes = async (
   }
 
   await Promise.all(
-    node.children.map((child) => traverseNodes(child, callback))
+    node.getChildren().map((child) => traverseNodes(child, callback))
   );
+};
+
+export const getTextDescendants = (root: Node) => {
+  const descendants: TextNode[] = [];
+
+  const traverse = (node: Node) => {
+    if (node.getType() === NodeType.TEXT) {
+      //@ts-ignore
+      descendants.push(node);
+    }
+    node.getChildren().forEach(traverse);
+  };
+
+  traverse(root);
+
+  return descendants;
+};
+
+export const getContainedText = (node: Node) => {
+  const textDecendants = getTextDescendants(node);
+  const text = textDecendants.map((node) => node?.getText() || "").join(" ");
+  return text;
 };
 
 export const replaceVariableNameWithinFile = (

@@ -1,4 +1,4 @@
-import { isEmpty } from "../../../utils";
+import { getTextDescendants, isEmpty } from "../../../utils";
 import { Option, UiFramework } from "../../code";
 import {
   ImageNode,
@@ -86,7 +86,19 @@ export class Generator {
 
         const children: Node[] = node.getChildren();
 
-        if (isEmpty(children)) {
+        if (isEmpty(children) && htmlTag === "input") {
+          delete node.cssAttributes["min-width"];
+          node.addCssAttributes({
+            "background-color": "transparent",
+            width: "100%",
+          });
+
+          const inputClassProps = this.getPropsFromNode(node, option);
+          // TODO: style placeholder text
+          return `<input placeholder="${textProp}" ${inputClassProps}></input>`;
+        }
+
+        if (isEmpty(children) && htmlTag !== "input") {
           return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
         }
 
@@ -107,29 +119,38 @@ export class Generator {
       }
 
       case NodeType.GROUP:
-        // this edge case should never happen
+      case NodeType.VISIBLE: {
+        const props = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<${htmlTag}></${htmlTag}>`;
+          return `<${htmlTag} ${props}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getPropsFromNode(node, option);
-        return await this.generateHtmlFromNodes(
-          node.getChildren(),
-          [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
-          option
-        );
+        if (htmlTag === "input") {
+          // assume inputs only have one text child for now
+          const textDecendant = getTextDescendants(node)[0];
+          const otherChildren = node
+            .getChildren()
+            .filter((child) => child.id !== textDecendant.id);
 
-      case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getPropsFromNode(node, option);
-        if (isEmpty(node.getChildren())) {
-          return `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`;
+          if (otherChildren.length > 0) {
+            textDecendant.addAnnotations("htmlTag", "input");
+            return await this.generateHtmlFromNodes(
+              node.getChildren(),
+              [`<div ${props}>`, `</div>`],
+              option
+            );
+          }
+
+          // TODO: style placeholder text
+          return `<input placeholder="${textDecendant.getText()}" ${props}></input>`;
         }
 
         return await this.generateHtmlFromNodes(
           node.getChildren(),
-          [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
+          [`<${htmlTag} ${props}>`, `</${htmlTag}>`],
           option
         );
+      }
 
       // TODO: VECTOR_GROUP node type is deprecated
       case NodeType.VECTOR_GROUP:
@@ -520,11 +541,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-        cssAttributes,
-        option,
-        node,
-        parentCssAttributes
-      )}`
+          cssAttributes,
+          option,
+          node,
+          parentCssAttributes
+        )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;

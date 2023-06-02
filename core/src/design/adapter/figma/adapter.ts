@@ -1,13 +1,12 @@
 import base64js from "base64-js";
 import {
   GroupNode as BricksGroupNode,
-  ImageNode,
-  Node,
+  ImageNode as BricksImageNode,
+  Node as BricksNode,
   TextNode as BricksTextNode,
-  VectorNode as BricksVector,
-  VisibleNode,
+  VectorNode as BricksVectorNode,
+  VisibleNode as BricksVisibleNode,
   computePositionalRelationship,
-  VectorNode,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
@@ -24,6 +23,7 @@ import {
   figmaLetterSpacingToCssString,
   figmaFontNameToCssString,
   hasShadow,
+  isRectangle,
 } from "./util";
 import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
@@ -167,53 +167,22 @@ const setBackgroundGradientColor = (
       attributes["-webkit-background-clip"] = "text";
     }
   }
-
-  const radialGradientPaint = fills.find(
-    (fill) => fill.type === "GRADIENT_RADIAL"
-  ) as GradientPaint;
-
-  if (radialGradientPaint) {
-    const width: number = figmaNode.absoluteBoundingBox.width;
-    const height: number = figmaNode.absoluteBoundingBox.height;
-
-    const { start, end } = extractLinearGradientParamsFromTransform(
-      width,
-      height,
-      radialGradientPaint.gradientTransform
-    );
-
-    let radius: number = Math.round(
-      Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2))
-    );
-
-    const gradientAxisLength: number = getGradientAxisLength(start, end);
-    let arbitraryLineLength: number =
-      gradientAxisLength > radius ? gradientAxisLength : radius;
-
-    attributes["background"] = `radial-gradient(${stringifyGradientColors(
-      radialGradientPaint.gradientStops,
-      gradientAxisLength,
-      arbitraryLineLength,
-      0
-    )})`;
-
-    if (figmaNode.type === NodeType.TEXT) {
-      attributes["color"] = "transparent";
-
-      attributes["background-clip"] = "text";
-
-      attributes["-webkit-background-clip"] = "text";
-    }
-  }
 };
 
-const setBackgroundColor = (figmaNode: SceneNode, attributes: Attributes) => {
-  // @ts-ignore
+const setBackgroundColor = (
+  figmaNode:
+    | FrameNode
+    | RectangleNode
+    | InstanceNode
+    | ComponentNode
+    | VectorNode
+    | EllipseNode,
+  attributes: Attributes
+) => {
   if (isEmpty(figmaNode.fills)) {
     return;
   }
 
-  // @ts-ignore
   const fills = figmaNode.fills;
   if (fills !== figma.mixed && fills.length > 0 && fills[0].visible) {
     // background color
@@ -226,6 +195,27 @@ const setBackgroundColor = (figmaNode: SceneNode, attributes: Attributes) => {
         solidPaint.opacity
       );
     }
+  }
+};
+
+const setBorderColor = (
+  figmaNode:
+    | FrameNode
+    | RectangleNode
+    | InstanceNode
+    | ComponentNode
+    | VectorNode
+    | EllipseNode,
+  attributes: Attributes
+) => {
+  const borderColors = figmaNode.strokes;
+  // TODO: if multiple solid border colors exist with opacity<100%, add them together to get final border color
+  if (
+    borderColors.length > 0 &&
+    borderColors[0].visible &&
+    borderColors[0].type === "SOLID"
+  ) {
+    attributes["border-color"] = colorToString(borderColors[0].color);
   }
 };
 
@@ -334,8 +324,9 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
-        }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
+        spread ?? 0
+      }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -450,13 +441,27 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   // @ts-ignore
   if (!isEmpty(figmaNode.rotation) && figmaNode.rotation !== 0) {
-    if (figmaNode.type !== NodeType.VECTOR && !doesNodeContainsAnImage(figmaNode)) {
+    if (
+      figmaNode.type !== NodeType.VECTOR &&
+      !doesNodeContainsAnImage(figmaNode)
+    ) {
       // @ts-ignore
       attributes["transform"] = `rotate(${Math.trunc(figmaNode.rotation)}deg)`;
     }
   }
 
-  if (figmaNode.type === NodeType.ELLIPSE) {
+  if (
+    figmaNode.type === NodeType.VECTOR ||
+    figmaNode.type === NodeType.ELLIPSE
+  ) {
+    const { strokeWeight } = figmaNode;
+    if (strokeWeight !== figma.mixed) {
+      setBorderColor(figmaNode, attributes);
+      attributes["border-width"] = `${strokeWeight}px`;
+      attributes["border-style"] =
+        figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
+    }
+
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);
     setBackgroundGradientColor(figmaNode, attributes);
@@ -472,10 +477,13 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     figmaNode.type === NodeType.INSTANCE ||
     figmaNode.type === NodeType.COMPONENT
   ) {
-    // corner radius
+    // corner-radius
     if (figmaNode.cornerRadius !== figma.mixed) {
       attributes["border-radius"] = `${figmaNode.cornerRadius}px`;
     }
+
+    // border-color
+    setBorderColor(figmaNode, attributes);
 
     // border
     const borderColors = figmaNode.strokes;
@@ -484,8 +492,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       borderColors[0].visible &&
       borderColors[0].type === "SOLID"
     ) {
-      attributes["border-color"] = colorToString(borderColors[0].color);
-
       const {
         strokeWeight,
         strokeTopWeight,
@@ -644,7 +650,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-        0.1 ||
+          0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -663,7 +669,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-        absoluteBoundingBox.width >
+          absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
@@ -1126,7 +1132,7 @@ const VECTOR_NODE_TYPES: string[] = [
 ];
 
 type Feedback = {
-  nodes: Node[];
+  nodes: BricksNode[];
   areAllNodesExportable: boolean;
   doNodesContainImage: boolean;
   doNodesHaveNonOverlappingChildren: boolean;
@@ -1169,7 +1175,7 @@ export const convertFigmaNodesToBricksNodes = (
     }
   }
 
-  const newNodes: Node[] = [];
+  const newNodes: BricksNode[] = [];
 
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
@@ -1191,11 +1197,13 @@ export const convertFigmaNodesToBricksNodes = (
         sliceNode = figmaNode;
       }
 
-      let newNode: Node = new VisibleNode(new FigmaNodeAdapter(figmaNode));
+      let newNode: BricksNode = new BricksVisibleNode(
+        new FigmaNodeAdapter(figmaNode)
+      );
       switch (figmaNode.type) {
         case NodeType.RECTANGLE:
           if (doesNodeContainsAnImage(figmaNode)) {
-            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            newNode = new BricksImageNode(new FigmaImageNodeAdapter(figmaNode));
             result.doNodesContainImage = true;
           }
           break;
@@ -1204,7 +1212,7 @@ export const convertFigmaNodesToBricksNodes = (
           break;
         case NodeType.FRAME:
           if (doesNodeContainsAnImage(figmaNode)) {
-            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            newNode = new BricksImageNode(new FigmaImageNodeAdapter(figmaNode));
             result.doNodesContainImage = true;
             break;
           }
@@ -1225,18 +1233,28 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new BricksTextNode(new FigmaTextNodeAdapter(figmaNode));
           break;
         case NodeType.VECTOR:
+          if (
+            figmaNode.vectorPaths.length === 1 &&
+            figmaNode.vectorPaths[0].windingRule === "EVENODD" &&
+            isRectangle(figmaNode.vectorPaths[0].data)
+          ) {
+            // if vector is a rectangle, we can leave it as a visible node
+            break;
+          }
         case NodeType.STAR:
-          newNode = new BricksVector(new FigmaVectorNodeAdapter(figmaNode));
+          newNode = new BricksVectorNode(new FigmaVectorNodeAdapter(figmaNode));
           break;
         case NodeType.ELLIPSE:
           if (doesNodeContainsAnImage(figmaNode)) {
-            newNode = new ImageNode(new FigmaImageNodeAdapter(figmaNode));
+            newNode = new BricksImageNode(new FigmaImageNodeAdapter(figmaNode));
             result.doNodesContainImage = true;
             break;
           }
 
           if (!isEmpty(figmaNode.rotation)) {
-            newNode = new VectorNode(new FigmaImageNodeAdapter(figmaNode));
+            newNode = new BricksVectorNode(
+              new FigmaImageNodeAdapter(figmaNode)
+            );
             break;
           }
       }
@@ -1248,12 +1266,11 @@ export const convertFigmaNodesToBricksNodes = (
   for (let i = 0; i < reordered.length; i++) {
     const figmaNode = reordered[i];
 
-    let newNode: Node = newNodes[i];
+    let newNode: BricksNode = newNodes[i];
 
     //@ts-ignore
     if (!isEmpty(figmaNode?.children)) {
       let isExportableNode: boolean = false;
-      //@ts-ignore
       const feedback: Feedback = convertFigmaNodesToBricksNodes(
         //@ts-ignore
         figmaNode.children
@@ -1286,9 +1303,11 @@ export const convertFigmaNodesToBricksNodes = (
         if (!doNodesHaveNonOverlappingChildren) {
           isExportableNode = true;
           if (feedback.doNodesContainImage) {
-            newNode = new ImageNode(new FigmaVectorGroupNodeAdapter(figmaNode));
+            newNode = new BricksImageNode(
+              new FigmaVectorGroupNodeAdapter(figmaNode)
+            );
           } else {
-            newNode = new BricksVector(
+            newNode = new BricksVectorNode(
               new FigmaVectorGroupNodeAdapter(figmaNode)
             );
           }
@@ -1315,7 +1334,9 @@ export const convertFigmaNodesToBricksNodes = (
   result.nodes = newNodes;
 
   if (!isEmpty(sliceNode)) {
-    result.nodes = [new BricksVector(new FigmaVectorNodeAdapter(sliceNode))];
+    result.nodes = [
+      new BricksVectorNode(new FigmaVectorNodeAdapter(sliceNode)),
+    ];
     result.doNodesHaveNonOverlappingChildren = false;
     result.areAllNodesExportable = false;
   }
@@ -1365,8 +1386,12 @@ export const getFigmaLineBasedOnDirection = (
 export const reorderFigmaNodes = (reordered: SceneNode[]) => {
   if (reordered.length > 1) {
     reordered.sort((a, b) => {
-      let wrappedNodeA: Node = new VisibleNode(new FigmaNodeAdapter(a));
-      let wrappedNodeB: Node = new VisibleNode(new FigmaNodeAdapter(b));
+      let wrappedNodeA: BricksNode = new BricksVisibleNode(
+        new FigmaNodeAdapter(a)
+      );
+      let wrappedNodeB: BricksNode = new BricksVisibleNode(
+        new FigmaNodeAdapter(b)
+      );
 
       if (
         computePositionalRelationship(
