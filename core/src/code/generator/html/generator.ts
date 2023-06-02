@@ -122,7 +122,7 @@ export class Generator {
       case NodeType.VISIBLE:
         const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
+          return `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`;
         }
 
         return await this.generateHtmlFromNodes(
@@ -312,9 +312,10 @@ export class Generator {
     const sample: object = data[0];
     const generatedComponent = await this.generateHtml(nodes[0], option);
 
-    let componentCodeString: string = `const ${component.getName()} = ({
-      ${component.getPropNames().join(",")}
-    }) => (
+    const propNames: string = component.getPropNames().join(",");
+    let propBinding: string = isEmpty(propNames) ? `` : `{${propNames}}`;
+
+    let componentCodeString: string = `const ${component.getName()} = (${propBinding}) => (
       ${generatedComponent}
     );`;
 
@@ -462,7 +463,7 @@ export class Generator {
 
               const lastListItem =
                 listItemArr[listItemIndex - 1] ||
-                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1]?.characters ||
                 "";
               if (hasOpenListItem && lastListItem.endsWith("\n")) {
                 result += "</li><li>";
@@ -519,11 +520,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-          cssAttributes,
-          option,
-          node,
-          parentCssAttributes
-        )}`
+        cssAttributes,
+        option,
+        node,
+        parentCssAttributes
+      )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;

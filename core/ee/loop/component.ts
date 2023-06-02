@@ -133,7 +133,10 @@ export class Component {
 
     for (const node of nodes) {
       const instanceId: string = this.idToInstanceIdMapping[node.getId()];
-      data.push(this.instanceIdToDataBindings[instanceId]);
+      const correspondingData: Data = this.instanceIdToDataBindings[instanceId];
+      if (!isEmpty(correspondingData)) {
+        data.push(correspondingData);
+      }
     }
 
     return data;
@@ -445,7 +448,7 @@ export const gatherPropsFromSimilarNodes = (
 
   const cssProps: ComponentProperties =
     optionRegistryGlobalInstance.getOption().cssFramework ===
-    CssFramework.tailwindcss
+      CssFramework.tailwindcss
       ? gatherTwcssPropsFromNodes(similarNodes, instanceIds)
       : gatherCssPropsFromNodes(similarNodes, instanceIds);
   let componentProps: ComponentProperties = {

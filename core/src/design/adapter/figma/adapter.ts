@@ -450,8 +450,10 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
   // @ts-ignore
   if (!isEmpty(figmaNode.rotation) && figmaNode.rotation !== 0) {
-    // @ts-ignore
-    attributes["transform"] = `rotate(${figmaNode.rotation}deg)`;
+    if (figmaNode.type !== NodeType.VECTOR && !doesNodeContainsAnImage(figmaNode)) {
+      // @ts-ignore
+      attributes["transform"] = `rotate(${Math.trunc(figmaNode.rotation)}deg)`;
+    }
   }
 
   if (figmaNode.type === NodeType.ELLIPSE) {
@@ -1383,7 +1385,6 @@ export const reorderFigmaNodes = (reordered: SceneNode[]) => {
       ) {
         return -1;
       }
-
       if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
         return 1;
       }

@@ -818,8 +818,8 @@ export const getPositionalCssAttributes = (
 
       childAttributes["position"] = "absolute";
       if (
-        currentBox.leftTop.y < targetBox.leftTop.y &&
-        currentBox.leftTop.y > targetBox.rightBot.y
+        currentBox.leftTop.y > targetBox.leftTop.y &&
+        currentBox.leftTop.y < targetBox.rightBot.y
       ) {
         childAttributes["top"] = `-${vertical}px`;
       } else {

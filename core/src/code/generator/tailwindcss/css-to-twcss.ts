@@ -1149,7 +1149,7 @@ const findClosestTwcssRotate = (cssValue: string) => {
   }
 
   if (Math.abs(minDiff) > 3) {
-    return rotatePrefix + "rotate" + `[${num}deg]`;
+    return rotatePrefix + "rotate-" + `[${num}deg]`;
   }
 
   return rotatePrefix + twcssClass;
