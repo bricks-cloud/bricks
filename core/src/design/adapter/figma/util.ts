@@ -230,3 +230,46 @@ export const hasShadow = (figmaNode: SceneNode) => {
 
   return false;
 };
+
+export function isRectangle(svgPath) {
+  const commands = svgPath.trim().split(/(?=[A-Za-z])/);
+
+  // A rectangle path should consist of 'M', 4 'L' commands and 'Z'
+  if (commands.length !== 6) {
+    return false;
+  }
+
+  if (commands[0][0] !== "M" || commands[5] !== "Z") {
+    return false;
+  }
+
+  for (let i = 1; i < 5; i++) {
+    if (commands[i][0] !== "L") {
+      return false;
+    }
+  }
+
+  // Extract the coordinates from the commands
+  const coordinates = commands
+    .slice(1, 5)
+    .map((command) => command.slice(1).trim().split(" ").map(Number));
+
+  // Check if the lines are parallel to the axes.
+  // If so, the x-coordinates of the start and end points of horizontal lines should be the same,
+  // and the y-coordinates of vertical lines should be the same.
+  if (
+    coordinates[0][0] !== coordinates[1][0] ||
+    coordinates[2][0] !== coordinates[3][0]
+  ) {
+    return false;
+  }
+
+  if (
+    coordinates[1][1] !== coordinates[2][1] ||
+    coordinates[3][1] !== coordinates[0][1]
+  ) {
+    return false;
+  }
+
+  return true;
+}

@@ -1,5 +1,5 @@
 import { Identify, identify, track } from "@amplitude/analytics-browser";
-import { Node, NodeType } from "./bricks/node";
+import { Node, TextNode, NodeType } from "./bricks/node";
 import uuid from "react-native-uuid";
 import { NameMap, File } from "./code/code";
 
@@ -31,36 +31,29 @@ export const traverseNodes = async (
   }
 
   await Promise.all(
-    node.children.map((child) => traverseNodes(child, callback))
+    node.getChildren().map((child) => traverseNodes(child, callback))
   );
 };
 
-export const getDescendants = (root: Node, condition?: (Node) => boolean) => {
-  const descendants: Node[] = [];
+export const getTextDescendants = (root: Node) => {
+  const descendants: TextNode[] = [];
+
   const traverse = (node: Node) => {
-    if (!condition || (condition && condition(node))) {
+    if (node.getType() === NodeType.TEXT) {
+      //@ts-ignore
       descendants.push(node);
     }
-
-    node.children.forEach(traverse);
+    node.getChildren().forEach(traverse);
   };
+
   traverse(root);
+
   return descendants;
 };
 
 export const getContainedText = (node: Node) => {
-  const textDecendants = getDescendants(
-    node,
-    (node) => node.getType() === NodeType.TEXT
-  );
-
-  const text = textDecendants
-    .map((node) =>
-      //@ts-ignore
-      node?.getText()
-    )
-    .join(" ");
-
+  const textDecendants = getTextDescendants(node);
+  const text = textDecendants.map((node) => node?.getText() || "").join(" ");
   return text;
 };
 

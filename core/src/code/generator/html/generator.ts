@@ -1,4 +1,4 @@
-import { isEmpty } from "../../../utils";
+import { getTextDescendants, isEmpty } from "../../../utils";
 import { Option, UiFramework } from "../../code";
 import {
   ImageNode,
@@ -122,7 +122,13 @@ export class Generator {
       case NodeType.VISIBLE:
         const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
+          return `<${htmlTag} ${visibleNodeClassProps}></${htmlTag}>`;
+        }
+
+        if (htmlTag === "input") {
+          // assume inputs only have one text child for now
+          const textDecendant = getTextDescendants(node)[0];
+          return `<${htmlTag} placeholder="${textDecendant.getText()}" ${visibleNodeClassProps}></${htmlTag}>`;
         }
 
         return await this.generateHtmlFromNodes(
@@ -542,11 +548,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-        cssAttributes,
-        option,
-        undefined,
-        parentCssAttributes
-      )}`
+          cssAttributes,
+          option,
+          undefined,
+          parentCssAttributes
+        )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
@@ -612,7 +618,10 @@ const getAttributeOverrides = (
   };
 };
 
-const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string => {
+const replaceLeadingWhiteSpaceAndNewLine = (
+  str: string,
+  option: Option
+): string => {
   let newStr: string = "";
   let streak: boolean = true;
   for (let i = 0; i < str.length; i++) {
@@ -625,7 +634,7 @@ const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string
     streak = false;
 
     if (str.charAt(i) === "\n") {
-      newStr += (option.uiFramework === "html" ? "<br>" : "<br />");
+      newStr += option.uiFramework === "html" ? "<br>" : "<br />";
       streak = true;
       continue;
     }
