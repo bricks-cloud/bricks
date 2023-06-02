@@ -50,9 +50,15 @@ export const isFrameNodeTransparent = (
 
 // doesNodeContainsAnImage tests whether rectangle node contain an image
 export const doesNodeContainsAnImage = (
-  node: RectangleNode | EllipseNode | FrameNode
+  node: SceneNode
 ): boolean => {
+  // @ts-ignore
+  if (isEmpty(node.fills)) {
+    return false;
+  }
+  // @ts-ignore
   if (node.fills != figma.mixed) {
+    // @ts-ignore
     for (const fill of node.fills) {
       if (fill.type === "IMAGE") {
         return true;

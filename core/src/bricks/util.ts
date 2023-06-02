@@ -219,3 +219,10 @@ export const shouldUseAsBackgroundImage = (node: Node): boolean => {
 
   return false;
 };
+
+export const doChildrenOverflowParent = (node: Node) => {
+  const [boundingWidth, boundingHeight]: number[] = node.getAbsBoundingBoxWidthAndHeight();
+  const [renderingWidth, renderingHeight]: number[] = node.getRenderingBoxWidthAndHeight();
+
+  return renderingWidth > boundingWidth || renderingHeight > boundingHeight;
+};
