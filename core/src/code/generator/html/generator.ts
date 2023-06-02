@@ -86,7 +86,19 @@ export class Generator {
 
         const children: Node[] = node.getChildren();
 
-        if (isEmpty(children)) {
+        if (isEmpty(children) && htmlTag === "input") {
+          delete node.cssAttributes["min-width"];
+          node.addCssAttributes({
+            "background-color": "transparent",
+            width: "100%",
+          });
+
+          const inputClassProps = this.getPropsFromNode(node, option);
+          // TODO: style placeholder text
+          return `<input placeholder="${textProp}" ${inputClassProps}></input>`;
+        }
+
+        if (isEmpty(children) && htmlTag !== "input") {
           return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
         }
 
@@ -128,7 +140,21 @@ export class Generator {
         if (htmlTag === "input") {
           // assume inputs only have one text child for now
           const textDecendant = getTextDescendants(node)[0];
-          return `<${htmlTag} placeholder="${textDecendant.getText()}" ${visibleNodeClassProps}></${htmlTag}>`;
+          const otherChildren = node
+            .getChildren()
+            .filter((child) => child.id !== textDecendant.id);
+
+          if (otherChildren.length > 0) {
+            textDecendant.addAnnotations("htmlTag", "input");
+            return await this.generateHtmlFromNodes(
+              node.getChildren(),
+              [`<div ${visibleNodeClassProps}>`, `</div>`],
+              option
+            );
+          }
+
+          // TODO: style placeholder text
+          return `<input placeholder="${textDecendant.getText()}" ${visibleNodeClassProps}></input>`;
         }
 
         return await this.generateHtmlFromNodes(

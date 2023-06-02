@@ -551,6 +551,10 @@ export const getTwcssClass = (
       return `min-w-[${minWidthNum}px]`;
 
     case "width":
+      if (cssValue === "100%") {
+        return "w-full";
+      }
+
       const widthNum = extractPixelNumberFromString(cssValue);
       if (cssValue.endsWith("px") && widthNum > largestTwcssWidthInPixels) {
         return `w-[${widthNum}px]`;
@@ -662,7 +666,11 @@ export const getTwcssClass = (
     }
 
     case "background-color":
-      return `bg-${findClosestTwcssColor(cssValue)}`;
+      if (cssValue === "transparent") {
+        return "bg-transparent";
+      } else {
+        return `bg-${findClosestTwcssColor(cssValue)}`;
+      }
 
     case "background":
       if (cssValue.startsWith("linear-gradient")) {
