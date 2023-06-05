@@ -1,4 +1,4 @@
-import { isEmpty } from "../../../utils";
+import { getTextDescendants, isEmpty } from "../../../utils";
 import { Option, UiFramework } from "../../code";
 import {
   ImageNode,
@@ -28,7 +28,7 @@ type GetPropsFromNode = (node: Node, option: Option) => string;
 export type GetPropsFromAttributes = (
   attributes: Attributes,
   option: Option,
-  id?: string,
+  node: Node,
   // sometimes needed because the value of an attribute can depend on the parent's attributes
   parentCssAttributes?: Attributes
 ) => string;
@@ -86,7 +86,19 @@ export class Generator {
 
         const children: Node[] = node.getChildren();
 
-        if (isEmpty(children)) {
+        if (isEmpty(children) && htmlTag === "input") {
+          delete node.cssAttributes["min-width"];
+          node.addCssAttributes({
+            "background-color": "transparent",
+            width: "100%",
+          });
+
+          const inputClassProps = this.getPropsFromNode(node, option);
+          // TODO: style placeholder text
+          return `<input placeholder="${textProp}" ${inputClassProps}></input>`;
+        }
+
+        if (isEmpty(children) && htmlTag !== "input") {
           return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
         }
 
@@ -99,7 +111,7 @@ export class Generator {
         return await this.generateHtmlFromNodes(
           children,
           [
-            `<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`,
+            `<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} &nbsp;`,
             `</${htmlTag}>`,
           ],
           option
@@ -107,29 +119,38 @@ export class Generator {
       }
 
       case NodeType.GROUP:
-        // this edge case should never happen
+      case NodeType.VISIBLE: {
+        const props = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
-          return `<${htmlTag}></${htmlTag}>`;
+          return `<${htmlTag} ${props}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getPropsFromNode(node, option);
-        return await this.generateHtmlFromNodes(
-          node.getChildren(),
-          [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
-          option
-        );
+        if (htmlTag === "input") {
+          // assume inputs only have one text child for now
+          const textDecendant = getTextDescendants(node)[0];
+          const otherChildren = node
+            .getChildren()
+            .filter((child) => child.id !== textDecendant.id);
 
-      case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getPropsFromNode(node, option);
-        if (isEmpty(node.getChildren())) {
-          return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
+          if (otherChildren.length > 0) {
+            textDecendant.addAnnotations("htmlTag", "input");
+            return await this.generateHtmlFromNodes(
+              node.getChildren(),
+              [`<div ${props}>`, `</div>`],
+              option
+            );
+          }
+
+          // TODO: style placeholder text
+          return `<input placeholder="${textDecendant.getText()}" ${props}></input>`;
         }
 
         return await this.generateHtmlFromNodes(
           node.getChildren(),
-          [`<${htmlTag} ${visibleNodeClassProps}>`, `</${htmlTag}>`],
+          [`<${htmlTag} ${props}>`, `</${htmlTag}>`],
           option
         );
+      }
 
       // TODO: VECTOR_GROUP node type is deprecated
       case NodeType.VECTOR_GROUP:
@@ -137,11 +158,7 @@ export class Generator {
         const vectorGroupCodeString =
           await this.generateHtmlElementForVectorNode(vectorGroupNode, option);
 
-        return this.renderNodeWithPositionalAttributes(
-          vectorGroupNode,
-          vectorGroupCodeString,
-          option
-        );
+        return vectorGroupCodeString;
 
       case NodeType.VECTOR:
         const vectorNode = node as VectorGroupNode;
@@ -151,11 +168,7 @@ export class Generator {
         );
 
         if (isEmpty(node.getChildren())) {
-          return this.renderNodeWithPositionalAttributes(
-            vectorNode,
-            vectorCodeString,
-            option
-          );
+          return vectorCodeString;
         }
 
         const vectorNodeClassProps = this.getPropsFromNode(node, option);
@@ -245,16 +258,13 @@ export class Generator {
     option: Option
   ): Promise<string> {
     const alt: string = getAltProp(node);
-
-    if (option.uiFramework === UiFramework.react) {
-      const src = getSrcProp(node);
-
-      let widthAndHeight: string = getWidthAndHeightProp(node);
-
-      return `<img ${widthAndHeight} src=${src} alt=${alt} />`;
-    }
-
-    return await node.export(ExportFormat.SVG);
+    const src = getSrcProp(node);
+    let widthAndHeight: string = getWidthAndHeightProp(node);
+    return this.renderImageWithPositionalAttributes(
+      node,
+      `${widthAndHeight} src=${src} alt=${alt}`,
+      option
+    );
   }
 
   private async generateHtmlElementForImageNode(
@@ -277,18 +287,18 @@ export class Generator {
         }
 
         return [
-          this.renderNodeWithPositionalAttributes(
+          this.renderImageWithPositionalAttributes(
             node,
-            `<img src=${srcValue} alt=${alt} ${widthAndHeight}/>`,
+            `src=${srcValue} alt=${alt} ${widthAndHeight}`,
             option
           ),
         ];
       }
 
       return [
-        this.renderNodeWithPositionalAttributes(
+        this.renderImageWithPositionalAttributes(
           node,
-          `<img src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}/>`,
+          `src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}`,
           option
         ),
       ];
@@ -297,28 +307,12 @@ export class Generator {
     return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
-  renderNodeWithPositionalAttributes(
+  renderImageWithPositionalAttributes(
     node: ImageNode | VectorNode | VectorGroupNode,
-    inner: string,
+    props: string,
     option: Option
   ): string {
-    const positionalCssAttribtues: Attributes =
-      node.getPositionalCssAttributes();
-
-    const cssAttribtues: Attributes = node.getCssAttributes();
-
-    if (
-      positionalCssAttribtues["position"] === "absolute" ||
-      positionalCssAttribtues["margin-left"] ||
-      positionalCssAttribtues["margin-right"] ||
-      positionalCssAttribtues["margin-top"] ||
-      positionalCssAttribtues["margin-bottom"] ||
-      cssAttribtues["border-radius"]
-    ) {
-      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
-    }
-
-    return inner;
+    return `<img ${this.getPropsFromNode(node, option)} ${props}/>`;
   }
 
   async generateCodeFromRepeatedComponents(
@@ -339,9 +333,10 @@ export class Generator {
     const sample: object = data[0];
     const generatedComponent = await this.generateHtml(nodes[0], option);
 
-    let componentCodeString: string = `const ${component.getName()} = ({
-      ${component.getPropNames().join(",")}
-    }) => (
+    const propNames: string = component.getPropNames().join(",");
+    let propBinding: string = isEmpty(propNames) ? `` : `{${propNames}}`;
+
+    let componentCodeString: string = `const ${component.getName()} = (${propBinding}) => (
       ${generatedComponent}
     );`;
 
@@ -413,7 +408,8 @@ export class Generator {
               href,
               cssAttributes,
               parentCssAttributes,
-              option
+              option,
+              node
             );
 
             return result;
@@ -442,7 +438,8 @@ export class Generator {
                     "margin-left": "40px",
                     "list-style-type": listType === "ul" ? "disc" : "decimal",
                   },
-                  option
+                  option,
+                  node
                 );
 
                 resultText += `<${listType} ${listProps}>`;
@@ -487,7 +484,7 @@ export class Generator {
 
               const lastListItem =
                 listItemArr[listItemIndex - 1] ||
-                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1]?.characters ||
                 "";
               if (hasOpenListItem && lastListItem.endsWith("\n")) {
                 result += "</li><li>";
@@ -498,7 +495,8 @@ export class Generator {
                 href,
                 cssAttributes,
                 parentCssAttributes,
-                option
+                option,
+                node
               );
 
               const isLastListItem = listItemIndex === listItemArr.length - 1;
@@ -530,7 +528,8 @@ export class Generator {
     href: string,
     cssAttributes: Attributes,
     parentCssAttributes: Attributes,
-    option: Option
+    option: Option,
+    node: Node
   ) {
     const resultText = escapeHtml(text);
 
@@ -542,11 +541,11 @@ export class Generator {
     const hrefAttribute = href ? ` href="${href}"` : "";
     const styleAttribute = !isEmpty(cssAttributes)
       ? ` ${this.getPropsFromAttributes(
-        cssAttributes,
-        option,
-        undefined,
-        parentCssAttributes
-      )}`
+          cssAttributes,
+          option,
+          node,
+          parentCssAttributes
+        )}`
       : "";
 
     return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
@@ -612,7 +611,10 @@ const getAttributeOverrides = (
   };
 };
 
-const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string => {
+const replaceLeadingWhiteSpaceAndNewLine = (
+  str: string,
+  option: Option
+): string => {
   let newStr: string = "";
   let streak: boolean = true;
   for (let i = 0; i < str.length; i++) {
@@ -625,7 +627,7 @@ const replaceLeadingWhiteSpaceAndNewLine = (str: string, option: Option): string
     streak = false;
 
     if (str.charAt(i) === "\n") {
-      newStr += (option.uiFramework === "html" ? "<br>" : "<br />");
+      newStr += option.uiFramework === "html" ? "<br>" : "<br />";
       streak = true;
       continue;
     }

@@ -6,7 +6,13 @@ import {
   reorderNodesBasedOnDirection,
   getDirection,
 } from "./direction";
-import { Node, NodeType, TextNode } from "./node";
+import {
+  Node,
+  NodeType,
+  PostionalRelationship,
+  TextNode,
+  computePositionalRelationship,
+} from "./node";
 import {
   getContainerLineFromNodes,
   getLinesFromNodes,
@@ -64,7 +70,10 @@ enum RelativePoisition {
 }
 
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
-export const addAdditionalCssAttributesToNodes = (node: Node) => {
+export const addAdditionalCssAttributesToNodes = (
+  node: Node,
+  startingNode: Node
+) => {
   if (isEmpty(node)) {
     return;
   }
@@ -85,7 +94,22 @@ export const addAdditionalCssAttributesToNodes = (node: Node) => {
   UpdateNodeWidthToMinWidth(node);
 
   for (const child of children) {
-    addAdditionalCssAttributesToNodes(child);
+    setOverflowHiddenForStartingNode(child, startingNode);
+    addAdditionalCssAttributesToNodes(child, startingNode);
+  }
+};
+
+const setOverflowHiddenForStartingNode = (
+  targetNode: Node,
+  startingNode: Node
+) => {
+  if (
+    computePositionalRelationship(
+      targetNode.getAbsBoundingBox(),
+      startingNode.getAbsBoundingBox()
+    ) !== PostionalRelationship.INCLUDE
+  ) {
+    startingNode.addCssAttributes({ overflow: "hidden" });
   }
 };
 
@@ -120,14 +144,10 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
   const zIndexArr: string[] = ["10", "20", "30", "40", "50"];
 
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
-    if (children.length <= 6) {
-      for (let i = 0; i < children.length; i++) {
-        if (i === 0) {
-          continue;
-        }
-
+    if (children.length <= 5) {
+      for (let i = children.length - 1; i >= 0; i--) {
         const current: Node = children[i];
-        const zIndex: string = zIndexArr[i - 1];
+        const zIndex: string = zIndexArr[children.length - 1 - i];
         current.addPositionalCssAttributes({
           "z-index": zIndex,
         });
@@ -135,10 +155,10 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
     }
 
     if (children.length > 5) {
-      for (let i = 0; i < children.length; i++) {
+      for (let i = children.length - 1; i >= 0; i--) {
         const current: Node = children[i];
         current.addPositionalCssAttributes({
-          "z-index": `${children.length - i}`,
+          "z-index": `${children.length - 1 - i}`,
         });
       }
     }
@@ -766,8 +786,17 @@ export const getPositionalCssAttributes = (
 ): Attributes => {
   const positionalCssAttributes = node.getPositionalCssAttributes();
   // if autolayout has been set on this node
-  if (positionalCssAttributes["display"]) {
-    return positionalCssAttributes;
+  if (!isEmpty(positionalCssAttributes["display"])) {
+    if (doPaddingValuesExist(node)) {
+      return positionalCssAttributes;
+    }
+
+    const attributes: Attributes = {};
+    setPaddingAndMarginValues(node, direction, attributes);
+    return {
+      ...positionalCssAttributes,
+      ...attributes,
+    };
   }
 
   const attributes: Attributes = {};
@@ -789,8 +818,8 @@ export const getPositionalCssAttributes = (
 
       childAttributes["position"] = "absolute";
       if (
-        currentBox.leftTop.y < targetBox.leftTop.y &&
-        currentBox.leftTop.y > targetBox.rightBot.y
+        currentBox.leftTop.y > targetBox.leftTop.y &&
+        currentBox.leftTop.y < targetBox.rightBot.y
       ) {
         childAttributes["top"] = `-${vertical}px`;
       } else {
@@ -820,6 +849,33 @@ export const getPositionalCssAttributes = (
     attributes["flex-direction"] = "column";
   }
 
+  setPaddingAndMarginValues(node, direction, attributes);
+
+  return {
+    ...positionalCssAttributes,
+    ...attributes,
+  };
+};
+
+const doPaddingValuesExist = (node: Node): boolean => {
+  const cssAttributes: Attributes = node.getCssAttributes();
+  if (
+    !isEmpty(cssAttributes["padding-top"]) ||
+    !isEmpty(cssAttributes["padding-bottom"]) ||
+    !isEmpty(cssAttributes["padding-left"]) ||
+    !isEmpty(cssAttributes["padding-right"])
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+const setPaddingAndMarginValues = (
+  node: Node,
+  direction: Direction,
+  attributes: Attributes
+) => {
   const justifyContentValue = getJustifyContentValue(node, direction);
   const alignItemsValue = getAlignItemsValue(
     node,
@@ -849,11 +905,6 @@ export const getPositionalCssAttributes = (
     alignItemsValue,
     paddings
   );
-
-  return {
-    ...positionalCssAttributes,
-    ...attributes,
-  };
 };
 
 // getJustifyContentValue determines the value of justify-content css property given a node and flex-direction.

@@ -52,8 +52,8 @@ export const getVariablePropForTwcss = (
 // getVariablePropForCss gets variable props for css styling classes
 export const getVariablePropForCss = (
   nodeId: string
-): [string, Set<string>] => {
-  let variableProps: string = "";
+): [string[], Set<string>] => {
+  let variableProps: string[] = [];
   const propBindings: PropToPropBinding[] =
     propRegistryGlobalInstance.getPropToPropBindingByNodeId(nodeId);
 
@@ -67,25 +67,25 @@ export const getVariablePropForCss = (
           cssKeyConnectedToProps.add(cssKey);
           if (propBinding.dataType === DataType.boolean) {
             if (isEmpty(propBinding.conditionalValue)) {
-              variableProps += ` ...(${
-                propBinding.prop
-              } && {${snakeCaseToCamelCase(cssKey)}: "${
-                propBinding.defaultValue
-              }"}),`;
+              variableProps.push(
+                ` ...(${propBinding.prop} && {${snakeCaseToCamelCase(
+                  cssKey
+                )}: "${propBinding.defaultValue}"})`
+              );
               continue;
             }
 
-            variableProps += ` ${snakeCaseToCamelCase(cssKey)}: ${
-              propBinding.prop
-            } ? "${propBinding.defaultValue}" : "${
-              propBinding.conditionalValue
-            }",`;
+            variableProps.push(
+              ` ${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop} ? "${
+                propBinding.defaultValue
+              }" : "${propBinding.conditionalValue}"`
+            );
             continue;
           }
 
-          variableProps += `${snakeCaseToCamelCase(cssKey)}: ${
-            propBinding.prop
-          },`;
+          variableProps.push(
+            `${snakeCaseToCamelCase(cssKey)}: ${propBinding.prop}`
+          );
         }
       }
     }

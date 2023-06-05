@@ -1,65 +1,87 @@
 import { Node, NodeType } from "../../src/bricks/node";
-import { ExportFormat } from "../../src/design/adapter/node";
-import { traverseNodes } from "../../src/utils";
+import {
+  traverseNodes,
+  getContainedText,
+  getTextDescendants,
+} from "../../src/utils";
 import {
   AiApplication,
   aiApplicationRegistryGlobalInstance,
 } from "../ui/ai-application-registry";
-import { predictImage } from "../web/request";
+import { predictText } from "../web/request";
 
 export const annotateNodeForHtmlTag = async (startingNode: Node) => {
   try {
-    const idImageMap: Record<string, string> = {};
-    const idTextMap: Record<string, string> = {};
+    // const idImageMap: Record<string, string> = {};
+    const buttonTextCandidates: { [id: string]: string } = {};
+    const inputTextCandidates: { [id: string]: string } = {};
 
     await traverseNodes(startingNode, async (node) => {
-      const originalId = node?.node?.getOriginalId();
+      // if (node.id && node.getType() !== NodeType.TEXT) {
+      //   const base64image = await node?.node?.export(ExportFormat.JPG);
+      //   if (base64image) {
+      //     idImageMap[node.id] = base64image;
+      //   }
+      // }
 
-      if (originalId && node?.getType() !== NodeType.TEXT) {
-        const base64image = await node?.node?.export(ExportFormat.JPG);
-        if (base64image) {
-          idImageMap[originalId] = base64image;
-        }
+      if (isButtonCandidate(node)) {
+        const text = getContainedText(node);
+        buttonTextCandidates[node.id] = text;
       }
 
-      //@ts-ignore
-      const text = node?.getText?.();
-      if (
-        originalId &&
-        node?.getType?.() === NodeType.TEXT &&
-        text?.split(" ")?.length <= 5 // only check text nodes with 5 words or less
-      ) {
-        idTextMap[originalId] = text;
+      if (isInputCandidate(node)) {
+        const placeHolderText = getContainedText(node);
+        inputTextCandidates[node.id] = placeHolderText;
       }
 
-      return node?.getType() !== NodeType.VECTOR_GROUP;
+      return true;
     });
 
-    const [predictImagesResult] = await Promise.allSettled([
-      predictImage(idImageMap),
-    ]);
+    console.log("buttonTextCandidates", buttonTextCandidates);
+    console.log("inputTextCandidates", inputTextCandidates);
 
-    const imagePredictions =
-      predictImagesResult.status === "fulfilled"
-        ? predictImagesResult.value
-        : {};
+    const textCandidates = {
+      ...buttonTextCandidates,
+      ...inputTextCandidates,
+    };
 
-    if (predictImagesResult.status === "rejected") {
-      console.error("Error with image prediction", predictImagesResult.reason);
+    if (Object.keys(textCandidates).length === 0) {
+      return;
     }
 
-    await traverseNodes(startingNode, async (node) => {
-      if (node.node) {
-        const originalId = node.node.getOriginalId();
-        const predictedHtmlTag = imagePredictions[originalId];
+    const [
+      predictTextResult,
+      // predictImagesResult,
+    ] = await Promise.allSettled([
+      predictText(textCandidates),
+      // predictImage(idImageMap),
+    ]);
 
-        if (predictedHtmlTag) {
-          aiApplicationRegistryGlobalInstance.addApplication(
-            AiApplication.componentIdentification
-          );
-          node.addAnnotations("htmlTag", predictedHtmlTag);
-          return predictedHtmlTag !== "button";
-        }
+    console.log("predictTextResult", predictTextResult);
+    const textPredictions =
+      predictTextResult.status === "fulfilled" ? predictTextResult.value : {};
+
+    if (predictTextResult.status === "rejected") {
+      console.error("Error with text prediction", predictTextResult.reason);
+    }
+
+    // const imagePredictions =
+    //   predictImagesResult.status === "fulfilled"
+    //     ? predictImagesResult.value
+    //     : {};
+    // if (predictImagesResult.status === "rejected") {
+    //   console.error("Error with image prediction", predictImagesResult.reason);
+    // }
+
+    await traverseNodes(startingNode, async (node) => {
+      const predictedHtmlTag = textPredictions[node.id];
+
+      if (predictedHtmlTag) {
+        aiApplicationRegistryGlobalInstance.addApplication(
+          AiApplication.componentIdentification
+        );
+        node.addAnnotations("htmlTag", predictedHtmlTag);
+        return predictedHtmlTag !== "button";
       }
 
       return true;
@@ -67,4 +89,38 @@ export const annotateNodeForHtmlTag = async (startingNode: Node) => {
   } catch (e) {
     console.error("Error with image or text detection", e);
   }
+};
+
+const isButtonCandidate = (node: Node) => {
+  const textDecendants = getTextDescendants(node);
+  const hasColor =
+    node.getACssAttribute("background-color") ||
+    node.getACssAttribute("border-color");
+  const text = textDecendants[0]?.getText();
+
+  return (
+    (node.getType() === NodeType.VISIBLE ||
+      node.getType() === NodeType.GROUP) &&
+    textDecendants.length === 1 &&
+    hasColor &&
+    text?.trim() &&
+    text?.split(" ")?.length <= 5
+  );
+};
+
+const isInputCandidate = (node: Node) => {
+  const textDecendants = getTextDescendants(node);
+  const hasColor =
+    node.getACssAttribute("background-color") ||
+    node.getACssAttribute("border-color");
+  const text = textDecendants[0]?.getText();
+
+  return (
+    (node.getType() === NodeType.VISIBLE ||
+      node.getType() === NodeType.GROUP) &&
+    textDecendants.length === 1 &&
+    hasColor &&
+    text?.trim() &&
+    text?.split(" ")?.length <= 10
+  );
 };
