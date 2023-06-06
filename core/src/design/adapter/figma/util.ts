@@ -49,9 +49,7 @@ export const isFrameNodeTransparent = (
 };
 
 // doesNodeContainsAnImage tests whether rectangle node contain an image
-export const doesNodeContainsAnImage = (
-  node: SceneNode
-): boolean => {
+export const doesNodeContainsAnImage = (node: SceneNode): boolean => {
   // @ts-ignore
   if (isEmpty(node.fills)) {
     return false;
@@ -103,7 +101,18 @@ export function getMostCommonFieldInString<
   } = {}
 ): Variation<T> {
   const { areVariationsEqual, variationModifier } = options;
-  const styledTextSegments = figmaTextNode.getStyledTextSegments([field]);
+
+  let styledTextSegments: Pick<
+    StyledTextSegment,
+    T | "characters" | "start" | "end"
+  >[];
+
+  try {
+    styledTextSegments = figmaTextNode.getStyledTextSegments([field]);
+  } catch (e) {
+    console.error("Error getting styled text segments on field:", field, e);
+    return null;
+  }
 
   // Count the number of characters that has each variation of "field".
   // For example, if field is "fontSize", variations are the different font sizes (12, 14, etc.)
