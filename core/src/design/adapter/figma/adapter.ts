@@ -495,13 +495,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   if (
     figmaNode.type === NodeType.ELLIPSE
   ) {
-    const { strokeWeight } = figmaNode;
-    if (strokeWeight !== figma.mixed) {
-      setBorderColor(figmaNode, attributes);
-      attributes["border-width"] = `${strokeWeight}px`;
-      attributes["border-style"] =
-        figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-    }
 
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);

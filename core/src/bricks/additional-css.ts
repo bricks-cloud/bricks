@@ -9,9 +9,7 @@ import {
 import {
   Node,
   NodeType,
-  PostionalRelationship,
   TextNode,
-  computePositionalRelationship,
 } from "./node";
 import {
   getContainerLineFromNodes,
@@ -94,24 +92,23 @@ export const addAdditionalCssAttributesToNodes = (
   UpdateNodeWidthToMinWidth(node);
 
   for (const child of children) {
-    setOverflowHiddenForStartingNode(child, startingNode);
     addAdditionalCssAttributesToNodes(child, startingNode);
   }
 };
 
-const setOverflowHiddenForStartingNode = (
-  targetNode: Node,
-  startingNode: Node
-) => {
-  if (
-    computePositionalRelationship(
-      targetNode.getAbsBoundingBox(),
-      startingNode.getAbsBoundingBox()
-    ) !== PostionalRelationship.INCLUDE
-  ) {
-    startingNode.addCssAttributes({ overflow: "hidden" });
-  }
-};
+// const setOverflowHiddenForStartingNode = (
+//   targetNode: Node,
+//   startingNode: Node
+// ) => {
+//   if (
+//     computePositionalRelationship(
+//       targetNode.getAbsBoundingBox(),
+//       startingNode.getAbsBoundingBox()
+//     ) !== PostionalRelationship.INCLUDE
+//   ) {
+//     startingNode.addCssAttributes({ overflow: "hidden" });
+//   }
+// };
 
 const UpdateNodeWidthToMinWidth = (node: Node) => {
   const positionalCssAttributes: Attributes = node.getPositionalCssAttributes();
