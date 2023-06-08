@@ -1,17 +1,10 @@
-import { isEmpty } from "../../../utils";
-import {
-  ImportedComponentMeta,
-  InFileDataMeta,
-  InFileComponentMeta,
-} from "../html/generator";
-import { getExtensionFromFilePath } from "../util";
+import { InFileDataMeta, InFileComponentMeta } from "../html/generator";
 
 export class Generator {
   generateReactFileContent(
     content: string,
     componentName: string,
     isCssFileNeeded: boolean = false,
-    importComponents: ImportedComponentMeta[],
     inFileData: InFileDataMeta[],
     inFileComponents: InFileComponentMeta[]
   ): string {

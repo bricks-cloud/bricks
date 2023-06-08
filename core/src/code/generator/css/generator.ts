@@ -2,14 +2,9 @@ import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import {
-  getFileExtensionFromLanguage,
-  constructExtraFiles,
-  snakeCaseToCamelCase,
-} from "../util";
+import { getFileExtensionFromLanguage, snakeCaseToCamelCase } from "../util";
 import {
   Generator as HtmlGenerator,
-  ImportedComponentMeta,
   InFileComponentMeta,
   InFileDataMeta,
 } from "../html/generator";
@@ -37,7 +32,7 @@ export class Generator {
     option: Option,
     mainComponentName: string,
     isCssFileNeeded: boolean
-  ): Promise<[string, ImportedComponentMeta[]]> {
+  ): Promise<string> {
     const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
     const [inFileComponents, inFileData]: [
@@ -45,24 +40,17 @@ export class Generator {
       InFileDataMeta[]
     ] = this.htmlGenerator.getExtraComponentsMetaData();
 
-    // TODO: get rid of importComponents and any funciton that uses this
-    const importComponents = [];
-
     if (option.uiFramework === UiFramework.react) {
-      return [
-        this.reactGenerator.generateReactFileContent(
-          mainFileContent,
-          mainComponentName,
-          isCssFileNeeded,
-          [],
-          inFileData,
-          inFileComponents
-        ),
-        importComponents,
-      ];
+      return this.reactGenerator.generateReactFileContent(
+        mainFileContent,
+        mainComponentName,
+        isCssFileNeeded,
+        inFileData,
+        inFileComponents
+      );
     }
 
-    return [mainFileContent, importComponents];
+    return mainFileContent;
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
@@ -75,13 +63,12 @@ export class Generator {
       isCssFileNeeded = true;
     }
 
-    const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(
-        node,
-        option,
-        mainComponentName,
-        isCssFileNeeded
-      );
+    const mainFileContent = await this.generateMainFileContent(
+      node,
+      option,
+      mainComponentName,
+      isCssFileNeeded
+    );
 
     const mainFile: File = {
       content: mainFileContent,

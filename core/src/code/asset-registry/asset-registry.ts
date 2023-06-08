@@ -1,3 +1,5 @@
+import { Node } from "../../bricks/node";
+
 export let assetRegistryGlobalInstance: AssetRegistry;
 export const instantiateAssetRegistryGlobalInstance = () => {
   assetRegistryGlobalInstance = new AssetRegistry();
@@ -8,10 +10,12 @@ type Asset =
       type: "local";
       src: string;
       content: string;
+      node: Node;
     }
   | {
       type: "web";
       src: string;
+      node: Node;
     };
 
 export class AssetRegistry {
@@ -23,18 +27,20 @@ export class AssetRegistry {
     this.assets = {};
   }
 
-  registerLocalAsset(nodeId: string, src: string, content: string) {
-    this.assets[nodeId] = {
+  registerLocalAsset(node: Node, src: string, content: string) {
+    this.assets[node.getId()] = {
       type: "local",
-      src: src,
-      content: content,
+      src,
+      content,
+      node,
     };
   }
 
-  registerWebAsset(nodeId: string, src: string) {
-    this.assets[nodeId] = {
+  registerWebAsset(node: Node, src: string) {
+    this.assets[node.getId()] = {
       type: "web",
-      src: src,
+      src,
+      node,
     };
   }
 

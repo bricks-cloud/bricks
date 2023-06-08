@@ -34,12 +34,6 @@ export type GetPropsFromAttributes = (
   parentCssAttributes?: Attributes
 ) => string;
 
-export type ImportedComponentMeta = {
-  node: VectorGroupNode | VectorNode | ImageNode;
-  importPath: string;
-  componentName: string;
-};
-
 export type InFileComponentMeta = {
   componentCode: string;
 };

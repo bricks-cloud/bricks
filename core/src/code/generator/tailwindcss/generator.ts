@@ -1,11 +1,7 @@
 import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
-import {
-  getFileExtensionFromLanguage,
-  constructExtraFiles,
-  getExtensionFromFilePath,
-} from "../util";
+import { getFileExtensionFromLanguage } from "../util";
 import {
   convertCssClassesToTwcssClasses,
   getImageFileNameFromUrl,
@@ -13,7 +9,6 @@ import {
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import {
   Generator as HtmlGenerator,
-  ImportedComponentMeta,
   InFileComponentMeta,
   InFileDataMeta,
 } from "../html/generator";
@@ -40,11 +35,8 @@ export class Generator {
     node: Node,
     option: Option,
     mainComponentName: string
-  ): Promise<[string, ImportedComponentMeta[]]> {
+  ): Promise<string> {
     const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
-
-    // TODO: get rid of importComponents and any funciton that uses this
-    const importComponents: ImportedComponentMeta[] = [];
 
     const [inFileComponents, inFileData]: [
       InFileComponentMeta[],
@@ -52,28 +44,27 @@ export class Generator {
     ] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
-      return [
-        this.reactGenerator.generateReactFileContent(
-          mainFileContent,
-          mainComponentName,
-          true,
-          [],
-          inFileData,
-          inFileComponents
-        ),
-        importComponents,
-      ];
+      return this.reactGenerator.generateReactFileContent(
+        mainFileContent,
+        mainComponentName,
+        true,
+        inFileData,
+        inFileComponents
+      );
     }
 
-    return [mainFileContent, importComponents];
+    return mainFileContent;
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
     const mainComponentName = "GeneratedComponent";
     const mainFileExtension = getFileExtensionFromLanguage(option);
 
-    const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(node, option, mainComponentName);
+    const mainFileContent = await this.generateMainFileContent(
+      node,
+      option,
+      mainComponentName
+    );
 
     const mainFile: File = {
       content: mainFileContent,
@@ -94,7 +85,7 @@ export class Generator {
     );
 
     const twcssConfigFile: File = {
-      content: buildTwcssConfigFileContent(mainFileExtension, importComponents),
+      content: buildTwcssConfigFileContent(mainFileExtension),
       path: `/tailwind.config.js`,
     };
 
@@ -222,8 +213,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
-  mainComponentFileExtension: string,
-  importComponents: ImportedComponentMeta[]
+  mainComponentFileExtension: string
 ) => {
   let fontFamilies = "";
   let backgroundImages = "";
@@ -236,25 +226,18 @@ export const buildTwcssConfigFileContent = (
       .join("");
   }
 
-  if (!isEmpty(importComponents)) {
-    importComponents.forEach((importComponent: ImportedComponentMeta) => {
-      const extension = getExtensionFromFilePath(importComponent.importPath);
-      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
-        backgroundImages += `"${getImageFileNameFromUrl(
-          importComponent.importPath
-        )}": "url(.${importComponent.importPath})",`;
-      }
-
-      if (
-        extension === "svg" &&
-        shouldUseAsBackgroundImage(importComponent.node)
-      ) {
-        backgroundImages += `"${getImageFileNameFromUrl(
-          importComponent.importPath
-        )}": "url(.${importComponent.importPath})",`;
-      }
-    });
-  }
+  Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach((asset) => {
+    if (asset.src.endsWith("png") && !isEmpty(asset.node.getChildren())) {
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
+        asset.src
+      })",`;
+    }
+    if (asset.src.endsWith("svg") && shouldUseAsBackgroundImage(asset.node)) {
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
+        asset.src
+      })",`;
+    }
+  });
 
   const backgroundImagesConfig = !isEmpty(backgroundImages)
     ? `backgroundImage: {

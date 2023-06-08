@@ -19,7 +19,7 @@ export async function generateAssets(node: Node, option: Option) {
     // registering all assets locally
     assets.forEach((asset) => {
       assetRegistryGlobalInstance.registerLocalAsset(
-        asset.id,
+        asset.node,
         `/assets/${asset.name}`,
         asset.content
       );
@@ -50,15 +50,15 @@ export async function generateAssets(node: Node, option: Option) {
     console.log("urls", urls);
 
     urls?.forEach((url) => {
-      const id = assets.find((asset) => url.includes(asset.name))?.id;
-      if (id) {
-        assetRegistryGlobalInstance.registerWebAsset(id, url);
+      const asset = assets.find((asset) => url.includes(asset.name));
+      if (asset) {
+        assetRegistryGlobalInstance.registerWebAsset(asset.node, url);
       }
     });
 
     vectorAssets.forEach((asset) => {
       assetRegistryGlobalInstance.registerLocalAsset(
-        asset.id,
+        asset.node,
         `/assets/${asset.name}`,
         asset.content
       );
@@ -90,30 +90,33 @@ function findAllAssetNodes(root: Node) {
   return nodes;
 }
 
-type Asset = { id: string; name: string; content: string };
+type Asset = { node: Node; name: string; content: string };
 
 const getAllAssets = async (root: Node): Promise<Asset[]> => {
   const assetNodes = findAllAssetNodes(root);
 
   const promises = assetNodes.map(async (assetNode) => {
     try {
-      const id: string = assetNode.getId();
       const nodeType = assetNode.getType();
 
       switch (nodeType) {
         case NodeType.VECTOR:
         case NodeType.VECTOR_GROUP: {
           return {
-            id,
-            name: `${nameRegistryGlobalInstance.getVectorName(id)}.svg`,
+            node: assetNode,
+            name: `${nameRegistryGlobalInstance.getVectorName(
+              assetNode.id
+            )}.svg`,
             content: await assetNode.export(ExportFormat.SVG),
           };
         }
         case NodeType.IMAGE:
         default: {
           return {
-            id,
-            name: `${nameRegistryGlobalInstance.getImageName(id)}.png`,
+            node: assetNode,
+            name: `${nameRegistryGlobalInstance.getImageName(
+              assetNode.id
+            )}.png`,
             content: await assetNode.export(ExportFormat.PNG),
           };
         }
@@ -121,7 +124,7 @@ const getAllAssets = async (root: Node): Promise<Asset[]> => {
     } catch (e) {
       console.error("Error exporting node:", assetNode, "Error:", e);
       return {
-        id: "",
+        node: null,
         name: "",
         content: "",
       };
@@ -130,5 +133,5 @@ const getAllAssets = async (root: Node): Promise<Asset[]> => {
 
   const assets = await Promise.all(promises);
 
-  return assets.filter((asset) => asset.id && asset.name && asset.content);
+  return assets.filter((asset) => asset.node && asset.name && asset.content);
 };
