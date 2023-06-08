@@ -34,8 +34,9 @@ import {
   getGradientAxisLength,
   stringifyGradientColors,
 } from "./gradient";
+import { setBorderStyleAttributes } from "./border";
 
-enum NodeType {
+export enum NodeType {
   GROUP = "GROUP",
   TEXT = "TEXT",
   IMAGE = "IMAGE",
@@ -61,6 +62,47 @@ const setBackgroundGradientColor = (
 
   // @ts-ignore
   const fills = figmaNode.fills;
+  if (fills === figma.mixed) {
+    return;
+  }
+
+  const radialGradientPaint = fills.find(
+    (fill) => fill.type === "GRADIENT_RADIAL"
+  ) as GradientPaint;
+
+  if (radialGradientPaint) {
+    const width: number = figmaNode.absoluteBoundingBox.width;
+    const height: number = figmaNode.absoluteBoundingBox.height;
+
+    const { start, end } = extractLinearGradientParamsFromTransform(
+      width,
+      height,
+      radialGradientPaint.gradientTransform
+    );
+
+    let radius: number = Math.round(
+      Math.sqrt(Math.pow(width / 2, 2) + Math.pow(height / 2, 2))
+    );
+
+    const gradientAxisLength: number = getGradientAxisLength(start, end);
+    let arbitraryLineLength: number =
+      gradientAxisLength > radius ? gradientAxisLength : radius;
+
+    attributes["background"] = `radial-gradient(${stringifyGradientColors(
+      radialGradientPaint.gradientStops,
+      gradientAxisLength,
+      arbitraryLineLength,
+      0
+    )})`;
+
+    if (figmaNode.type === NodeType.TEXT) {
+      attributes["color"] = "transparent";
+
+      attributes["background-clip"] = "text";
+
+      attributes["-webkit-background-clip"] = "text";
+    }
+  }
 
   const linearGradientPaint = fills.find(
     (fill) => fill.type === "GRADIENT_LINEAR"
@@ -451,7 +493,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   }
 
   if (
-    figmaNode.type === NodeType.VECTOR ||
     figmaNode.type === NodeType.ELLIPSE
   ) {
     const { strokeWeight } = figmaNode;
@@ -483,74 +524,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
     }
 
     // border-color
-    setBorderColor(figmaNode, attributes);
-
-    // border
-    const borderColors = figmaNode.strokes;
-    if (
-      borderColors.length > 0 &&
-      borderColors[0].visible &&
-      borderColors[0].type === "SOLID"
-    ) {
-      const {
-        strokeWeight,
-        strokeTopWeight,
-        strokeBottomWeight,
-        strokeLeftWeight,
-        strokeRightWeight,
-      } = figmaNode;
-
-      if (strokeWeight !== figma.mixed) {
-        attributes["border-width"] = `${strokeWeight}px`;
-      } else {
-        if (strokeTopWeight > 0) {
-          attributes["border-top-width"] = `${strokeTopWeight}px`;
-        }
-
-        if (strokeBottomWeight > 0) {
-          attributes["border-bottom-width"] = `${strokeBottomWeight}px`;
-        }
-
-        if (strokeLeftWeight > 0) {
-          attributes["border-left-width"] = `${strokeLeftWeight}px`;
-        }
-
-        if (strokeRightWeight > 0) {
-          attributes["border-right-width"] = `${strokeRightWeight}px`;
-        }
-      }
-
-      if (
-        strokeTopWeight > 0 &&
-        strokeBottomWeight > 0 &&
-        strokeLeftWeight > 0 &&
-        strokeRightWeight > 0
-      ) {
-        attributes["border-style"] =
-          figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-      } else {
-        if (strokeTopWeight > 0) {
-          attributes["border-top-style"] =
-            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-        }
-
-        if (strokeBottomWeight > 0) {
-          attributes["border-bottom-style"] =
-            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-        }
-
-        if (strokeLeftWeight > 0) {
-          attributes["border-left-style"] =
-            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-        }
-
-        if (strokeRightWeight > 0) {
-          attributes["border-right-style"] =
-            figmaNode.dashPattern.length === 0 ? "solid" : "dashed";
-        }
-      }
-    }
-
+    setBorderStyleAttributes(figmaNode, attributes);
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
 
     // box shadow
