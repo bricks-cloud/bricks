@@ -10,10 +10,6 @@ export const getFileExtensionFromLanguage = (option: Option): string => {
     return "html";
   }
 
-  if (option.language === Language.typescript) {
-    return "tsx";
-  }
-
   return "jsx";
 };
 

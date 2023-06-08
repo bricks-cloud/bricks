@@ -20,19 +20,8 @@ import {
 import { Attributes } from "../../../design/adapter/node";
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import { Option, UiFramework } from "../../code";
-import { getVariablePropForTwcss } from "../../../../ee/code/prop";
 import { GetPropsFromAttributes } from "../html/generator";
 import { Node, NodeType } from "../../../bricks/node";
-// import { RadialGradientGlobalRegistry } from "./radient-registry";
-
-export type TwcssPropRenderingMeta = {
-  numberOfTwcssClasses: number;
-  filledClassIndexes: Set<number>;
-};
-
-export type TwcssPropRenderingMap = {
-  [cssKey: string]: TwcssPropRenderingMeta;
-};
 
 // convertCssClassesToTwcssClasses converts css classes to tailwindcss classes
 export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
@@ -42,64 +31,27 @@ export const convertCssClassesToTwcssClasses: GetPropsFromAttributes = (
   parentAttributes?: Attributes
 ) => {
   let classPropName: string = "class";
-  let variableProps: string = "";
-  const twcssPropRenderingMap: TwcssPropRenderingMap = {};
-
-  Object.entries(attributes).forEach(([property, value]) => {
-    const twcssClasses: string[] = getTwcssClass(
-      property,
-      value,
-      attributes,
-      parentAttributes
-    ).split(" ");
-    twcssPropRenderingMap[property] = {
-      numberOfTwcssClasses: twcssClasses.length,
-      filledClassIndexes: new Set<number>(),
-    };
-  });
 
   if (option.uiFramework === UiFramework.react) {
     classPropName = "className";
-    variableProps = getVariablePropForTwcss(
-      node.getId(),
-      twcssPropRenderingMap
-    );
   }
 
   let content: string = "";
   Object.entries(attributes).forEach(([property, value]) => {
-    const twcssPropRenderingMeta: TwcssPropRenderingMeta =
-      twcssPropRenderingMap[property];
-    if (
-      twcssPropRenderingMeta.numberOfTwcssClasses ===
-      twcssPropRenderingMeta.filledClassIndexes.size
-    ) {
-      return;
-    }
+    const twcssClass: string = getTwcssClass(
+      property,
+      value,
+      attributes,
+      parentAttributes
+    );
 
-    for (let i = 0; i < twcssPropRenderingMeta.numberOfTwcssClasses; i++) {
-      const parts: string[] = getTwcssClass(
-        property,
-        value,
-        attributes,
-        parentAttributes
-      ).split(" ");
-      if (twcssPropRenderingMeta.filledClassIndexes.has(i)) {
-        continue;
-      }
-      content = content + " " + parts[i];
-    }
+    content = content + twcssClass + " ";
   });
 
-  content += variableProps;
   content = filterContent(content, node);
 
   if (isEmpty(content)) {
     return "";
-  }
-
-  if (!isEmpty(variableProps)) {
-    return `${classPropName}={\`${content.trim()}\`}`;
   }
 
   return `${classPropName}="${content.trim()}"`;
@@ -1217,9 +1169,8 @@ const convertLinearGradientToTwcssValues = (cssValue: string) => {
       if (i === 0) {
         const start: number = colorInRgb.indexOf("(");
         const end: number = colorInRgb.lastIndexOf(")");
-        result += `from-[rgba(${colorInRgb.substring(start + 1, end)})] from-${
-          percentage + "%"
-        } `;
+        result += `from-[rgba(${colorInRgb.substring(start + 1, end)})] from-${percentage + "%"
+          } `;
         continue;
       }
 
