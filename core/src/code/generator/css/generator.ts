@@ -18,7 +18,7 @@ import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
 import { getVariablePropForCss } from "../../../../ee/code/prop";
-import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -45,8 +45,8 @@ export class Generator {
       InFileDataMeta[]
     ] = this.htmlGenerator.getExtraComponentsMetaData();
 
-    const importComponents =
-      extraFileRegistryGlobalInstance.getImportComponentMeta();
+    // TODO: get rid of importComponents and any funciton that uses this
+    const importComponents = [];
 
     if (option.uiFramework === UiFramework.react) {
       return [
@@ -88,10 +88,18 @@ export class Generator {
       path: `/${mainComponentName}.${getFileExtensionFromLanguage(option)}`,
     };
 
-    let extraFiles: File[] = [];
-    if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraFiles(importComponents);
-    }
+    // generate local asset files
+    const extraFiles: File[] = [];
+    Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
+      (asset) => {
+        if (asset.type === "local") {
+          extraFiles.push({
+            content: asset.content,
+            path: asset.src,
+          });
+        }
+      }
+    );
 
     if (isCssFileNeeded) {
       const cssFile: File = {

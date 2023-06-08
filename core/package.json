@@ -24,7 +24,8 @@
     "lodash": "^4.17.21",
     "matrix-inverse": "^2.0.0",
     "prettier": "^2.8.4",
-    "react-native-uuid": "^2.0.1"
+    "react-native-uuid": "^2.0.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@figma/plugin-typings": "*",

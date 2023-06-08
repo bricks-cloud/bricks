@@ -10,6 +10,7 @@ import {
   propRegistryGlobalInstance,
 } from "./prop-registry";
 import { shouldUseAsBackgroundImage } from "../../src/bricks/util";
+import { assetRegistryGlobalInstance } from "../../src/code/asset-registry/asset-registry";
 
 type PropLocation = {
   type: string;
@@ -448,7 +449,7 @@ export const gatherPropsFromSimilarNodes = (
 
   const cssProps: ComponentProperties =
     optionRegistryGlobalInstance.getOption().cssFramework ===
-      CssFramework.tailwindcss
+    CssFramework.tailwindcss
       ? gatherTwcssPropsFromNodes(similarNodes, instanceIds)
       : gatherCssPropsFromNodes(similarNodes, instanceIds);
   let componentProps: ComponentProperties = {
@@ -533,8 +534,7 @@ export const gatherPropsFromVectorNodes = (
       nodeId,
       type: "src",
       instanceId,
-      value:
-        "./assets/" + nameRegistryGlobalInstance.getVectorName(nodeId) + ".svg",
+      value: assetRegistryGlobalInstance.getAssetById(nodeId).src,
     });
 
     properties[altProp.id].bindings.push({
@@ -591,8 +591,7 @@ export const gatherPropsFromImageNodes = (
       nodeId,
       type: "src",
       instanceId,
-      value:
-        "./assets/" + nameRegistryGlobalInstance.getImageName(nodeId) + ".png",
+      value: assetRegistryGlobalInstance.getAssetById(nodeId).src,
     });
 
     properties[altProp.id].bindings.push({

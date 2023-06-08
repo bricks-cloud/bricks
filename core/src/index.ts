@@ -31,6 +31,8 @@ import {
   EVENT_AI_GET_NAME_SUCCESS,
 } from "./analytic/amplitude";
 import { removeCssFromNode } from "./bricks/remove-css";
+import { instantiateAssetRegistryGlobalInstance } from "./code/asset-registry/asset-registry";
+import { generateAssets } from "./code/generator/assets";
 // import { instantiateRadialRadientRegistryGlobalInstance } from "./code/generator/tailwindcss/radient-registry";
 
 export const convertToCode = async (
@@ -61,6 +63,7 @@ export const convertToCode = async (
 
   instantiateRegistries(startingNode, option);
 
+  await generateAssets(startingNode, option);
   addAdditionalCssAttributesToNodes(startingNode, startingNode);
   removeCssFromNode(startingNode);
 
@@ -96,6 +99,7 @@ export const convertToCodeWithAi = async (
 
   instantiateRegistries(startingNode, option);
 
+  await generateAssets(startingNode, option);
   addAdditionalCssAttributesToNodes(startingNode, startingNode);
   removeCssFromNode(startingNode);
 
@@ -144,4 +148,5 @@ const instantiateRegistries = (startingNode: Node, option: Option) => {
   instantiateDataArrRegistryGlobalInstance();
   instantiatePropRegistryGlobalInstance();
   instantiateComponentRegistryGlobalInstance();
+  instantiateAssetRegistryGlobalInstance();
 };

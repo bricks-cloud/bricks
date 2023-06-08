@@ -17,17 +17,6 @@ export class Generator {
   ): string {
     let importStatements: string[] = [`import React from "react";`];
 
-    for (const importComponent of importComponents) {
-      const extension = getExtensionFromFilePath(importComponent.importPath);
-      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
-        continue;
-      }
-
-      importStatements.push(
-        `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-      );
-    }
-
     if (isCssFileNeeded) {
       importStatements.push(`import "./style.css"`);
     }

@@ -19,6 +19,7 @@ import {
 import { withTimeout } from "./utils";
 import { EVENT_ERROR } from "./analytic/amplitude";
 import { isEmpty } from "bricks-core/src/utils";
+import { CodePreviewLocation } from "bricks-core/src/code/code";
 
 const socket = io("ws://localhost:32044");
 
@@ -26,7 +27,6 @@ const UI = () => {
   const [isComponentSelected, setIsComponentSelected] = useState(false);
   const [currentPage, setCurrentPage] = useState(PAGES.HOME);
   const [previousPage, setPreviousPage] = useState(PAGES.HOME);
-  const [connectedToVSCode, setConnectedToVSCode] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingCodeWithAi, setIsGeneratingCodeWithAi] = useState(false);
   const [aiApplications, setAiApplications] = useState([
@@ -36,6 +36,9 @@ const UI = () => {
   const [limit, setLimit] = useState(0);
 
   // User settings
+  const [codePreviewLocation, setCodePreviewLocation] = useState(
+    CodePreviewLocation.web
+  );
   const [selectedLanguage, setSelectedLanguage] = useState(Language.javascript);
   const [selectedUiFramework, setSelectedUiFramework] = useState(
     UiFramework.react
@@ -114,7 +117,7 @@ const UI = () => {
     parent.postMessage({ pluginMessage: { type: "get-last-reset" } }, "*");
 
     socket.on("connect", () => {
-      setConnectedToVSCode(true);
+      setCodePreviewLocation(CodePreviewLocation.vscode);
       parent.postMessage(
         {
           pluginMessage: {
@@ -128,7 +131,7 @@ const UI = () => {
     });
 
     socket.on("disconnect", () => {
-      setConnectedToVSCode(false);
+      setCodePreviewLocation(CodePreviewLocation.web);
       parent.postMessage(
         {
           pluginMessage: {
@@ -254,7 +257,7 @@ const UI = () => {
       }
 
       const TIMEOUT_SECONDS = 10;
-
+      console.log("Generated files:", pluginMessage.files);
       socket.emit(
         "code-generation",
         { files: pluginMessage.files },
@@ -319,7 +322,7 @@ const UI = () => {
       <div className="h-full">
         {currentPage === PAGES.HOME && (
           <Home
-            connectedToVSCode={connectedToVSCode}
+            codePreviewLocation={codePreviewLocation}
             isComponentSelected={isComponentSelected}
             selectedUiFramework={selectedUiFramework}
             selectedCssFramework={selectedCssFramework}

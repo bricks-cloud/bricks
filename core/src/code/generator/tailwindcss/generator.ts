@@ -19,9 +19,9 @@ import {
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
-import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 // import { RadialGradientGlobalRegistry } from "./radient-registry";
 
 export class Generator {
@@ -43,8 +43,9 @@ export class Generator {
   ): Promise<[string, ImportedComponentMeta[]]> {
     const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const importComponents: ImportedComponentMeta[] =
-      extraFileRegistryGlobalInstance.getImportComponentMeta();
+    // TODO: get rid of importComponents and any funciton that uses this
+    const importComponents: ImportedComponentMeta[] = [];
+
     const [inFileComponents, inFileData]: [
       InFileComponentMeta[],
       InFileDataMeta[]
@@ -79,10 +80,18 @@ export class Generator {
       path: `/${mainComponentName}.${mainFileExtension}`,
     };
 
-    let extraFiles: File[] = [];
-    if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraFiles(importComponents);
-    }
+    // generate local asset files
+    const extraFiles: File[] = [];
+    Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
+      (asset) => {
+        if (asset.type === "local") {
+          extraFiles.push({
+            content: asset.content,
+            path: asset.src,
+          });
+        }
+      }
+    );
 
     const twcssConfigFile: File = {
       content: buildTwcssConfigFileContent(mainFileExtension, importComponents),

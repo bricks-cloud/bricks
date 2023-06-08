@@ -23,6 +23,7 @@ import {
 } from "../../../../ee/code/prop";
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 type GetPropsFromNode = (node: Node, option: Option) => string;
 export type GetPropsFromAttributes = (
@@ -283,6 +284,7 @@ export class Generator {
         let srcValue: string = `${imageComponentName}`;
         const src = getSrcProp(node);
         if (!isEmpty(src)) {
+          // QUESTION: Do we call getImageName() then override it with getSrcProp()?
           srcValue = src;
         }
 
@@ -298,6 +300,7 @@ export class Generator {
       return [
         this.renderImageWithPositionalAttributes(
           node,
+          // TODO: change this to use getSrcProp
           `src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}`,
           option
         ),
@@ -676,20 +679,20 @@ const getWidthAndHeightProp = (node: Node): string => {
 const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
-  let fileExtension: string = "svg";
-  let componentName: string = nameRegistryGlobalInstance.getVectorName(id);
+  // let fileExtension: string = "svg";
+  // let componentName: string = nameRegistryGlobalInstance.getVectorName(id);
 
-  if (node.getType() === NodeType.IMAGE) {
-    fileExtension = "png";
-    componentName = nameRegistryGlobalInstance.getImageName(id);
-  }
+  // if (node.getType() === NodeType.IMAGE) {
+  //   fileExtension = "png";
+  //   componentName = nameRegistryGlobalInstance.getImageName(id);
+  // }
 
   const prop: string = getVariableProp(id, "src");
   if (!isEmpty(prop)) {
     return `{${prop}}`;
   }
 
-  return `"./assets/${componentName}.${fileExtension}"`;
+  return `"${assetRegistryGlobalInstance?.getAssetById(id)?.src}"`;
 };
 
 const getAltProp = (node: Node): string => {

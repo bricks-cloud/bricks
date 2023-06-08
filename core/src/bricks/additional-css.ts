@@ -23,7 +23,7 @@ import {
 } from "./line";
 import { filterCssValue, shouldUseAsBackgroundImage } from "./util";
 import { absolutePositioningAnnotation } from "./overlap";
-import { nameRegistryGlobalInstance } from "../code/name-registry/name-registry";
+import { assetRegistryGlobalInstance } from "../code/asset-registry/asset-registry";
 
 export const selectBox = (
   node: Node,
@@ -481,16 +481,10 @@ const isCssValueEmpty = (value: string): boolean => {
 export const addAdditionalCssAttributes = (node: Node) => {
   if (shouldUseAsBackgroundImage(node)) {
     const id: string = node.getId();
-    const imageComponentName: string =
-      nameRegistryGlobalInstance.getImageName(id);
-
-    let extension: string = "png";
-    if (node.getType() === NodeType.VECTOR) {
-      extension = "svg";
-    }
-
     node.addCssAttributes({
-      "background-image": `url('./assets/${imageComponentName}.${extension}')`,
+      "background-image": `url('${
+        assetRegistryGlobalInstance.getAssetById(id).src
+      }')`,
     });
   }
 

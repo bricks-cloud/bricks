@@ -9,15 +9,14 @@ import {
 } from "../constants";
 import {
   EVENT_GENERATE_BUTTON_CLICK,
-  EVENT_INSTALLATION_LINK_CLICK,
-  EVENT_FAQ_LINK_CLICK,
   EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
 } from "../analytic/amplitude";
 import Button from "../components/Button";
 import { Tooltip } from "flowbite-react";
+import { CodePreviewLocation } from "bricks-core/src/code/code";
 
 export interface Props {
-  connectedToVSCode: boolean;
+  codePreviewLocation: CodePreviewLocation;
   selectedUiFramework: UiFramework;
   selectedCssFramework: CssFramework;
   selectedLanguage: Language;
@@ -30,7 +29,7 @@ export interface Props {
 
 const Home = (props: PropsWithChildren<Props>) => {
   const {
-    connectedToVSCode,
+    codePreviewLocation,
     isComponentSelected,
     setIsGeneratingCodeWithAi,
     limit,
@@ -54,6 +53,7 @@ const Home = (props: PropsWithChildren<Props>) => {
             language: selectedLanguage,
             uiFramework: selectedUiFramework,
             cssFramework: selectedCssFramework,
+            codePreviewLocation,
           },
         },
       },
@@ -89,6 +89,7 @@ const Home = (props: PropsWithChildren<Props>) => {
             language: selectedLanguage,
             uiFramework: selectedUiFramework,
             cssFramework: selectedCssFramework,
+            codePreviewLocation,
           },
         },
       },
@@ -115,42 +116,6 @@ const Home = (props: PropsWithChildren<Props>) => {
     setCurrentPage(PAGES.SETTING);
   };
 
-  const handleInstallationLinkClick = () => {
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_INSTALLATION_LINK_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
-  };
-
-  const handleFaqLinkClick = () => {
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_FAQ_LINK_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
-  };
-
-  const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
-
   const getGenerateCodeButton = () => {
     if (
       selectedGenerationMethod === GenerationMethod.withai &&
@@ -160,7 +125,7 @@ const Home = (props: PropsWithChildren<Props>) => {
       return (
         <Button
           onClick={handleGenerateCodeWithAiButtonClick}
-          disabled={!isGenerateCodeButtonEnabled}
+          disabled={!isComponentSelected}
         >
           Generate Code With AI
         </Button>
@@ -170,63 +135,15 @@ const Home = (props: PropsWithChildren<Props>) => {
     return (
       <Button
         onClick={handleGenerateCodeButtonClick}
-        disabled={!isGenerateCodeButtonEnabled}
+        disabled={!isComponentSelected}
       >
         Generate Code
       </Button>
     );
   };
 
-  const getCenterContent = (isConnectedToVSCode: boolean) => {
-    if (isConnectedToVSCode) {
-      return (
-        <div>
-          <p className="font-vietnam text-black font-bold text-lg mb-4">
-            Select a frame or component to get started
-          </p>
-          <p className="font-vietnam italic text-sm text-gray-400">
-            {isComponentSelected
-              ? "Components detected"
-              : "No components selected"}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div>
-        <p className="font-vietnam text-black font-bold text-lg mb-4">
-          Activate Bricks VSCode extension to get started
-        </p>
-        <p className="font-vietnam text-black text-sm mb-1">
-          Install VSCode extension{" "}
-          <a
-            onClick={handleInstallationLinkClick}
-            href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode"
-            target="_top"
-            className="text-blue-600 dark:text-blue-500 hover:underline"
-          >
-            {" "}
-            here
-          </a>
-        </p>
-        <p className="font-vietnam text-black text-sm">
-          For any issues, check out our{" "}
-          <a
-            onClick={handleFaqLinkClick}
-            href="https://github.com/bricks-cloud/bricks/tree/main/docs"
-            target="_top"
-            className="text-blue-600 dark:text-blue-500 hover:underline"
-          >
-            FAQs
-          </a>
-        </p>
-      </div>
-    );
-  };
-
   const ranOutOfAiCredits =
-    limit === 0 && connectedToVSCode ? (
+    limit === 0 ? (
       <div className="h-16 border-t-2 font-vietnam text-sm text-gray-400 w-full flex justify-center items-start pt-3">
         Ran out of daily AI credits?<span>&nbsp;</span>
         <Tooltip
@@ -241,16 +158,25 @@ const Home = (props: PropsWithChildren<Props>) => {
 
   return (
     <div className="h-full w-full flex flex-col justify-between items-center">
-      <div className="p-6">{getCenterContent(connectedToVSCode)}</div>
+      <div className="p-6">
+        <div>
+          <p className="font-vietnam text-black font-bold text-lg mb-4">
+            Select a frame or component to get started
+          </p>
+          <p className="font-vietnam italic text-sm text-gray-400">
+            {isComponentSelected
+              ? "Components detected"
+              : "No components selected"}
+          </p>
+        </div>
+      </div>
       <div className="h-28 w-full flex justify-center items-center">
         <div className="h-28 w-full flex flex-col justify-center items-center gap-4 mb-2">
           {getGenerateCodeButton()}
-          {connectedToVSCode ? (
-            <Button onClick={handleOutputSettingButtonClick} secondary>
-              <img className="h-4 mr-2" src={settingsLogo.default} />
-              Setting
-            </Button>
-          ) : null}
+          <Button onClick={handleOutputSettingButtonClick} secondary>
+            <img className="h-4 mr-2" src={settingsLogo.default} />
+            Setting
+          </Button>
         </div>
       </div>
       {ranOutOfAiCredits}

@@ -28,6 +28,7 @@ figma.ui.onmessage = async (msg) => {
       language: msg.options.language,
       cssFramework: msg.options.cssFramework,
       uiFramework: msg.options.uiFramework,
+      codePreviewLocation: msg.options.codePreviewLocation,
     });
 
     promise
@@ -63,6 +64,7 @@ figma.ui.onmessage = async (msg) => {
       language: msg.options.language,
       cssFramework: msg.options.cssFramework,
       uiFramework: msg.options.uiFramework,
+      codePreviewLocation: msg.options.codePreviewLocation,
     });
 
     promise

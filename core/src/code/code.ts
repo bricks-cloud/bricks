@@ -19,7 +19,13 @@ export enum CssFramework {
   tailwindcss = "tailwindcss",
 }
 
+export enum CodePreviewLocation {
+  vscode = "vscode",
+  web = "web",
+}
+
 export interface Option {
+  codePreviewLocation?: CodePreviewLocation;
   language?: Language;
   uiFramework?: UiFramework;
   cssFramework?: CssFramework;
