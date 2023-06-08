@@ -3,7 +3,6 @@ import { useContext, useState } from "react";
 import demo from "../assets/bricks-demo.gif";
 import PageContext, { PAGES } from "../context/page-context";
 import Button from "../components/Button";
-import { EVENT_FEEDBACK } from "../analytic/amplitude";
 
 const PostCodeGeneration = () => {
   const { setCurrentPage } = useContext(PageContext);
@@ -16,20 +15,6 @@ const PostCodeGeneration = () => {
 
   const handleSubmitFeedback = () => {
     if (feedback.trim() === "") return;
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_FEEDBACK,
-          eventProperties: {
-            feedback: feedback.trim(),
-          },
-        },
-      },
-      "*"
-    );
-
     setSubmitted(true);
   };
 

@@ -10,19 +10,9 @@ import {
 } from "../../../bricks/node";
 import {
   Attributes,
-  ExportFormat,
   StyledTextSegment,
 } from "../../../design/adapter/node";
-import { generateProps } from "../../../../ee/loop/data-array-registry";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
-import { Component, Data, DataArr } from "../../../../ee/loop/component";
-import {
-  getVariableProp,
-  getTextVariableProp,
-  getWidthAndHeightVariableProp,
-} from "../../../../ee/code/prop";
-import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
-import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
 type GetPropsFromNode = (node: Node, option: Option) => string;
 export type GetPropsFromAttributes = (
@@ -211,43 +201,10 @@ export class Generator {
     option: Option
   ): Promise<string> {
     let childrenCodeStrings: string[] = [];
-    let repeatedComponents: Node[] = [];
-    let streak: boolean = false;
-
     for (const child of nodes) {
-      if (
-        option.uiFramework === UiFramework.react &&
-        componentRegistryGlobalInstance.getComponentByNodeId(child.getId()) &&
-        nodes.length > 2
-      ) {
-        streak = true;
-
-        repeatedComponents.push(child);
-        continue;
-      }
-
-      if (streak) {
-        const repeatedComponentsCodeString: string =
-          await this.generateCodeFromRepeatedComponents(
-            repeatedComponents,
-            option
-          );
-        childrenCodeStrings.push(repeatedComponentsCodeString);
-        streak = false;
-      }
-
       const codeString: string = await this.generateHtml(child, option);
 
       childrenCodeStrings.push(codeString);
-    }
-
-    if (streak) {
-      const repeatedComponentsCodeString: string =
-        await this.generateCodeFromRepeatedComponents(
-          repeatedComponents,
-          option
-        );
-      childrenCodeStrings.push(repeatedComponentsCodeString);
     }
 
     return openingTag + childrenCodeStrings.join("") + closingTag;
@@ -313,68 +270,6 @@ export class Generator {
     option: Option
   ): string {
     return `<img ${this.getPropsFromNode(node, option)} ${props}/>`;
-  }
-
-  async generateCodeFromRepeatedComponents(
-    nodes: Node[],
-    option: Option
-  ): Promise<string> {
-    const id: string = nodes[0].getId();
-    const component: Component =
-      componentRegistryGlobalInstance.getComponentByNodeId(id);
-    const dataArr: DataArr = component.getDataArr();
-    const data: Data[] = component.getData(nodes);
-
-    let renderInALoop: boolean = false;
-    if (!isEmpty(data)) {
-      renderInALoop = true;
-    }
-
-    const sample: object = data[0];
-    const generatedComponent = await this.generateHtml(nodes[0], option);
-
-    const propNames: string = component.getPropNames().join(",");
-    let propBinding: string = isEmpty(propNames) ? `` : `{${propNames}}`;
-
-    let componentCodeString: string = `const ${component.getName()} = (${propBinding}) => (
-      ${generatedComponent}
-    );`;
-
-    this.inFileComponents.push({
-      componentCode: componentCodeString,
-    });
-
-    let codeStr: string = "";
-
-    if (renderInALoop) {
-      let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(
-        data
-      )};`;
-
-      let arrCodeStr: string = `{
-        ${dataArr.name}.map(({
-      ${Object.keys(sample).join(",")}
-        }) => <${component.getName()} ${generateProps(
-        dataArr.fieldToPropBindings
-      )} />)
-      }`;
-
-      this.inFileData.push({
-        dataCode: dataCodeStr,
-      });
-
-      codeSampleRegistryGlobalInstance.addCodeSample(
-        createMiniReactFile(componentCodeString, dataCodeStr, arrCodeStr)
-      );
-
-      return arrCodeStr;
-    }
-
-    for (const _ of nodes) {
-      codeStr += `<${component.getName()} />`;
-    }
-
-    return codeStr;
   }
 
   getText(node: Node, option: Option): string {

@@ -7,12 +7,6 @@ import {
   Language,
   GenerationMethod,
 } from "../constants";
-import {
-  EVENT_GENERATE_BUTTON_CLICK,
-  EVENT_INSTALLATION_LINK_CLICK,
-  EVENT_FAQ_LINK_CLICK,
-  EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
-} from "../analytic/amplitude";
 import Button from "../components/Button";
 import { Tooltip } from "flowbite-react";
 
@@ -45,35 +39,6 @@ const Home = (props: PropsWithChildren<Props>) => {
   const handleGenerateCodeButtonClick = async () => {
     await setIsGeneratingCode(true);
     await setCurrentPage(PAGES.CODE_GENERATION);
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "styled-bricks-nodes",
-          options: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_GENERATE_BUTTON_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
   };
 
   const handleGenerateCodeWithAiButtonClick = async () => {
@@ -94,59 +59,10 @@ const Home = (props: PropsWithChildren<Props>) => {
       },
       "*"
     );
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_GENERATE_WITH_AI_BUTTON_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
   };
 
   const handleOutputSettingButtonClick = () => {
     setCurrentPage(PAGES.SETTING);
-  };
-
-  const handleInstallationLinkClick = () => {
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_INSTALLATION_LINK_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
-  };
-
-  const handleFaqLinkClick = () => {
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_FAQ_LINK_CLICK,
-          eventProperties: {
-            language: selectedLanguage,
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-          },
-        },
-      },
-      "*"
-    );
   };
 
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
@@ -201,7 +117,6 @@ const Home = (props: PropsWithChildren<Props>) => {
         <p className="font-vietnam text-black text-sm mb-1">
           Install VSCode extension{" "}
           <a
-            onClick={handleInstallationLinkClick}
             href="https://marketplace.visualstudio.com/items?itemName=Bricks.d2c-vscode"
             target="_top"
             className="text-blue-600 dark:text-blue-500 hover:underline"
@@ -213,7 +128,6 @@ const Home = (props: PropsWithChildren<Props>) => {
         <p className="font-vietnam text-black text-sm">
           For any issues, check out our{" "}
           <a
-            onClick={handleFaqLinkClick}
             href="https://github.com/bricks-cloud/bricks/tree/main/docs"
             target="_top"
             className="text-blue-600 dark:text-blue-500 hover:underline"

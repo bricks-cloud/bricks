@@ -18,7 +18,6 @@ import tailwindcssLogo from "../assets/tailwindcss-logo.svg";
 import javascriptLogo from "../assets/javascript-logo.svg";
 import typescriptLogo from "../assets/typescript-logo.svg";
 import Button from "../components/Button";
-import { EVENT_SAVE_SETTINGS } from "../analytic/amplitude";
 
 type Option<T> = {
   id: T;
@@ -170,22 +169,6 @@ const CodeOutputSetting: React.FC<Props> = ({
       selectedGenerationMethod
     );
     setCurrentPage(PAGES.HOME);
-
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "analytics",
-          eventName: EVENT_SAVE_SETTINGS,
-          eventProperties: {
-            uiFramework: selectedUiFramework,
-            cssFramework: selectedCssFramework,
-            language: selectedLanguage,
-            generationMethod: selectedGenerationMethod,
-          },
-        },
-      },
-      "*"
-    );
   };
 
   return (

@@ -17,7 +17,6 @@ import {
   UiFramework,
 } from "./constants";
 import { withTimeout } from "./utils";
-import { EVENT_ERROR } from "./analytic/amplitude";
 import { isEmpty } from "bricks-core/src/utils";
 
 const socket = io("ws://localhost:32044");
@@ -262,19 +261,6 @@ const UI = () => {
           (response) => {
             if (response.error) {
               console.error("Error from VS Code. See more in VS code console.");
-              parent.postMessage(
-                {
-                  pluginMessage: {
-                    type: "analytics",
-                    eventName: EVENT_ERROR,
-                    eventProperties: {
-                      source: "vscode",
-                      error: response.error,
-                    },
-                  },
-                },
-                "*"
-              );
 
               setCurrentPageWithAdjustedScreenSize(PAGES.ERROR);
             }
@@ -283,19 +269,6 @@ const UI = () => {
             const error = `VS Code timeout after ${TIMEOUT_SECONDS} seconds.`;
 
             console.error(error);
-            parent.postMessage(
-              {
-                pluginMessage: {
-                  type: "analytics",
-                  eventName: EVENT_ERROR,
-                  eventProperties: {
-                    source: "vscode",
-                    error,
-                  },
-                },
-              },
-              "*"
-            );
             setCurrentPageWithAdjustedScreenSize(PAGES.ERROR);
           },
           // set timeout
