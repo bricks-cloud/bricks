@@ -274,12 +274,6 @@ export class Generator {
 
   getText(node: Node, option: Option): string {
     const textNode: TextNode = node as TextNode;
-
-    const prop: string = getTextVariableProp(node.getId());
-    if (!isEmpty(prop)) {
-      return prop;
-    }
-
     const styledTextSegments = textNode.getStyledTextSegments();
 
     // for keeping track of nested tags
@@ -555,17 +549,14 @@ const splitByNewLine = (text: string) => {
 
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();
-  let widthAndHeight: string = getWidthAndHeightVariableProp(node.getId());
-
   if (
-    isEmpty(widthAndHeight) &&
     cssAttribtues["width"] &&
     cssAttribtues["height"]
   ) {
     return `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
   }
 
-  return widthAndHeight;
+  return "";
 };
 
 const getSrcProp = (node: Node): string => {
@@ -579,22 +570,12 @@ const getSrcProp = (node: Node): string => {
     componentName = nameRegistryGlobalInstance.getImageName(id);
   }
 
-  const prop: string = getVariableProp(id, "src");
-  if (!isEmpty(prop)) {
-    return `{${prop}}`;
-  }
-
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
 const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
-
-  const prop: string = getVariableProp(id, "alt");
-  if (!isEmpty(prop)) {
-    return `{${prop}}`;
-  }
 
   return `"${componentName}"`;
 };

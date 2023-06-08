@@ -22,7 +22,6 @@ import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
-// import { RadialGradientGlobalRegistry } from "./radient-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;

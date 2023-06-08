@@ -1,4 +1,3 @@
-import { Identify, identify, track } from "@amplitude/analytics-browser";
 import { Node, TextNode, NodeType } from "./bricks/node";
 import uuid from "react-native-uuid";
 import { NameMap, File } from "./code/code";
@@ -11,13 +10,6 @@ export const isEmpty = (value: any): boolean => {
     (typeof value === "object" && Object.keys(value).length === 0) ||
     (typeof value === "string" && value.trim().length === 0)
   );
-};
-
-export const trackEvent = (eventName: string, eventProperties: any) => {
-  const event = new Identify();
-  event.setOnce("username", figma.currentUser.name);
-  identify(event);
-  track(eventName, isEmpty(eventProperties) ? {} : eventProperties);
 };
 
 export const traverseNodes = async (

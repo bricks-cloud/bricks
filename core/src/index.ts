@@ -18,6 +18,7 @@ export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
   option: Option
 ): Promise<File[]> => {
+
   const { nodes: converted } = convertFigmaNodesToBricksNodes(figmaNodes);
   if (converted.length < 1) {
     return [];

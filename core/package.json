@@ -2,7 +2,6 @@
   "name": "bricks-core",
   "version": "0.0.1",
   "description": "Converts Figma nodes into Bricks nodes",
-  "license": "MIT",
   "homepage": "https://github.com/bricks-cloud/bricks#readme",
   "repository": {
     "type": "git",
@@ -18,7 +17,6 @@
     "prettier": "prettier --write ."
   },
   "dependencies": {
-    "@amplitude/analytics-browser": "^1.9.4",
     "base64-js": "^1.5.1",
     "dotenv": "^16.0.3",
     "lodash": "^4.17.21",

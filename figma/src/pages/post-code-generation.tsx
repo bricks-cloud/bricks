@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 //@ts-ignore
 import demo from "../assets/bricks-demo.gif";
 import PageContext, { PAGES } from "../context/page-context";
@@ -6,16 +6,9 @@ import Button from "../components/Button";
 
 const PostCodeGeneration = () => {
   const { setCurrentPage } = useContext(PageContext);
-  const [feedback, setFeedback] = useState("");
-  const [submitted, setSubmitted] = useState(false);
 
   const handleDismissButtonClick = () => {
     setCurrentPage(PAGES.HOME);
-  };
-
-  const handleSubmitFeedback = () => {
-    if (feedback.trim() === "") return;
-    setSubmitted(true);
   };
 
   return (
@@ -31,25 +24,7 @@ const PostCodeGeneration = () => {
         <img className="h-32" src={demo} />
       </div>
 
-      <div className="max-w-xs mx-auto flex flex-col justify-between items-center">
-        <p className="font-vietnam text-sm text-black text-center mb-2">
-          How are you liking Bricks?
-        </p>
-        <textarea
-          className="w-64 h-24 border border-gray-400 rounded-md p-2 text-sm focus:outline-blue-500"
-          placeholder="We appreciate any feedback!"
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-        />
-      </div>
-
       <div className="flex flex-col justify-center items-center gap-4">
-        <Button
-          disabled={feedback.trim() === "" || submitted}
-          onClick={handleSubmitFeedback}
-        >
-          {!submitted ? "Submit" : "Submitted!"}
-        </Button>
         <Button secondary onClick={handleDismissButtonClick}>
           Dismiss
         </Button>

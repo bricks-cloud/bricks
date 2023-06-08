@@ -1,52 +1,27 @@
 import { useEffect, useContext, PropsWithChildren } from "react";
 import PageContext, { PAGES } from "../context/page-context";
-import { GenerationMethod, UiFramework } from "../constants";
+import { UiFramework } from "../constants";
 
 export interface Props {
   isGeneratingCode: boolean;
-  isGeneratingCodeWithAi: boolean;
   selectedUiFramework: UiFramework;
-  limit: number;
-  selectedGenerationMethod: GenerationMethod;
 }
 
 const CodeGenerationStatus = ({
   isGeneratingCode,
-  isGeneratingCodeWithAi,
-  selectedUiFramework,
-  limit,
-  selectedGenerationMethod,
 }: PropsWithChildren<Props>) => {
   const { setCurrentPage } = useContext(PageContext);
 
   useEffect(() => {
-    if (!isGeneratingCode && !isGeneratingCodeWithAi) {
-      if (
-        selectedGenerationMethod === GenerationMethod.withai &&
-        selectedUiFramework !== UiFramework.html &&
-        limit !== 0
-      ) {
-        setCurrentPage(PAGES.POST_CODE_GENERATION_AI);
-        return;
-      }
+    if (!isGeneratingCode) {
       setCurrentPage(PAGES.POST_CODE_GENERATION);
     }
-  }, [isGeneratingCode, isGeneratingCodeWithAi]);
-
-  const generatingCodeText = isGeneratingCodeWithAi ? (
-    <p className="font-vietnam text-black font-bold text-lg text-center">
-      Generating Code With AI. <br />
-      This could take up to 3 minute. <br />
-      Please wait patiently.
-    </p>
-  ) : (
-    <p className="font-vietnam text-black font-bold text-lg">Generating Code</p>
-  );
+  }, [isGeneratingCode]);
 
   return (
     <div className="h-full w-full flex flex-col justify-center items-center">
       <div className="flex flex-col justify-between items-center gap-6">
-        {generatingCodeText}
+        <p className="font-vietnam text-black font-bold text-lg">Generating Code</p>
         <svg
           aria-hidden="true"
           className="w-12 h-12 text-blue-300 animate-spin fill-blue-600"

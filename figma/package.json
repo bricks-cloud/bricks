@@ -74,13 +74,9 @@
     "webpack-cli": "^5.0.0"
   },
   "figmaPlugin": {
-    "name": "Bricks D2C",
-    "id": "1178847414663679049",
+    "name": "Bricks D2C Developer Edition",
     "api": "1.0.0",
     "main": "./code.js",
-    "permissions": [
-      "currentuser"
-    ],
     "editorType": [
       "figma"
     ],

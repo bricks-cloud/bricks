@@ -17,7 +17,6 @@ import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
-import { getVariablePropForCss } from "../../../../ee/code/prop";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 
 export class Generator {
@@ -251,36 +250,13 @@ const convertCssClassesToInlineStyle = (
   const cssEntries: [string, string][] = Object.entries(attributes);
 
   if (option.uiFramework === UiFramework.react) {
-    let [variableProps, cssKeyConnectedToProps]: [string[], Set<string>] =
-      getVariablePropForCss(node.getId());
     const lines: string[] = [];
     cssEntries.forEach(([key, value]) => {
-      if (cssKeyConnectedToProps.has(key)) {
-        return;
-      }
-
       lines.push(`${snakeCaseToCamelCase(key)}: "${value}"`);
     });
 
-    variableProps = filterStyles(variableProps, node);
-
-    if (isEmpty(variableProps) && isEmpty(lines)) {
-      return "";
-    }
-
-    if (isEmpty(variableProps)) {
-      return `style=${`{{${placeBackgroundAtTheBeginning(lines, option)}}}`}`;
-    }
-
-    if (isEmpty(lines)) {
-      return `style=${`{{${placeBackgroundAtTheBeginning(
-        variableProps,
-        option
-      )}}}`}`;
-    }
-
     inlineStyle = `{{${placeBackgroundAtTheBeginning(
-      [...lines, ...variableProps],
+      lines,
       option
     )}}}`;
 
@@ -299,21 +275,6 @@ const convertCssClassesToInlineStyle = (
   inlineStyle = `${lines.join("; ")}`;
 
   return `style="${inlineStyle}"`;
-};
-
-const filterStyles = (styles: string[], node: Node) => {
-  const type: NodeType = node.getType();
-  if (type !== NodeType.VECTOR && type !== NodeType.IMAGE) {
-    return styles;
-  }
-
-  if (!isEmpty(node.getChildren())) {
-    return styles;
-  }
-
-  return styles.filter(
-    (style) => !style.startsWith("width") && !style.startsWith("height")
-  );
 };
 
 const placeBackgroundAtTheBeginning = (
