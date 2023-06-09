@@ -1,32 +1,13 @@
-import { isEmpty } from "../../../utils";
-import {
-  ImportedComponentMeta,
-  InFileDataMeta,
-  InFileComponentMeta,
-} from "../html/generator";
-import { getExtensionFromFilePath } from "../util";
-
+import { InFileDataMeta, InFileComponentMeta } from "../html/generator";
 export class Generator {
   generateReactFileContent(
     content: string,
     componentName: string,
     isCssFileNeeded: boolean = false,
-    importComponents: ImportedComponentMeta[],
     inFileData: InFileDataMeta[],
     inFileComponents: InFileComponentMeta[]
   ): string {
     let importStatements: string[] = [`import React from "react";`];
-
-    for (const importComponent of importComponents) {
-      const extension = getExtensionFromFilePath(importComponent.importPath);
-      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
-        continue;
-      }
-
-      importStatements.push(
-        `import ${importComponent.componentName} from ".${importComponent.importPath}"`
-      );
-    }
 
     if (isCssFileNeeded) {
       importStatements.push(`import "./style.css"`);

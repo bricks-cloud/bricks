@@ -1,11 +1,7 @@
 import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
-import {
-  getFileExtensionFromLanguage,
-  constructExtraFiles,
-  getExtensionFromFilePath,
-} from "../util";
+import { getFileExtensionFromLanguage } from "../util";
 import {
   convertCssClassesToTwcssClasses,
   getImageFileNameFromUrl,
@@ -13,15 +9,14 @@ import {
 import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import {
   Generator as HtmlGenerator,
-  ImportedComponentMeta,
   InFileComponentMeta,
   InFileDataMeta,
 } from "../html/generator";
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
-import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -39,52 +34,57 @@ export class Generator {
     node: Node,
     option: Option,
     mainComponentName: string
-  ): Promise<[string, ImportedComponentMeta[]]> {
+  ): Promise<string> {
     const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const importComponents: ImportedComponentMeta[] =
-      extraFileRegistryGlobalInstance.getImportComponentMeta();
     const [inFileComponents, inFileData]: [
       InFileComponentMeta[],
       InFileDataMeta[]
     ] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
-      return [
-        this.reactGenerator.generateReactFileContent(
-          mainFileContent,
-          mainComponentName,
-          true,
-          [],
-          inFileData,
-          inFileComponents
-        ),
-        importComponents,
-      ];
+      return this.reactGenerator.generateReactFileContent(
+        mainFileContent,
+        mainComponentName,
+        true,
+        inFileData,
+        inFileComponents
+      );
     }
 
-    return [mainFileContent, importComponents];
+    return mainFileContent;
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
     const mainComponentName = "GeneratedComponent";
     const mainFileExtension = getFileExtensionFromLanguage(option);
 
-    const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(node, option, mainComponentName);
+    const mainFileContent = await this.generateMainFileContent(
+      node,
+      option,
+      mainComponentName
+    );
 
     const mainFile: File = {
       content: mainFileContent,
       path: `/${mainComponentName}.${mainFileExtension}`,
     };
 
-    let extraFiles: File[] = [];
-    if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraFiles(importComponents);
-    }
+    // generate local asset files
+    const extraFiles: File[] = [];
+    Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
+      (asset) => {
+        if (asset.type === "local") {
+          extraFiles.push({
+            content: asset.content,
+            path: asset.src,
+          });
+        }
+      }
+    );
 
     const twcssConfigFile: File = {
-      content: buildTwcssConfigFileContent(mainFileExtension, importComponents),
+      content: buildTwcssConfigFileContent(mainFileExtension),
       path: `/tailwind.config.js`,
     };
 
@@ -212,8 +212,7 @@ const getPropsFromNode = (node: Node, option: Option): string => {
 
 // buildTwcssConfigFileContent builds file content for tailwind.config.js.
 export const buildTwcssConfigFileContent = (
-  mainComponentFileExtension: string,
-  importComponents: ImportedComponentMeta[]
+  mainComponentFileExtension: string
 ) => {
   let fontFamilies = "";
   let backgroundImages = "";
@@ -226,25 +225,18 @@ export const buildTwcssConfigFileContent = (
       .join("");
   }
 
-  if (!isEmpty(importComponents)) {
-    importComponents.forEach((importComponent: ImportedComponentMeta) => {
-      const extension = getExtensionFromFilePath(importComponent.importPath);
-      if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
-        backgroundImages += `"${getImageFileNameFromUrl(
-          importComponent.importPath
-        )}": "url(.${importComponent.importPath})",`;
-      }
-
-      if (
-        extension === "svg" &&
-        shouldUseAsBackgroundImage(importComponent.node)
-      ) {
-        backgroundImages += `"${getImageFileNameFromUrl(
-          importComponent.importPath
-        )}": "url(.${importComponent.importPath})",`;
-      }
-    });
-  }
+  Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach((asset) => {
+    if (asset.src.endsWith("png") && !isEmpty(asset.node.getChildren())) {
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
+        asset.src
+      })",`;
+    }
+    if (asset.src.endsWith("svg") && shouldUseAsBackgroundImage(asset.node)) {
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
+        asset.src
+      })",`;
+    }
+  });
 
   const backgroundImagesConfig = !isEmpty(backgroundImages)
     ? `backgroundImage: {

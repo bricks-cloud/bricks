@@ -2,14 +2,9 @@ import { isEmpty } from "../../../utils";
 import { File, Option, UiFramework } from "../../code";
 import { Node, NodeType } from "../../../bricks/node";
 import { Attributes } from "../../../design/adapter/node";
-import {
-  getFileExtensionFromLanguage,
-  constructExtraFiles,
-  snakeCaseToCamelCase,
-} from "../util";
+import { getFileExtensionFromLanguage, snakeCaseToCamelCase } from "../util";
 import {
   Generator as HtmlGenerator,
-  ImportedComponentMeta,
   InFileComponentMeta,
   InFileDataMeta,
 } from "../html/generator";
@@ -17,7 +12,7 @@ import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
-import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -36,7 +31,7 @@ export class Generator {
     option: Option,
     mainComponentName: string,
     isCssFileNeeded: boolean
-  ): Promise<[string, ImportedComponentMeta[]]> {
+  ): Promise<string> {
     const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
     const [inFileComponents, inFileData]: [
@@ -44,24 +39,17 @@ export class Generator {
       InFileDataMeta[]
     ] = this.htmlGenerator.getExtraComponentsMetaData();
 
-    const importComponents =
-      extraFileRegistryGlobalInstance.getImportComponentMeta();
-
     if (option.uiFramework === UiFramework.react) {
-      return [
-        this.reactGenerator.generateReactFileContent(
-          mainFileContent,
-          mainComponentName,
-          isCssFileNeeded,
-          [],
-          inFileData,
-          inFileComponents
-        ),
-        importComponents,
-      ];
+      return this.reactGenerator.generateReactFileContent(
+        mainFileContent,
+        mainComponentName,
+        isCssFileNeeded,
+        inFileData,
+        inFileComponents
+      );
     }
 
-    return [mainFileContent, importComponents];
+    return mainFileContent;
   }
 
   async generateFiles(node: Node, option: Option): Promise<File[]> {
@@ -74,23 +62,30 @@ export class Generator {
       isCssFileNeeded = true;
     }
 
-    const [mainFileContent, importComponents] =
-      await this.generateMainFileContent(
-        node,
-        option,
-        mainComponentName,
-        isCssFileNeeded
-      );
+    const mainFileContent = await this.generateMainFileContent(
+      node,
+      option,
+      mainComponentName,
+      isCssFileNeeded
+    );
 
     const mainFile: File = {
       content: mainFileContent,
       path: `/${mainComponentName}.${getFileExtensionFromLanguage(option)}`,
     };
 
-    let extraFiles: File[] = [];
-    if (!isEmpty(importComponents)) {
-      extraFiles = await constructExtraFiles(importComponents);
-    }
+    // generate local asset files
+    const extraFiles: File[] = [];
+    Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
+      (asset) => {
+        if (asset.type === "local") {
+          extraFiles.push({
+            content: asset.content,
+            path: asset.src,
+          });
+        }
+      }
+    );
 
     if (isCssFileNeeded) {
       const cssFile: File = {
@@ -255,10 +250,7 @@ const convertCssClassesToInlineStyle = (
       lines.push(`${snakeCaseToCamelCase(key)}: "${value}"`);
     });
 
-    inlineStyle = `{{${placeBackgroundAtTheBeginning(
-      lines,
-      option
-    )}}}`;
+    inlineStyle = `{{${placeBackgroundAtTheBeginning(lines, option)}}}`;
 
     return `style=${inlineStyle}`;
   }

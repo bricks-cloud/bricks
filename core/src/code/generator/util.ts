@@ -1,6 +1,4 @@
 import { isEmpty } from "../../utils";
-import { ImportedComponentMeta } from "./html/generator";
-import { ExportFormat } from "../../design/adapter/node";
 import { Option, File, UiFramework, Language } from "../code";
 import { Node, NodeType } from "../../bricks/node";
 
@@ -46,36 +44,6 @@ export const cssStrToNum = (value: string): number => {
   }
 
   return 0;
-};
-
-// constructExtraFiles creates extra files if they are imported in the main file
-export const constructExtraFiles = async (
-  importedComponents: ImportedComponentMeta[]
-): Promise<File[]> => {
-  let files: File[] = [];
-  if (isEmpty(importedComponents)) {
-    return files;
-  }
-
-  for (const importComponent of importedComponents) {
-    const extension = getExtensionFromFilePath(importComponent.importPath);
-
-    if (extension === "svg") {
-      files.push({
-        content: await importComponent.node.export(ExportFormat.SVG),
-        path: importComponent.importPath,
-      });
-
-      continue;
-    }
-
-    files.push({
-      content: await importComponent.node.export(ExportFormat.PNG),
-      path: importComponent.importPath,
-    });
-  }
-
-  return files;
 };
 
 // styling in React requires CSS property to be camel cased such as style={{ justifyContent: "center" }}

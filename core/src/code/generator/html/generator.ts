@@ -8,11 +8,9 @@ import {
   VectorNode,
   TextNode,
 } from "../../../bricks/node";
-import {
-  Attributes,
-  StyledTextSegment,
-} from "../../../design/adapter/node";
+import { Attributes, StyledTextSegment } from "../../../design/adapter/node";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
+import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 type GetPropsFromNode = (node: Node, option: Option) => string;
 export type GetPropsFromAttributes = (
@@ -22,12 +20,6 @@ export type GetPropsFromAttributes = (
   // sometimes needed because the value of an attribute can depend on the parent's attributes
   parentCssAttributes?: Attributes
 ) => string;
-
-export type ImportedComponentMeta = {
-  node: VectorGroupNode | VectorNode | ImageNode;
-  importPath: string;
-  componentName: string;
-};
 
 export type InFileComponentMeta = {
   componentCode: string;
@@ -255,6 +247,7 @@ export class Generator {
       return [
         this.renderImageWithPositionalAttributes(
           node,
+          // TODO: change this to use getSrcProp
           `src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}`,
           option
         ),
@@ -549,10 +542,7 @@ const splitByNewLine = (text: string) => {
 
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();
-  if (
-    cssAttribtues["width"] &&
-    cssAttribtues["height"]
-  ) {
+  if (cssAttribtues["width"] && cssAttribtues["height"]) {
     return `width="${cssAttribtues["width"]}" height="${cssAttribtues["height"]}"`;
   }
 
@@ -562,15 +552,7 @@ const getWidthAndHeightProp = (node: Node): string => {
 const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
-  let fileExtension: string = "svg";
-  let componentName: string = nameRegistryGlobalInstance.getVectorName(id);
-
-  if (node.getType() === NodeType.IMAGE) {
-    fileExtension = "png";
-    componentName = nameRegistryGlobalInstance.getImageName(id);
-  }
-
-  return `"./assets/${componentName}.${fileExtension}"`;
+  return `"${assetRegistryGlobalInstance?.getAssetById(id)?.src}"`;
 };
 
 const getAltProp = (node: Node): string => {
@@ -593,27 +575,4 @@ const escapeHtml = (str: string) => {
         return "&#125;";
     }
   });
-};
-
-const createMiniReactFile = (
-  componentCode: string,
-  dataCode: string,
-  arrCode: string
-) => {
-  return `
-  import React from "react"; 
-  import "./style.css";
-
-  ${componentCode}
-
-  ${dataCode}
-
-  const GeneratedComponent = (
-    <div>
-      ${arrCode}
-    </div>
-  );
-
-  export default GeneratedComponent;
-  `;
 };
