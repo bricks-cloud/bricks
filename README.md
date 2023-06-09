@@ -58,8 +58,11 @@ Check out our [demo video](https://www.loom.com/share/1e7bf5792f6949cb83f2e18176
 Bricks is composed of a number of components. Below is a description of each component:
 
 - `figma`: the Figma plugin for Bricks.
-- `vscode`: the VS Code extension for Bricks.
-- `core`: engine that converts Figma nodes into coding files.
+- `core`: the engine that converts Figma nodes into coding files.
+
+## Related Projects
+- [bricks-cloud/vscode](https://github.com/bricks-cloud/vscode): the VS Code extension for Bricks.
+
 
 ## License
 
