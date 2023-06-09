@@ -1,4 +1,5 @@
 import { Node } from "../../bricks/node";
+import { File } from "../code";
 
 export let assetRegistryGlobalInstance: AssetRegistry;
 export const instantiateAssetRegistryGlobalInstance = () => {
@@ -28,6 +29,20 @@ export class AssetRegistry {
   }
 
   registerLocalAsset(node: Node, src: string, content: string) {
+    const identicalAsset = Object.values(this.assets).find(
+      (asset) => asset.type === "local" && asset.content === content
+    );
+
+    if (identicalAsset) {
+      this.assets[node.getId()] = {
+        type: "local",
+        src: identicalAsset.src,
+        content,
+        node,
+      };
+      return;
+    }
+
     this.assets[node.getId()] = {
       type: "local",
       src,
@@ -51,4 +66,32 @@ export class AssetRegistry {
   getAllAssets() {
     return this.assets;
   }
+
+  generateAssetFiles() {
+    const assetFiles: File[] = [];
+
+    Object.values(this.assets).forEach((asset) => {
+      if (asset.type === "local") {
+        assetFiles.push({
+          content: asset.content,
+          path: asset.src,
+        });
+      }
+    });
+
+    return removeFilesWithDuplicatePaths(assetFiles);
+  }
+}
+
+// util
+function removeFilesWithDuplicatePaths(files: File[]): File[] {
+  const keyValueSet = new Set();
+  return files.filter((file) => {
+    const path = file.path;
+    if (keyValueSet.has(path)) {
+      return false;
+    }
+    keyValueSet.add(path);
+    return true;
+  });
 }
