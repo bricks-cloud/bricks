@@ -13,12 +13,13 @@ import {
   removeNode,
 } from "./bricks/remove-node";
 import { removeCssFromNode } from "./bricks/remove-css";
+import { instantiateAssetRegistryGlobalInstance } from "./code/asset-registry/asset-registry";
+import { generateAssets } from "./code/generator/assets";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
   option: Option
 ): Promise<File[]> => {
-
   const { nodes: converted } = convertFigmaNodesToBricksNodes(figmaNodes);
   if (converted.length < 1) {
     return [];
@@ -43,6 +44,7 @@ export const convertToCode = async (
 
   instantiateRegistries(startingNode, option);
 
+  await generateAssets(startingNode);
   addAdditionalCssAttributesToNodes(startingNode, startingNode);
   removeCssFromNode(startingNode);
 
@@ -53,4 +55,5 @@ const instantiateRegistries = (startingNode: Node, option: Option) => {
   instantiateOptionRegistryGlobalInstance(option);
   instantiateFontsRegistryGlobalInstance(startingNode);
   instantiateNameRegistryGlobalInstance();
+  instantiateAssetRegistryGlobalInstance();
 };
