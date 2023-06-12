@@ -658,7 +658,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
           }
 
           moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
-
           if (!moreThanOneRow) {
             delete childAttributes["width"];
             delete childAttributes["min-width"];

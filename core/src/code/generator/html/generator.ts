@@ -499,10 +499,12 @@ const replaceLeadingWhiteSpaceAndNewLine = (
 ): string => {
   let newStr: string = "";
   let streak: boolean = true;
+  let replacedWhiteSpaceIndex: Set<number> = new Set<number>();
   for (let i = 0; i < str.length; i++) {
-    if (str.charCodeAt(i) === 160 && streak) {
+    if ((str.charCodeAt(i) === 160 || str.charCodeAt(i) === 32) && streak) {
       newStr += "&nbsp;";
       streak = true;
+      replacedWhiteSpaceIndex.add(i);
       continue;
     }
 
@@ -515,6 +517,20 @@ const replaceLeadingWhiteSpaceAndNewLine = (
     }
 
     newStr += str.charAt(i);
+  }
+
+  newStr = newStr.trimEnd();
+  for (let i = str.length - 1; i >= 0; i--) {
+    if (replacedWhiteSpaceIndex.has(i)) {
+      break;
+    }
+
+    if ((str.charCodeAt(i) === 160 || str.charCodeAt(i) === 32)) {
+      newStr += "&nbsp;";
+      continue;
+    }
+
+    break;
   }
 
   return newStr;

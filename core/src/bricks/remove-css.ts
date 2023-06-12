@@ -18,22 +18,6 @@ export const removeCssFromNode = (node: Node) => {
   let cssAttributes: Attributes = node.getCssAttributes();
 
   if (
-    positionalAttributes["justify-content"] === "start" &&
-    positionalAttributes["flex-direction"] !== "column" &&
-    !isEmpty(cssAttributes["width"])
-  ) {
-    delete positionalAttributes["padding-right"];
-  }
-
-  if (
-    positionalAttributes["justify-content"] === "start" &&
-    positionalAttributes["flex-direction"] !== "row" &&
-    !isEmpty(cssAttributes["height"])
-  ) {
-    delete positionalAttributes["padding-bottom"];
-  }
-
-  if (
     isEmpty(positionalAttributes["position"]) &&
     positionalAttributes["justify-content"] !== "space-between" &&
     !isEmpty(cssAttributes["width"])
