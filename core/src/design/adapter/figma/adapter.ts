@@ -398,7 +398,7 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
 
     switch (figmaNode.primaryAxisAlignItems) {
       case "MIN":
-        attributes["justify-content"] = "flex-start";
+        attributes["justify-content"] = "start";
         break;
       case "CENTER":
         attributes["justify-content"] = "center";
@@ -407,19 +407,19 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
         attributes["justify-content"] = "space-between";
         break;
       case "MAX":
-        attributes["justify-content"] = "flex-end";
+        attributes["justify-content"] = "end";
         break;
     }
 
     switch (figmaNode.counterAxisAlignItems) {
       case "MIN":
-        attributes["align-items"] = "flex-start";
+        attributes["align-items"] = "start";
         break;
       case "CENTER":
         attributes["align-items"] = "center";
         break;
       case "MAX":
-        attributes["align-items"] = "flex-end";
+        attributes["align-items"] = "end";
         break;
     }
 

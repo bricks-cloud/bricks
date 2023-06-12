@@ -18,11 +18,27 @@ export const removeCssFromNode = (node: Node) => {
   let cssAttributes: Attributes = node.getCssAttributes();
 
   if (
+    positionalAttributes["justify-content"] === "start" &&
+    positionalAttributes["flex-direction"] !== "column" &&
+    !isEmpty(cssAttributes["width"])
+  ) {
+    delete positionalAttributes["padding-right"];
+  }
+
+  if (
+    positionalAttributes["justify-content"] === "start" &&
+    positionalAttributes["flex-direction"] !== "row" &&
+    !isEmpty(cssAttributes["height"])
+  ) {
+    delete positionalAttributes["padding-bottom"];
+  }
+
+  if (
     isEmpty(positionalAttributes["position"]) &&
     positionalAttributes["justify-content"] !== "space-between" &&
     !isEmpty(cssAttributes["width"])
   ) {
-    const actualChildrenWidth: number = calculateActualChildrenWidth(node);
+    const actualChildrenWidth: number = calculateActualChildrenWidth(positionalAttributes, children);
     const width: number = cssStrToNum(cssAttributes["width"]);
 
     if (
@@ -60,12 +76,10 @@ export const removeCssFromNode = (node: Node) => {
   }
 
   node.setCssAttributes(cssAttributes);
+  node.setPositionalCssAttributes(positionalAttributes);
 };
 
-const calculateActualChildrenWidth = (node: Node): number => {
-  const positionalAttributes: Attributes = node.getPositionalCssAttributes();
-
-  const children = node.getChildren();
+const calculateActualChildrenWidth = (positionalAttributes: Attributes, children: Node[]): number => {
   let paddingCum: number = 0;
   let gapCum: number = 0;
   let widthCum: number = 0;

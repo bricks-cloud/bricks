@@ -44,15 +44,15 @@ export const selectBox = (
 };
 
 enum JustifyContent {
-  FLEX_START = "flex-start",
-  FLEX_END = "flex-end",
+  START = "start",
+  END = "end",
   CENTER = "center",
   SPACE_BETWEEN = "space-between",
 }
 
 enum AlignItems {
-  FLEX_START = "flex-start",
-  FLEX_END = "flex-end",
+  START = "start",
+  END = "end",
   CENTER = "center",
   SPACE_BETWEEN = "space-between",
 }
@@ -230,19 +230,19 @@ export const getPaddingInPixels = (
         paddingLeft = leftGap;
         paddingRight = rightGap;
         break;
-      case JustifyContent.FLEX_START:
+      case JustifyContent.START:
         paddingLeft = leftGap;
         break;
-      case JustifyContent.FLEX_END:
+      case JustifyContent.END:
         paddingRight = rightGap;
         break;
     }
 
     switch (alignItemsValue) {
-      case AlignItems.FLEX_START:
+      case AlignItems.START:
         paddingTop = topGap;
         break;
-      case AlignItems.FLEX_END:
+      case AlignItems.END:
         paddingBot = botGap;
         break;
     }
@@ -263,19 +263,19 @@ export const getPaddingInPixels = (
       paddingTop = topGap;
       paddingBot = botGap;
       break;
-    case JustifyContent.FLEX_START:
+    case JustifyContent.START:
       paddingTop = topGap;
       break;
-    case JustifyContent.FLEX_END:
+    case JustifyContent.END:
       paddingBot = botGap;
       break;
   }
 
   switch (alignItemsValue) {
-    case AlignItems.FLEX_START:
+    case AlignItems.START:
       paddingLeft = leftGap;
       break;
-    case AlignItems.FLEX_END:
+    case AlignItems.END:
       paddingRight = rightGap;
       break;
   }
@@ -360,10 +360,10 @@ const setMarginsForChildren = (
             marginBot = botGap;
           }
           break;
-        case JustifyContent.FLEX_START:
+        case JustifyContent.START:
           marginTop = topGap;
           break;
-        case JustifyContent.FLEX_END:
+        case JustifyContent.END:
           marginBot = botGap;
           break;
       }
@@ -378,10 +378,10 @@ const setMarginsForChildren = (
         paddingRight;
 
       switch (alignItemsValue) {
-        case AlignItems.FLEX_START:
+        case AlignItems.START:
           marginLeft = leftGap;
           break;
-        case AlignItems.FLEX_END:
+        case AlignItems.END:
           marginRight = rightGap;
           break;
       }
@@ -422,10 +422,10 @@ const setMarginsForChildren = (
           break;
         }
         break;
-      case JustifyContent.FLEX_START:
+      case JustifyContent.START:
         marginLeft = leftGap;
         break;
-      case JustifyContent.FLEX_END:
+      case JustifyContent.END:
         marginRight = rightGap;
         break;
     }
@@ -440,10 +440,10 @@ const setMarginsForChildren = (
       paddingBot;
 
     switch (alignItemsValue) {
-      case AlignItems.FLEX_START:
+      case AlignItems.START:
         marginTop = topGap;
         break;
-      case AlignItems.FLEX_END:
+      case AlignItems.END:
         marginBot = botGap;
         break;
     }
@@ -468,10 +468,12 @@ const isCssValueEmpty = (value: string): boolean => {
 export const addAdditionalCssAttributes = (node: Node) => {
   if (shouldUseAsBackgroundImage(node)) {
     const id: string = node.getId();
-    node.addCssAttributes({
-      "background-image": `url('${assetRegistryGlobalInstance.getAssetById(id).src
-        }')`,
-    });
+    const url: string = assetRegistryGlobalInstance.getAssetById(id)?.src;
+    if (!isEmpty(url)) {
+      node.addCssAttributes({
+        "background-image": `url('${url}')`,
+      });
+    }
   }
 
   if (node.getType() === NodeType.IMAGE) {
@@ -761,13 +763,30 @@ const getAllowedMaxWidthAndHeight = (node: Node): number[] => {
 
 const addGapToNode = (node: Node, direction: Direction) => {
   const positionalCssAttributes = node.getPositionalCssAttributes();
-
-  if ((positionalCssAttributes["justify-content"] === "space-between" && isEmpty(positionalCssAttributes["gap"]))) {
+  if ((positionalCssAttributes["justify-content"] === JustifyContent.SPACE_BETWEEN && isEmpty(positionalCssAttributes["gap"]))) {
     const [_, gap] = getAverageGap(node, direction);
-    node.addPositionalCssAttributes({
-      "gap": `${Math.trunc(gap)}px`,
-    });
+    if (gap > 2) {
+      node.addPositionalCssAttributes({
+        "gap": `${Math.trunc(gap)}px`,
+      });
+    }
+    return;
+  }
 
+  if ((positionalCssAttributes["justify-content"] === JustifyContent.START && node.getChildren().length === 2)) {
+    const secondChild: Node = node.getChildren()[1];
+
+
+    if ((direction === Direction.VERTICAL && isEmpty(secondChild.getAPositionalAttribute("margin-left"))) ||
+      (direction === Direction.HORIZONTAL && isEmpty(secondChild.getAPositionalAttribute("margin-top")))
+    ) {
+      const [_, gap] = getAverageGap(node, direction);
+      if (gap > 2) {
+        node.addPositionalCssAttributes({
+          "gap": `${Math.trunc(gap)}px`,
+        });
+      }
+    }
     return;
   }
 
@@ -922,18 +941,18 @@ const getJustifyContentValue = (
     }
 
     if (touchingStart) {
-      return JustifyContent.FLEX_START;
+      return JustifyContent.START;
     }
 
     if (touchingEnd) {
-      return JustifyContent.FLEX_END;
+      return JustifyContent.END;
     }
 
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
-        return JustifyContent.FLEX_START;
+        return JustifyContent.START;
       case RelativePoisition.RIGHT:
-        return JustifyContent.FLEX_END;
+        return JustifyContent.END;
       case RelativePoisition.CONTAIN:
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
@@ -941,10 +960,10 @@ const getJustifyContentValue = (
         }
 
         if (diff > 0) {
-          return JustifyContent.FLEX_END;
+          return JustifyContent.END;
         }
 
-        return JustifyContent.FLEX_START;
+        return JustifyContent.START;
     }
   }
 
@@ -953,7 +972,7 @@ const getJustifyContentValue = (
     return JustifyContent.SPACE_BETWEEN;
   }
 
-  return JustifyContent.FLEX_START;
+  return JustifyContent.START;
 };
 
 
@@ -1012,9 +1031,9 @@ const getAlignItemsValue = (
     const targetLine = targetLines[0];
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
-        return AlignItems.FLEX_START;
+        return AlignItems.START;
       case RelativePoisition.RIGHT:
-        return AlignItems.FLEX_END;
+        return AlignItems.END;
       case RelativePoisition.CONTAIN:
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
@@ -1022,10 +1041,10 @@ const getAlignItemsValue = (
         }
 
         if (diff > 0) {
-          return AlignItems.FLEX_END;
+          return AlignItems.END;
         }
 
-        return AlignItems.FLEX_START;
+        return AlignItems.START;
     }
   }
 
@@ -1110,14 +1129,14 @@ const getAlignItemsValue = (
       numberOfItemsTippingLeftStrict !== 0 &&
       numberOfItemsTippingRightStrict === 0
     ) {
-      return AlignItems.FLEX_START;
+      return AlignItems.START;
     }
 
     if (
       numberOfItemsTippingRightStrict !== 0 &&
       numberOfItemsTippingLeftStrict === 0
     ) {
-      return AlignItems.FLEX_END;
+      return AlignItems.END;
     }
   }
 
@@ -1126,11 +1145,11 @@ const getAlignItemsValue = (
   }
 
   if (numberOfItemsTippingLeft !== 0) {
-    return AlignItems.FLEX_START;
+    return AlignItems.START;
   }
 
   if (numberOfItemsTippingRight !== 0) {
-    return AlignItems.FLEX_END;
+    return AlignItems.END;
   }
 
   return AlignItems.CENTER;
