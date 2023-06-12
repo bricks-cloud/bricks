@@ -66,7 +66,8 @@ enum RelativePoisition {
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
 export const addAdditionalCssAttributesToNodes = (
   node: Node,
-  startingNode: Node
+  startingNode: Node,
+  relativePositionSet: boolean,
 ) => {
   if (isEmpty(node)) {
     return;
@@ -82,31 +83,23 @@ export const addAdditionalCssAttributesToNodes = (
 
   const direction = getDirection(node);
   reorderNodesBasedOnDirection(node, direction);
-  node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
+
+  const [positionalAttributes, relateivePositionSetNew]: [Attributes, boolean] = getPositionalCssAttributes(node, direction, relativePositionSet);
+  node.addPositionalCssAttributes(positionalAttributes);
+  addGapToNode(node, direction);
+
   adjustChildrenHeightAndWidthCssValue(node);
   adjustChildrenPositionalCssValue(node, direction);
-  UpdateNodeWidthToMinWidth(node);
+  updateNodeWidthToMinWidth(node);
+
+
 
   for (const child of children) {
-    addAdditionalCssAttributesToNodes(child, startingNode);
+    addAdditionalCssAttributesToNodes(child, startingNode, relateivePositionSetNew);
   }
 };
 
-// const setOverflowHiddenForStartingNode = (
-//   targetNode: Node,
-//   startingNode: Node
-// ) => {
-//   if (
-//     computePositionalRelationship(
-//       targetNode.getAbsBoundingBox(),
-//       startingNode.getAbsBoundingBox()
-//     ) !== PostionalRelationship.INCLUDE
-//   ) {
-//     startingNode.addCssAttributes({ overflow: "hidden" });
-//   }
-// };
-
-const UpdateNodeWidthToMinWidth = (node: Node) => {
+const updateNodeWidthToMinWidth = (node: Node) => {
   const positionalCssAttributes: Attributes = node.getPositionalCssAttributes();
   const cssAttributes: Attributes = node.getCssAttributes();
   if (
@@ -162,6 +155,7 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
   let prevChild: Node = null;
   for (let i = 0; i < children.length; i++) {
     const child: Node = children[i];
+
     if (i === 0) {
       prevChild = child;
       continue;
@@ -475,9 +469,8 @@ export const addAdditionalCssAttributes = (node: Node) => {
   if (shouldUseAsBackgroundImage(node)) {
     const id: string = node.getId();
     node.addCssAttributes({
-      "background-image": `url('${
-        assetRegistryGlobalInstance.getAssetById(id).src
-      }')`,
+      "background-image": `url('${assetRegistryGlobalInstance.getAssetById(id).src
+        }')`,
     });
   }
 
@@ -766,34 +759,47 @@ const getAllowedMaxWidthAndHeight = (node: Node): number[] => {
   return [width - pl - pr, height - pt - pb];
 };
 
+const addGapToNode = (node: Node, direction: Direction) => {
+  const positionalCssAttributes = node.getPositionalCssAttributes();
+
+  if ((positionalCssAttributes["justify-content"] === "space-between" && isEmpty(positionalCssAttributes["gap"]))) {
+    const [_, gap] = getAverageGap(node, direction);
+    node.addPositionalCssAttributes({
+      "gap": `${Math.trunc(gap)}px`,
+    });
+
+    return;
+  }
+
+  return;
+};
+
 // getPositionalCssAttributes gets positional css information of a node in relation to its children.
 export const getPositionalCssAttributes = (
   node: Node,
-  direction: Direction
-): Attributes => {
+  direction: Direction,
+  relativePositionSet: boolean
+): [Attributes, boolean] => {
   const positionalCssAttributes = node.getPositionalCssAttributes();
   // if autolayout has been set on this node
   if (!isEmpty(positionalCssAttributes["display"])) {
-    if (doPaddingValuesExist(node)) {
-      return positionalCssAttributes;
-    }
 
-    const attributes: Attributes = {};
-    setPaddingAndMarginValues(node, direction, attributes);
-    return {
-      ...positionalCssAttributes,
-      ...attributes,
-    };
+
+    return [positionalCssAttributes, relativePositionSet];
   }
 
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
-    return positionalCssAttributes;
+    return [positionalCssAttributes, relativePositionSet];
   }
 
+  let relativePositionSetCopy: boolean = relativePositionSet;
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
-    attributes["position"] = "relative";
+    if (positionalCssAttributes["position"] !== "absolute") {
+      relativePositionSetCopy = true;
+      attributes["position"] = "relative";
+    }
 
     const currentBox = selectBox(node, true);
     for (const child of node.getChildren()) {
@@ -825,10 +831,10 @@ export const getPositionalCssAttributes = (
       child.addPositionalCssAttributes(childAttributes);
     }
 
-    return {
+    return [{
       ...positionalCssAttributes,
       ...attributes,
-    };
+    }, relativePositionSetCopy];
   }
 
   attributes["display"] = "flex";
@@ -836,33 +842,20 @@ export const getPositionalCssAttributes = (
     attributes["flex-direction"] = "column";
   }
 
-  setPaddingAndMarginValues(node, direction, attributes);
+  const [justifyContentValue, alignItemsValue]: [JustifyContent, AlignItems] = setJustifyContentAndAlignItemsValues(node, direction, attributes);
+  setPaddingAndMarginValues(node, direction, attributes, justifyContentValue, alignItemsValue);
 
-  return {
+  return [{
     ...positionalCssAttributes,
     ...attributes,
-  };
+  }, relativePositionSet];
 };
 
-const doPaddingValuesExist = (node: Node): boolean => {
-  const cssAttributes: Attributes = node.getCssAttributes();
-  if (
-    !isEmpty(cssAttributes["padding-top"]) ||
-    !isEmpty(cssAttributes["padding-bottom"]) ||
-    !isEmpty(cssAttributes["padding-left"]) ||
-    !isEmpty(cssAttributes["padding-right"])
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
-const setPaddingAndMarginValues = (
+const setJustifyContentAndAlignItemsValues = (
   node: Node,
   direction: Direction,
   attributes: Attributes
-) => {
+): [JustifyContent, AlignItems] => {
   const justifyContentValue = getJustifyContentValue(node, direction);
   const alignItemsValue = getAlignItemsValue(
     node,
@@ -872,6 +865,16 @@ const setPaddingAndMarginValues = (
   attributes["justify-content"] = justifyContentValue;
   attributes["align-items"] = alignItemsValue;
 
+  return [justifyContentValue, alignItemsValue];
+};
+
+const setPaddingAndMarginValues = (
+  node: Node,
+  direction: Direction,
+  attributes: Attributes,
+  justifyContentValue: JustifyContent,
+  alignItemsValue: AlignItems,
+) => {
   const paddings = getPaddingInPixels(
     node,
     direction,
@@ -945,47 +948,54 @@ const getJustifyContentValue = (
     }
   }
 
-  if (targetLines.length === 2) {
+  const [shouldUseSpaceBetween, _]: [boolean, number] = getAverageGap(parentNode, direction);
+  if (shouldUseSpaceBetween) {
     return JustifyContent.SPACE_BETWEEN;
   }
 
-  if (targetLines.length > 2) {
-    const gaps: number[] = [];
-    let prevLine: Line = null;
-    for (let i = 0; i < targetLines.length; i++) {
-      const targetLine: Line = targetLines[i];
-      if (i === 0) {
-        prevLine = targetLine;
-        continue;
-      }
+  return JustifyContent.FLEX_START;
+};
 
-      gaps.push(targetLine.lower - prevLine.upper);
-      prevLine = targetLine;
-    }
 
-    const averageGap: number = gaps.reduce((a, b) => a + b) / gaps.length;
-    let isJustifyCenter: boolean = true;
-    for (let i = 0; i < targetLines.length; i++) {
-      const targetLine: Line = targetLines[i];
-      if (i === 0) {
-        prevLine = targetLine;
-        continue;
-      }
-
-      const gap: number = targetLine.lower - prevLine.upper;
-
-      if (Math.abs(gap - averageGap) / averageGap > 0.1) {
-        isJustifyCenter = false;
-      }
-      prevLine = targetLine;
-    }
-
-    if (isJustifyCenter) {
-      return JustifyContent.SPACE_BETWEEN;
-    }
+const getAverageGap = (parentNode: Node, direction: Direction): [boolean, number] => {
+  const children = parentNode.getChildren();
+  if (children.length <= 1) {
+    return [false, 0];
   }
 
-  return JustifyContent.FLEX_START;
+  const targetLines = getLinesFromNodes(children, direction);
+
+  const gaps: number[] = [];
+  let prevLine: Line = null;
+  for (let i = 0; i < targetLines.length; i++) {
+    const targetLine: Line = targetLines[i];
+    if (i === 0) {
+      prevLine = targetLine;
+      continue;
+    }
+
+    gaps.push(targetLine.lower - prevLine.upper);
+    prevLine = targetLine;
+  }
+
+  const averageGap: number = gaps.reduce((a, b) => a + b) / gaps.length;
+  let isJustifyCenter: boolean = true;
+  for (let i = 0; i < targetLines.length; i++) {
+    const targetLine: Line = targetLines[i];
+    if (i === 0) {
+      prevLine = targetLine;
+      continue;
+    }
+
+    const gap: number = targetLine.lower - prevLine.upper;
+
+    if (Math.abs(gap - averageGap) / averageGap > 0.1) {
+      isJustifyCenter = false;
+    }
+    prevLine = targetLine;
+  }
+
+  return [isJustifyCenter, averageGap];
 };
 
 // getAlignItemsValue determines the value of align-items css property given a node and flex-direction.

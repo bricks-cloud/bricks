@@ -146,69 +146,13 @@ export class BaseNode {
   }
 }
 
-function findIntersection(
-  rectangle1: BoxCoordinates,
-  rectangle2: BoxCoordinates
-): BoxCoordinates {
-  const xOverlap = Math.max(
-    0,
-    Math.min(rectangle1.rightBot.x, rectangle2.rightBot.x) -
-    Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x)
-  );
-  const yOverlap = Math.max(
-    0,
-    Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y) -
-    Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
-  );
-
-  if (xOverlap === 0 || yOverlap === 0) {
-    return null; // No intersection
-  }
-
-  const intersection: BoxCoordinates = {
-    rightBot: {
-      x: Math.max(rectangle1.rightBot.x, rectangle2.rightBot.x),
-      y: Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y),
-    },
-    rightTop: {
-      x: Math.min(rectangle1.rightTop.x, rectangle2.rightTop.x),
-      y: Math.max(rectangle1.rightTop.y, rectangle2.rightTop.y),
-    },
-    leftBot: {
-      x: Math.max(rectangle1.leftBot.x, rectangle2.leftBot.x),
-      y: Math.min(rectangle1.leftBot.y, rectangle2.leftBot.y),
-    },
-    leftTop: {
-      x: Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x),
-      y: Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y),
-    },
-  };
-
-  return intersection;
-}
-
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
-  targetCoordinates: BoxCoordinates
+  targetCoordinates: BoxCoordinates,
+  overlapBuffer: number,
 ): boolean => {
-  const intersection: BoxCoordinates = findIntersection(
-    currentCoordinate,
-    targetCoordinates
-  );
 
-  if (!isEmpty(intersection)) {
-    const intersectionWidth: number = Math.abs(
-      intersection.leftTop.x - intersection.rightBot.x
-    );
-    const intersectionHeight: number = Math.abs(
-      intersection.leftTop.y - intersection.rightBot.y
-    );
-
-    if (intersectionWidth < 2 || intersectionHeight < 2) {
-      return false;
-    }
-  }
 
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
@@ -225,15 +169,15 @@ export const doOverlap = (
   }
 
   if (
-    currentCoordinate.leftTop.x > targetCoordinates.rightBot.x ||
-    targetCoordinates.leftTop.x > currentCoordinate.rightBot.x
+    currentCoordinate.leftTop.x + overlapBuffer > targetCoordinates.rightBot.x ||
+    targetCoordinates.leftTop.x + overlapBuffer > currentCoordinate.rightBot.x
   ) {
     return false;
   }
 
   if (
-    currentCoordinate.rightBot.y < targetCoordinates.leftTop.y ||
-    targetCoordinates.rightBot.y < currentCoordinate.leftTop.y
+    currentCoordinate.rightBot.y < targetCoordinates.leftTop.y + overlapBuffer ||
+    targetCoordinates.rightBot.y < currentCoordinate.leftTop.y + overlapBuffer
   ) {
     return false;
   }
@@ -334,16 +278,18 @@ export const computePositionalRelationship = (
     return PostionalRelationship.INCLUDE;
   }
 
-  // if (
-  //   targetCoordinates.leftTop.y <= currentCoordinates.leftTop.y &&
-  //   targetCoordinates.leftTop.x <= currentCoordinates.leftTop.x &&
-  //   targetCoordinates.rightBot.x >= currentCoordinates.rightBot.x &&
-  //   targetCoordinates.rightBot.y >= currentCoordinates.rightBot.y
-  // ) {
-  //   return PostionalRelationship.COVER;
-  // }
+  const overlapBuffer: number = 2;
 
-  if (doOverlap(currentCoordinates, targetCoordinates)) {
+  if (
+    targetCoordinates.leftTop.y + overlapBuffer <= currentCoordinates.leftTop.y &&
+    targetCoordinates.leftTop.x + overlapBuffer <= currentCoordinates.leftTop.x &&
+    targetCoordinates.rightBot.x >= currentCoordinates.rightBot.x + overlapBuffer &&
+    targetCoordinates.rightBot.y >= currentCoordinates.rightBot.y + overlapBuffer
+  ) {
+    return PostionalRelationship.OVERLAP;
+  }
+
+  if (doOverlap(currentCoordinates, targetCoordinates, overlapBuffer)) {
     return PostionalRelationship.OVERLAP;
   }
 
@@ -375,16 +321,6 @@ export class GroupNode extends BaseNode {
   setChildren(children: Node[]) {
     this.children = children;
 
-    // if (!isEmpty(this.node)) {
-    //   const absBoundingBox: BoxCoordinates =
-    //     this.node.getAbsoluteBoundingBoxCoordinates();
-    //   this.cssAttributes["width"] = `${Math.abs(
-    //     absBoundingBox.rightBot.x - absBoundingBox.leftTop.x
-    //   )}px`;
-    //   this.cssAttributes["height"] = `${Math.abs(
-    //     absBoundingBox.rightBot.y - absBoundingBox.rightTop.y
-    //   )}px`;
-    // }
 
 
     this.setWidthAndHeights();

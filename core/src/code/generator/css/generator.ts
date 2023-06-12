@@ -12,7 +12,7 @@ import { Generator as ReactGenerator } from "../react/generator";
 import { getFontsMetadata } from "../font";
 import { computeGoogleFontURL } from "../../../google/google-fonts";
 import { filterAttributes } from "../../../bricks/util";
-import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
+import { AssetType, assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -78,7 +78,7 @@ export class Generator {
     const extraFiles: File[] = [];
     Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
       (asset) => {
-        if (asset.type === "local") {
+        if (asset.type === AssetType.local) {
           extraFiles.push({
             content: asset.content,
             path: asset.src,

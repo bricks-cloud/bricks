@@ -16,7 +16,7 @@ import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
 import { shouldUseAsBackgroundImage } from "../util";
 import { Attributes } from "../../../design/adapter/node";
-import { assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
+import { AssetType, assetRegistryGlobalInstance } from "../../asset-registry/asset-registry";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
@@ -74,7 +74,7 @@ export class Generator {
     const extraFiles: File[] = [];
     Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach(
       (asset) => {
-        if (asset.type === "local") {
+        if (asset.type === AssetType.local) {
           extraFiles.push({
             content: asset.content,
             path: asset.src,
@@ -227,14 +227,12 @@ export const buildTwcssConfigFileContent = (
 
   Object.values(assetRegistryGlobalInstance.getAllAssets()).forEach((asset) => {
     if (asset.src.endsWith("png") && !isEmpty(asset.node.getChildren())) {
-      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
-        asset.src
-      })",`;
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${asset.src
+        })",`;
     }
     if (asset.src.endsWith("svg") && shouldUseAsBackgroundImage(asset.node)) {
-      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${
-        asset.src
-      })",`;
+      backgroundImages += `"${getImageFileNameFromUrl(asset.src)}": "url(${asset.src
+        })",`;
     }
   });
 

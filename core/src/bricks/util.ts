@@ -59,6 +59,10 @@ export const marignFilter = (key: string, _: string): boolean => {
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
 export const truncateNumbers = (value: string): string => {
+  if (isEmpty(value)) {
+    return "";
+  }
+
   if (value.endsWith("px")) {
     const num = parseFloat(value.slice(0, -2));
     return `${toOneDecimal(num)}px`;

@@ -23,8 +23,10 @@ export const groupNodes = (parentNode: Node) => {
     unexploredNodes.push(child);
   }
 
+
   let groupedNodes = groupNodesByInclusion(children);
-  groupedNodes = groupNodesByOverlap(groupedNodes);
+
+  groupedNodes = groupNodesByOverlap(groupedNodes, parentNode);
 
   const horizontalSegmentedNodes = groupNodesByDirectionalOverlap(
     groupedNodes,

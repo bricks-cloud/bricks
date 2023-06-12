@@ -6,13 +6,11 @@ import {
   TextNode as BricksTextNode,
   VectorNode as BricksVectorNode,
   VisibleNode as BricksVisibleNode,
-  computePositionalRelationship,
 } from "../../../bricks/node";
 import { isEmpty } from "../../../utils";
 import { BoxCoordinates, Attributes, ExportFormat } from "../node";
 import { extractLinearGradientParamsFromTransform } from "@figma-plugin/helpers";
 import {
-  colorToString,
   colorToStringWithOpacity,
   rgbaToString,
   isFrameNodeTransparent,
@@ -23,11 +21,8 @@ import {
   figmaLetterSpacingToCssString,
   figmaFontNameToCssString,
   hasShadow,
-  isRectangle,
 } from "./util";
-import { PostionalRelationship } from "../../../bricks/node";
 import { Direction } from "../../../bricks/direction";
-import { StyledTextSegment } from "../node";
 import { Line } from "../../../bricks/line";
 import {
   calculateAngle,
@@ -35,6 +30,7 @@ import {
   stringifyGradientColors,
 } from "./gradient";
 import { setBorderStyleAttributes } from "./border";
+import { StyledTextSegment as BricksStyledTextSegment } from "../node";
 
 export enum NodeType {
   GROUP = "GROUP",
@@ -53,15 +49,16 @@ export enum NodeType {
 
 const setBackgroundGradientColor = (
   figmaNode: SceneNode,
-  attributes: Attributes
+  attributes: Attributes,
+  segment?: StyledTextSegment,
 ) => {
   // @ts-ignore
-  if (isEmpty(figmaNode.fills)) {
+  if (isEmpty(figmaNode.fills) || (!isEmpty(segment) && isEmpty(segment.fills))) {
     return;
   }
 
   // @ts-ignore
-  const fills = figmaNode.fills;
+  const fills = isEmpty(segment) ? figmaNode.fills : segment.fills;
   if (fills === figma.mixed) {
     return;
   }
@@ -240,27 +237,6 @@ const setBackgroundColor = (
   }
 };
 
-const setBorderColor = (
-  figmaNode:
-    | FrameNode
-    | RectangleNode
-    | InstanceNode
-    | ComponentNode
-    | VectorNode
-    | EllipseNode,
-  attributes: Attributes
-) => {
-  const borderColors = figmaNode.strokes;
-  // TODO: if multiple solid border colors exist with opacity<100%, add them together to get final border color
-  if (
-    borderColors.length > 0 &&
-    borderColors[0].visible &&
-    borderColors[0].type === "SOLID"
-  ) {
-    attributes["border-color"] = colorToString(borderColors[0].color);
-  }
-};
-
 const safelySetWidthAndHeight = (
   nodeType: string,
   figmaNode: SceneNode,
@@ -354,7 +330,8 @@ const addDropShadowCssProperty = (
     | FrameNode
     | RectangleNode
     | InstanceNode
-    | ComponentNode,
+    | ComponentNode
+    | VectorNode,
   attributes: Attributes
 ) => {
   const dropShadowStrings: string[] = figmaNode.effects
@@ -366,9 +343,8 @@ const addDropShadowCssProperty = (
     .map((effect: DropShadowEffect | InnerShadowEffect) => {
       const { offset, radius, spread, color } = effect;
 
-      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${
-        spread ?? 0
-      }px ${rgbaToString(color)}`;
+      const dropShadowString = `${offset.x}px ${offset.y}px ${radius}px ${spread ?? 0
+        }px ${rgbaToString(color)}`;
 
       if (effect.type === "INNER_SHADOW") {
         return "inset " + dropShadowString;
@@ -471,6 +447,37 @@ const getPositionalCssAttributes = (figmaNode: SceneNode): Attributes => {
   return attributes;
 };
 
+const setTextColorCssAttributes = (figmaNode: SceneNode, attributes: Attributes, segment?: StyledTextSegment) => {
+  if (figmaNode.type !== NodeType.TEXT) {
+    return;
+  }
+
+  const paints = isEmpty(segment) ? figmaNode.fills : segment.fills;
+  if (paints !== figma.mixed && paints.length > 0) {
+    const finalColor = getRgbaFromPaints(paints);
+    if (finalColor) {
+      attributes["color"] = rgbaToString(finalColor);
+    }
+
+    setBackgroundGradientColor(figmaNode, attributes, segment);
+  } else if (isEmpty(segment) && paints === figma.mixed) {
+    const mostCommonPaints = getMostCommonFieldInString(figmaNode, "fills", {
+      areVariationsEqual: (paint1, paint2) =>
+        JSON.stringify(paint1) === JSON.stringify(paint2),
+      variationModifier: (paint) => {
+        // don't consider non-solid paints for now
+        const solidPaints = paint.filter((p) => p.type === "SOLID");
+        return solidPaints.length > 0 ? solidPaints : null;
+      },
+    }) as SolidPaint[];
+
+    const finalColor = getRgbaFromPaints(mostCommonPaints);
+    if (finalColor) {
+      attributes["color"] = rgbaToString(finalColor);
+    }
+  }
+};
+
 // getCssAttributes extracts styling information from figmaNode to css attributes
 const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   const attributes: Attributes = {};
@@ -495,7 +502,6 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
   if (
     figmaNode.type === NodeType.ELLIPSE
   ) {
-
     safelySetWidthAndHeight(figmaNode.type, figmaNode, attributes);
     setBackgroundColor(figmaNode, attributes);
     setBackgroundGradientColor(figmaNode, attributes);
@@ -617,7 +623,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
       // actual effects therefore should be always considered as "text-align": "left" when there is only one row
       if (
         Math.abs(boundingBoxWidth - renderBoundsWidth) / boundingBoxWidth >
-          0.1 ||
+        0.1 ||
         moreThanOneRow
       ) {
         // text alignment
@@ -636,7 +642,7 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
 
       if (
         Math.abs(absoluteBoundingBox.width - absoluteRenderBounds.width) /
-          absoluteBoundingBox.width >
+        absoluteBoundingBox.width >
         0.2
       ) {
         width = absoluteRenderBounds.width + 6;
@@ -682,31 +688,8 @@ const getCssAttributes = (figmaNode: SceneNode): Attributes => {
         break;
     }
 
-    // font color
-    const paints = figmaNode.fills;
-    if (paints !== figma.mixed && paints.length > 0) {
-      const finalColor = getRgbaFromPaints(paints);
-      if (finalColor) {
-        attributes["color"] = rgbaToString(finalColor);
-      }
-
-      setBackgroundGradientColor(figmaNode, attributes);
-    } else if (paints === figma.mixed) {
-      const mostCommonPaints = getMostCommonFieldInString(figmaNode, "fills", {
-        areVariationsEqual: (paint1, paint2) =>
-          JSON.stringify(paint1) === JSON.stringify(paint2),
-        variationModifier: (paint) => {
-          // don't consider non-solid paints for now
-          const solidPaints = paint.filter((p) => p.type === "SOLID");
-          return solidPaints.length > 0 ? solidPaints : null;
-        },
-      }) as SolidPaint[];
-
-      const finalColor = getRgbaFromPaints(mostCommonPaints);
-      if (finalColor) {
-        attributes["color"] = rgbaToString(finalColor);
-      }
-    }
+    // text color
+    setTextColorCssAttributes(figmaNode, attributes);
 
     const textContainingOnlyOneWord =
       figmaNode.characters.trim().split(" ").length === 1;
@@ -1026,7 +1009,7 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
     return this.node.characters;
   }
 
-  getStyledTextSegments(): StyledTextSegment[] {
+  getStyledTextSegments(): BricksStyledTextSegment[] {
     const styledTextSegments = this.node.getStyledTextSegments([
       "fontSize",
       "fontName",
@@ -1064,12 +1047,16 @@ export class FigmaTextNodeAdapter extends FigmaNodeAdapter {
 
     return styledTextSegments.map((segment) => {
       const rgba = getRgbaFromPaints(segment.fills);
+      const colorCssAttributes: Attributes = {};
+      setTextColorCssAttributes(this.node, colorCssAttributes, segment as StyledTextSegment);
+
       return {
         ...segment,
         fontFamily: figmaFontNameToCssString(segment.fontName),
         textDecoration: figmaTextDecorationToCssMap[segment.textDecoration],
         textTransform: figmaTextCaseToCssTextTransformMap[segment.textCase],
         color: rgba ? rgbaToString(rgba) : "",
+        colorCssAttributes: colorCssAttributes,
         letterSpacing: figmaLetterSpacingToCssString(segment.letterSpacing),
         listType: figmaListOptionsToHtmlTagMap[segment.listOptions.type],
         href: segment?.hyperlink?.type === "URL" ? segment.hyperlink.value : "",
@@ -1200,14 +1187,6 @@ export const convertFigmaNodesToBricksNodes = (
           newNode = new BricksTextNode(new FigmaTextNodeAdapter(figmaNode));
           break;
         case NodeType.VECTOR:
-          if (
-            figmaNode.vectorPaths.length === 1 &&
-            figmaNode.vectorPaths[0].windingRule === "EVENODD" &&
-            isRectangle(figmaNode.vectorPaths[0].data)
-          ) {
-            // if vector is a rectangle, we can leave it as a visible node
-            break;
-          }
         case NodeType.STAR:
           newNode = new BricksVectorNode(new FigmaVectorNodeAdapter(figmaNode));
           break;
@@ -1353,30 +1332,6 @@ export const getFigmaLineBasedOnDirection = (
 export const reorderFigmaNodes = (reordered: SceneNode[]) => {
   if (reordered.length > 1) {
     reordered.sort((a, b) => {
-      let wrappedNodeA: BricksNode = new BricksVisibleNode(
-        new FigmaNodeAdapter(a)
-      );
-      let wrappedNodeB: BricksNode = new BricksVisibleNode(
-        new FigmaNodeAdapter(b)
-      );
-
-      if (
-        computePositionalRelationship(
-          wrappedNodeA.getAbsRenderingBox(),
-          wrappedNodeB.getAbsRenderingBox()
-        ) === PostionalRelationship.INCLUDE
-      ) {
-        return 1;
-      }
-
-      if (
-        computePositionalRelationship(
-          wrappedNodeB.getAbsRenderingBox(),
-          wrappedNodeA.getAbsRenderingBox()
-        ) === PostionalRelationship.INCLUDE
-      ) {
-        return -1;
-      }
       if (a.parent.children.indexOf(a) < b.parent.children.indexOf(b)) {
         return 1;
       }
