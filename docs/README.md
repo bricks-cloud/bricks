@@ -6,6 +6,7 @@
   - [Preview within VSCode extension or localhost:4000 is not working](#preview-within-vscode-extension-or-localhost4000-is-not-working)
   - [Figma plugin is stuck on the loading screen](#figma-plugin-is-stuck-on-the-loading-screen)
   - [Generated components are very different from the design](#generated-components-are-very-different-from-the-design)
+  - [Browser live preview is loading forever](#browser-live-preview-is-loading-forever)
 
 ## "Generate Code" button is greyed out
 
@@ -36,3 +37,7 @@
 ## Generated components are very different from the design
 
 - Let us know the use case through [Discord](https://discord.gg/NM6aeBeqCD) or [Github issues](https://github.com/bricks-cloud/bricks/issues). We will fix the problem asap.
+
+## Browser live preview is loading forever
+
+- This is likely because you have too many live previews open. Try closing live previews that you're not using anymore. This limitation is due to the fact that live previews run locally in your browser. In the future we will support a hosted solution that will allow you to run as many live previews as you want.
