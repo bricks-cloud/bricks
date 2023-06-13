@@ -5,23 +5,25 @@ export const instantiateAssetRegistryGlobalInstance = () => {
   assetRegistryGlobalInstance = new AssetRegistry();
 };
 
-type Asset =
-  | {
-      type: "local";
-      src: string;
-      content: string;
-      node: Node;
-    }
-  | {
-      type: "web";
-      src: string;
-      node: Node;
-    };
+export enum AssetType {
+  local = "local",
+  web = "web",
+}
+
+export type Asset = {
+  type: AssetType;
+  src: string;
+  content?: string;
+  node: Node;
+};
+
+
+export type AssetMap = {
+  [id: string]: Asset,
+};
 
 export class AssetRegistry {
-  private assets: {
-    [id: string]: Asset;
-  };
+  private assets: AssetMap;
 
   constructor() {
     this.assets = {};
@@ -29,7 +31,7 @@ export class AssetRegistry {
 
   registerLocalAsset(node: Node, src: string, content: string) {
     this.assets[node.getId()] = {
-      type: "local",
+      type: AssetType.local,
       src,
       content,
       node,
@@ -38,7 +40,7 @@ export class AssetRegistry {
 
   registerWebAsset(node: Node, src: string) {
     this.assets[node.getId()] = {
-      type: "web",
+      type: AssetType.web,
       src,
       node,
     };
@@ -48,7 +50,7 @@ export class AssetRegistry {
     return this.assets[nodeId];
   }
 
-  getAllAssets() {
+  getAllAssets(): AssetMap {
     return this.assets;
   }
 }

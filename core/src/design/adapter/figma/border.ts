@@ -8,7 +8,8 @@ export const setBorderColor = (
         | RectangleNode
         | InstanceNode
         | ComponentNode
-        | EllipseNode,
+        | EllipseNode
+        | VectorNode,
     attributes: Attributes
 ) => {
     const borderColors = figmaNode.strokes;
@@ -27,6 +28,7 @@ export const setBorderStyleAttributes = (figmaNode: | FrameNode
     | InstanceNode
     | ComponentNode
     | EllipseNode
+    | VectorNode
     , attributes) => {
     // border-color
     setBorderColor(figmaNode, attributes);

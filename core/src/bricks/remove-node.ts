@@ -6,7 +6,6 @@ import {
   replacedParentAnnotation,
   replacedChildAnnotation,
 } from "./annotation";
-import { doChildrenOverflowParent } from "./util";
 
 export const removeNode = (node: Node): Node => {
   const children: Node[] = node.getChildren();
@@ -50,15 +49,6 @@ export const removeNode = (node: Node): Node => {
       child.setPositionalCssAttributes(positionalCssAttributes);
       child.addAnnotations(replacedParentAnnotation, true);
 
-      return removeNode(child);
-    }
-
-    if (shouldNodeBeRemoved(node)) {
-      if (doChildrenOverflowParent(node)) {
-        child.addCssAttributes(node.cssAttributes);
-      }
-
-      child.addAnnotations(replacedParentAnnotation, true);
       return removeNode(child);
     }
   }

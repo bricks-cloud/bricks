@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { RadioGroup as BaseRadioGroup } from "@headlessui/react";
 import PageContext, { PAGES } from "../context/page-context";
 import {
@@ -47,7 +47,7 @@ function updateSettings(
         } as Settings,
       },
     },
-    "*" //TODO: can use different origin??
+    "*"
   );
 }
 
@@ -81,7 +81,7 @@ const RadioGroup = ({
   disabled = false,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: React.Dispatch<any>;
   label: string;
   options: Option<UiFramework | CssFramework>[];
   disabled?: boolean;
@@ -110,18 +110,21 @@ const RadioGroup = ({
 
 interface Props {
   selectedUiFramework: UiFramework;
-  setSelectedUiFramework: (value: UiFramework) => void;
   selectedCssFramework: CssFramework;
-  setSelectedCssFramework: (value: CssFramework) => void;
 }
 
 const CodeOutputSetting: React.FC<Props> = ({
   selectedUiFramework,
-  setSelectedUiFramework,
   selectedCssFramework,
-  setSelectedCssFramework,
 }) => {
   const { previousPage, setCurrentPage } = useContext(PageContext);
+
+  const [displayUiFramework, setDisplayUiFramework] = useState(
+    selectedUiFramework,
+  );
+  const [displayCssFramework, setDisplayCssFramework] = useState(
+    selectedCssFramework,
+  );
 
   const handleBackClick = () => {
     setCurrentPage(previousPage);
@@ -129,11 +132,16 @@ const CodeOutputSetting: React.FC<Props> = ({
 
   const handleSaveButtonClick = () => {
     updateSettings(
-      selectedUiFramework,
-      selectedCssFramework,
+      displayUiFramework,
+      displayCssFramework,
     );
     setCurrentPage(PAGES.HOME);
   };
+
+  useEffect(() => {
+    setDisplayUiFramework(selectedUiFramework);
+    setDisplayCssFramework(selectedCssFramework);
+  }, []);
 
   return (
     <div className="h-full w-full flex flex-col justify-between items-center px-3 py-5">
@@ -154,14 +162,14 @@ const CodeOutputSetting: React.FC<Props> = ({
 
         <div className="my-6 mx-2 flex flex-col gap-8">
           <RadioGroup
-            value={selectedUiFramework}
-            onChange={setSelectedUiFramework}
+            value={displayUiFramework}
+            onChange={setDisplayUiFramework}
             label="UI Framework"
             options={UiFrameworks}
           />
           <RadioGroup
-            value={selectedCssFramework}
-            onChange={setSelectedCssFramework}
+            value={displayCssFramework}
+            onChange={setDisplayCssFramework}
             label="CSS Framework"
             options={CssFrameworks}
           />

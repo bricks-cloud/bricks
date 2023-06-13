@@ -47,6 +47,8 @@ export interface StyledTextSegment {
   listType: "none" | "ul" | "ol";
   indentation: number;
   href: string;
+  colorCssAttributes: Attributes,
+
 }
 
 export interface TextNode extends Node {
@@ -56,8 +58,8 @@ export interface TextNode extends Node {
   getStyledTextSegments(): StyledTextSegment[];
 }
 
-export interface VectorNode extends Node {}
+export interface VectorNode extends Node { }
 
-export interface VectorGroupNode extends Node {}
+export interface VectorGroupNode extends Node { }
 
-export interface ImageNode extends Node {}
+export interface ImageNode extends Node { }

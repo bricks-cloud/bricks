@@ -22,7 +22,7 @@ export const removeCssFromNode = (node: Node) => {
     positionalAttributes["justify-content"] !== "space-between" &&
     !isEmpty(cssAttributes["width"])
   ) {
-    const actualChildrenWidth: number = calculateActualChildrenWidth(node);
+    const actualChildrenWidth: number = calculateActualChildrenWidth(positionalAttributes, children);
     const width: number = cssStrToNum(cssAttributes["width"]);
 
     if (
@@ -60,12 +60,10 @@ export const removeCssFromNode = (node: Node) => {
   }
 
   node.setCssAttributes(cssAttributes);
+  node.setPositionalCssAttributes(positionalAttributes);
 };
 
-const calculateActualChildrenWidth = (node: Node): number => {
-  const positionalAttributes: Attributes = node.getPositionalCssAttributes();
-
-  const children = node.getChildren();
+const calculateActualChildrenWidth = (positionalAttributes: Attributes, children: Node[]): number => {
   let paddingCum: number = 0;
   let gapCum: number = 0;
   let widthCum: number = 0;

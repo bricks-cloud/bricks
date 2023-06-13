@@ -774,9 +774,9 @@ export const getTwcssClass = (
 
     case "justify-content": {
       switch (cssValue) {
-        case "flex-start":
+        case "start":
           return "justify-start";
-        case "flex-end":
+        case "end":
           return "justify-end";
         case "center":
           return "justify-center";
@@ -793,9 +793,9 @@ export const getTwcssClass = (
 
     case "align-items": {
       switch (cssValue) {
-        case "flex-start":
+        case "start":
           return "items-start";
-        case "flex-end":
+        case "end":
           return "items-end";
         case "center":
           return "items-center";

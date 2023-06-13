@@ -44,15 +44,15 @@ export const selectBox = (
 };
 
 enum JustifyContent {
-  FLEX_START = "flex-start",
-  FLEX_END = "flex-end",
+  START = "start",
+  END = "end",
   CENTER = "center",
   SPACE_BETWEEN = "space-between",
 }
 
 enum AlignItems {
-  FLEX_START = "flex-start",
-  FLEX_END = "flex-end",
+  START = "start",
+  END = "end",
   CENTER = "center",
   SPACE_BETWEEN = "space-between",
 }
@@ -66,7 +66,7 @@ enum RelativePoisition {
 // addAdditionalCssAttributesToNodes adds additional css information to a node and its children.
 export const addAdditionalCssAttributesToNodes = (
   node: Node,
-  startingNode: Node
+  startingNode: Node,
 ) => {
   if (isEmpty(node)) {
     return;
@@ -82,31 +82,21 @@ export const addAdditionalCssAttributesToNodes = (
 
   const direction = getDirection(node);
   reorderNodesBasedOnDirection(node, direction);
-  node.addPositionalCssAttributes(getPositionalCssAttributes(node, direction));
+
+  const positionalAttributes: Attributes = getPositionalCssAttributes(node, direction);
+  node.addPositionalCssAttributes(positionalAttributes);
+  addGapToNode(node, direction);
+
   adjustChildrenHeightAndWidthCssValue(node);
   adjustChildrenPositionalCssValue(node, direction);
-  UpdateNodeWidthToMinWidth(node);
+  updateNodeWidthToMinWidth(node);
 
   for (const child of children) {
     addAdditionalCssAttributesToNodes(child, startingNode);
   }
 };
 
-// const setOverflowHiddenForStartingNode = (
-//   targetNode: Node,
-//   startingNode: Node
-// ) => {
-//   if (
-//     computePositionalRelationship(
-//       targetNode.getAbsBoundingBox(),
-//       startingNode.getAbsBoundingBox()
-//     ) !== PostionalRelationship.INCLUDE
-//   ) {
-//     startingNode.addCssAttributes({ overflow: "hidden" });
-//   }
-// };
-
-const UpdateNodeWidthToMinWidth = (node: Node) => {
+const updateNodeWidthToMinWidth = (node: Node) => {
   const positionalCssAttributes: Attributes = node.getPositionalCssAttributes();
   const cssAttributes: Attributes = node.getCssAttributes();
   if (
@@ -162,6 +152,7 @@ const adjustChildrenPositionalCssValue = (node: Node, direction: Direction) => {
   let prevChild: Node = null;
   for (let i = 0; i < children.length; i++) {
     const child: Node = children[i];
+
     if (i === 0) {
       prevChild = child;
       continue;
@@ -236,19 +227,19 @@ export const getPaddingInPixels = (
         paddingLeft = leftGap;
         paddingRight = rightGap;
         break;
-      case JustifyContent.FLEX_START:
+      case JustifyContent.START:
         paddingLeft = leftGap;
         break;
-      case JustifyContent.FLEX_END:
+      case JustifyContent.END:
         paddingRight = rightGap;
         break;
     }
 
     switch (alignItemsValue) {
-      case AlignItems.FLEX_START:
+      case AlignItems.START:
         paddingTop = topGap;
         break;
-      case AlignItems.FLEX_END:
+      case AlignItems.END:
         paddingBot = botGap;
         break;
     }
@@ -269,19 +260,19 @@ export const getPaddingInPixels = (
       paddingTop = topGap;
       paddingBot = botGap;
       break;
-    case JustifyContent.FLEX_START:
+    case JustifyContent.START:
       paddingTop = topGap;
       break;
-    case JustifyContent.FLEX_END:
+    case JustifyContent.END:
       paddingBot = botGap;
       break;
   }
 
   switch (alignItemsValue) {
-    case AlignItems.FLEX_START:
+    case AlignItems.START:
       paddingLeft = leftGap;
       break;
-    case AlignItems.FLEX_END:
+    case AlignItems.END:
       paddingRight = rightGap;
       break;
   }
@@ -366,10 +357,10 @@ const setMarginsForChildren = (
             marginBot = botGap;
           }
           break;
-        case JustifyContent.FLEX_START:
+        case JustifyContent.START:
           marginTop = topGap;
           break;
-        case JustifyContent.FLEX_END:
+        case JustifyContent.END:
           marginBot = botGap;
           break;
       }
@@ -384,10 +375,10 @@ const setMarginsForChildren = (
         paddingRight;
 
       switch (alignItemsValue) {
-        case AlignItems.FLEX_START:
+        case AlignItems.START:
           marginLeft = leftGap;
           break;
-        case AlignItems.FLEX_END:
+        case AlignItems.END:
           marginRight = rightGap;
           break;
       }
@@ -428,10 +419,10 @@ const setMarginsForChildren = (
           break;
         }
         break;
-      case JustifyContent.FLEX_START:
+      case JustifyContent.START:
         marginLeft = leftGap;
         break;
-      case JustifyContent.FLEX_END:
+      case JustifyContent.END:
         marginRight = rightGap;
         break;
     }
@@ -446,10 +437,10 @@ const setMarginsForChildren = (
       paddingBot;
 
     switch (alignItemsValue) {
-      case AlignItems.FLEX_START:
+      case AlignItems.START:
         marginTop = topGap;
         break;
-      case AlignItems.FLEX_END:
+      case AlignItems.END:
         marginBot = botGap;
         break;
     }
@@ -474,11 +465,12 @@ const isCssValueEmpty = (value: string): boolean => {
 export const addAdditionalCssAttributes = (node: Node) => {
   if (shouldUseAsBackgroundImage(node)) {
     const id: string = node.getId();
-    node.addCssAttributes({
-      "background-image": `url('${
-        assetRegistryGlobalInstance.getAssetById(id).src
-      }')`,
-    });
+    const url: string = assetRegistryGlobalInstance.getAssetById(id)?.src;
+    if (!isEmpty(url)) {
+      node.addCssAttributes({
+        "background-image": `url('${url}')`,
+      });
+    }
   }
 
   if (node.getType() === NodeType.IMAGE) {
@@ -663,7 +655,6 @@ const adjustChildrenHeightAndWidthCssValue = (node: Node) => {
           }
 
           moreThanOneRow = renderBoundsHeight > fontSize * 1.5;
-
           if (!moreThanOneRow) {
             delete childAttributes["width"];
             delete childAttributes["min-width"];
@@ -766,24 +757,47 @@ const getAllowedMaxWidthAndHeight = (node: Node): number[] => {
   return [width - pl - pr, height - pt - pb];
 };
 
+const addGapToNode = (node: Node, direction: Direction) => {
+  const positionalCssAttributes = node.getPositionalCssAttributes();
+  if ((positionalCssAttributes["justify-content"] === JustifyContent.SPACE_BETWEEN && isEmpty(positionalCssAttributes["gap"]))) {
+    const [_, gap] = getAverageGap(node, direction);
+    if (gap > 2) {
+      node.addPositionalCssAttributes({
+        "gap": `${Math.trunc(gap)}px`,
+      });
+    }
+    return;
+  }
+
+  if ((positionalCssAttributes["justify-content"] === JustifyContent.START && node.getChildren().length === 2)) {
+    const secondChild: Node = node.getChildren()[1];
+
+
+    if ((direction === Direction.VERTICAL && isEmpty(secondChild.getAPositionalAttribute("margin-left"))) ||
+      (direction === Direction.HORIZONTAL && isEmpty(secondChild.getAPositionalAttribute("margin-top")))
+    ) {
+      const [_, gap] = getAverageGap(node, direction);
+      if (gap > 2) {
+        node.addPositionalCssAttributes({
+          "gap": `${Math.trunc(gap)}px`,
+        });
+      }
+    }
+    return;
+  }
+
+  return;
+};
+
 // getPositionalCssAttributes gets positional css information of a node in relation to its children.
 export const getPositionalCssAttributes = (
   node: Node,
-  direction: Direction
+  direction: Direction,
 ): Attributes => {
   const positionalCssAttributes = node.getPositionalCssAttributes();
   // if autolayout has been set on this node
   if (!isEmpty(positionalCssAttributes["display"])) {
-    if (doPaddingValuesExist(node)) {
-      return positionalCssAttributes;
-    }
-
-    const attributes: Attributes = {};
-    setPaddingAndMarginValues(node, direction, attributes);
-    return {
-      ...positionalCssAttributes,
-      ...attributes,
-    };
+    return positionalCssAttributes;
   }
 
   const attributes: Attributes = {};
@@ -793,7 +807,9 @@ export const getPositionalCssAttributes = (
   }
 
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
-    attributes["position"] = "relative";
+    if (positionalCssAttributes["position"] !== "absolute") {
+      attributes["position"] = "relative";
+    }
 
     const currentBox = selectBox(node, true);
     for (const child of node.getChildren()) {
@@ -836,7 +852,8 @@ export const getPositionalCssAttributes = (
     attributes["flex-direction"] = "column";
   }
 
-  setPaddingAndMarginValues(node, direction, attributes);
+  const [justifyContentValue, alignItemsValue]: [JustifyContent, AlignItems] = setJustifyContentAndAlignItemsValues(node, direction, attributes);
+  setPaddingAndMarginValues(node, direction, attributes, justifyContentValue, alignItemsValue);
 
   return {
     ...positionalCssAttributes,
@@ -844,25 +861,11 @@ export const getPositionalCssAttributes = (
   };
 };
 
-const doPaddingValuesExist = (node: Node): boolean => {
-  const cssAttributes: Attributes = node.getCssAttributes();
-  if (
-    !isEmpty(cssAttributes["padding-top"]) ||
-    !isEmpty(cssAttributes["padding-bottom"]) ||
-    !isEmpty(cssAttributes["padding-left"]) ||
-    !isEmpty(cssAttributes["padding-right"])
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
-const setPaddingAndMarginValues = (
+const setJustifyContentAndAlignItemsValues = (
   node: Node,
   direction: Direction,
   attributes: Attributes
-) => {
+): [JustifyContent, AlignItems] => {
   const justifyContentValue = getJustifyContentValue(node, direction);
   const alignItemsValue = getAlignItemsValue(
     node,
@@ -872,6 +875,16 @@ const setPaddingAndMarginValues = (
   attributes["justify-content"] = justifyContentValue;
   attributes["align-items"] = alignItemsValue;
 
+  return [justifyContentValue, alignItemsValue];
+};
+
+const setPaddingAndMarginValues = (
+  node: Node,
+  direction: Direction,
+  attributes: Attributes,
+  justifyContentValue: JustifyContent,
+  alignItemsValue: AlignItems,
+) => {
   const paddings = getPaddingInPixels(
     node,
     direction,
@@ -919,18 +932,18 @@ const getJustifyContentValue = (
     }
 
     if (touchingStart) {
-      return JustifyContent.FLEX_START;
+      return JustifyContent.START;
     }
 
     if (touchingEnd) {
-      return JustifyContent.FLEX_END;
+      return JustifyContent.END;
     }
 
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
-        return JustifyContent.FLEX_START;
+        return JustifyContent.START;
       case RelativePoisition.RIGHT:
-        return JustifyContent.FLEX_END;
+        return JustifyContent.END;
       case RelativePoisition.CONTAIN:
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
@@ -938,54 +951,61 @@ const getJustifyContentValue = (
         }
 
         if (diff > 0) {
-          return JustifyContent.FLEX_END;
+          return JustifyContent.END;
         }
 
-        return JustifyContent.FLEX_START;
+        return JustifyContent.START;
     }
   }
 
-  if (targetLines.length === 2) {
+  const [shouldUseSpaceBetween, _]: [boolean, number] = getAverageGap(parentNode, direction);
+  if (shouldUseSpaceBetween) {
     return JustifyContent.SPACE_BETWEEN;
   }
 
-  if (targetLines.length > 2) {
-    const gaps: number[] = [];
-    let prevLine: Line = null;
-    for (let i = 0; i < targetLines.length; i++) {
-      const targetLine: Line = targetLines[i];
-      if (i === 0) {
-        prevLine = targetLine;
-        continue;
-      }
+  return JustifyContent.START;
+};
 
-      gaps.push(targetLine.lower - prevLine.upper);
-      prevLine = targetLine;
-    }
 
-    const averageGap: number = gaps.reduce((a, b) => a + b) / gaps.length;
-    let isJustifyCenter: boolean = true;
-    for (let i = 0; i < targetLines.length; i++) {
-      const targetLine: Line = targetLines[i];
-      if (i === 0) {
-        prevLine = targetLine;
-        continue;
-      }
-
-      const gap: number = targetLine.lower - prevLine.upper;
-
-      if (Math.abs(gap - averageGap) / averageGap > 0.1) {
-        isJustifyCenter = false;
-      }
-      prevLine = targetLine;
-    }
-
-    if (isJustifyCenter) {
-      return JustifyContent.SPACE_BETWEEN;
-    }
+const getAverageGap = (parentNode: Node, direction: Direction): [boolean, number] => {
+  const children = parentNode.getChildren();
+  if (children.length <= 1) {
+    return [false, 0];
   }
 
-  return JustifyContent.FLEX_START;
+  const targetLines = getLinesFromNodes(children, direction);
+
+  const gaps: number[] = [];
+  let prevLine: Line = null;
+  for (let i = 0; i < targetLines.length; i++) {
+    const targetLine: Line = targetLines[i];
+    if (i === 0) {
+      prevLine = targetLine;
+      continue;
+    }
+
+    gaps.push(targetLine.lower - prevLine.upper);
+    prevLine = targetLine;
+  }
+
+  const averageGap: number = gaps.reduce((a, b) => a + b) / gaps.length;
+  let isJustifyCenter: boolean = true;
+  for (let i = 0; i < targetLines.length; i++) {
+    const targetLine: Line = targetLines[i];
+    if (i === 0) {
+      prevLine = targetLine;
+      continue;
+    }
+
+    const gap: number = targetLine.lower - prevLine.upper;
+
+    if (Math.abs(gap - averageGap) / averageGap > 0.1) {
+      isJustifyCenter = false;
+    }
+    prevLine = targetLine;
+  }
+
+  return [isJustifyCenter, averageGap];
 };
 
 // getAlignItemsValue determines the value of align-items css property given a node and flex-direction.
@@ -1002,9 +1022,9 @@ const getAlignItemsValue = (
     const targetLine = targetLines[0];
     switch (targetLine.getRelativeLinePosition(mid)) {
       case RelativePoisition.LEFT:
-        return AlignItems.FLEX_START;
+        return AlignItems.START;
       case RelativePoisition.RIGHT:
-        return AlignItems.FLEX_END;
+        return AlignItems.END;
       case RelativePoisition.CONTAIN:
         const diff = targetLine.getSymetricDifference(mid);
         if (Math.abs(diff) / parentLine.getLength() <= 0.2) {
@@ -1012,10 +1032,10 @@ const getAlignItemsValue = (
         }
 
         if (diff > 0) {
-          return AlignItems.FLEX_END;
+          return AlignItems.END;
         }
 
-        return AlignItems.FLEX_START;
+        return AlignItems.START;
     }
   }
 
@@ -1100,14 +1120,14 @@ const getAlignItemsValue = (
       numberOfItemsTippingLeftStrict !== 0 &&
       numberOfItemsTippingRightStrict === 0
     ) {
-      return AlignItems.FLEX_START;
+      return AlignItems.START;
     }
 
     if (
       numberOfItemsTippingRightStrict !== 0 &&
       numberOfItemsTippingLeftStrict === 0
     ) {
-      return AlignItems.FLEX_END;
+      return AlignItems.END;
     }
   }
 
@@ -1116,11 +1136,11 @@ const getAlignItemsValue = (
   }
 
   if (numberOfItemsTippingLeft !== 0) {
-    return AlignItems.FLEX_START;
+    return AlignItems.START;
   }
 
   if (numberOfItemsTippingRight !== 0) {
-    return AlignItems.FLEX_END;
+    return AlignItems.END;
   }
 
   return AlignItems.CENTER;

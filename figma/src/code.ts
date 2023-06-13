@@ -35,7 +35,14 @@ figma.ui.onmessage = async (msg) => {
   }
 
   if (msg.type === "update-settings") {
-    figma.clientStorage.setAsync("settings", msg.settings);
+    await figma.clientStorage.setAsync("settings", msg.settings);
+
+    let settings = await figma.clientStorage.getAsync("settings");
+
+    figma.ui.postMessage({
+      type: "settings",
+      settings,
+    });
   }
 
   if (msg.type === "update-connection-status") {
@@ -51,7 +58,6 @@ figma.ui.onmessage = async (msg) => {
 
     figma.ui.postMessage({
       type: "settings",
-      userId: figma.currentUser.id,
       settings,
     });
   }

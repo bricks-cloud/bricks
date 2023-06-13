@@ -196,9 +196,7 @@ const UI = () => {
         {currentPage === PAGES.SETTING && (
           <CodeOutputSetting
             selectedUiFramework={selectedUiFramework}
-            setSelectedUiFramework={setSelectedUiFramework}
             selectedCssFramework={selectedCssFramework}
-            setSelectedCssFramework={setSelectedCssFramework}
           />
         )}
         {currentPage === PAGES.CODE_GENERATION && (
