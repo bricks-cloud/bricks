@@ -67,7 +67,6 @@ enum RelativePoisition {
 export const addAdditionalCssAttributesToNodes = (
   node: Node,
   startingNode: Node,
-  relativePositionSet: boolean,
 ) => {
   if (isEmpty(node)) {
     return;
@@ -84,7 +83,7 @@ export const addAdditionalCssAttributesToNodes = (
   const direction = getDirection(node);
   reorderNodesBasedOnDirection(node, direction);
 
-  const [positionalAttributes, relateivePositionSetNew]: [Attributes, boolean] = getPositionalCssAttributes(node, direction, relativePositionSet);
+  const positionalAttributes: Attributes = getPositionalCssAttributes(node, direction);
   node.addPositionalCssAttributes(positionalAttributes);
   addGapToNode(node, direction);
 
@@ -92,10 +91,8 @@ export const addAdditionalCssAttributesToNodes = (
   adjustChildrenPositionalCssValue(node, direction);
   updateNodeWidthToMinWidth(node);
 
-
-
   for (const child of children) {
-    addAdditionalCssAttributesToNodes(child, startingNode, relateivePositionSetNew);
+    addAdditionalCssAttributesToNodes(child, startingNode);
   }
 };
 
@@ -796,26 +793,21 @@ const addGapToNode = (node: Node, direction: Direction) => {
 export const getPositionalCssAttributes = (
   node: Node,
   direction: Direction,
-  relativePositionSet: boolean
-): [Attributes, boolean] => {
+): Attributes => {
   const positionalCssAttributes = node.getPositionalCssAttributes();
   // if autolayout has been set on this node
   if (!isEmpty(positionalCssAttributes["display"])) {
-
-
-    return [positionalCssAttributes, relativePositionSet];
+    return positionalCssAttributes;
   }
 
   const attributes: Attributes = {};
 
   if (isEmpty(node.getChildren())) {
-    return [positionalCssAttributes, relativePositionSet];
+    return positionalCssAttributes;
   }
 
-  let relativePositionSetCopy: boolean = relativePositionSet;
   if (node.hasAnnotation(absolutePositioningAnnotation)) {
     if (positionalCssAttributes["position"] !== "absolute") {
-      relativePositionSetCopy = true;
       attributes["position"] = "relative";
     }
 
@@ -849,10 +841,10 @@ export const getPositionalCssAttributes = (
       child.addPositionalCssAttributes(childAttributes);
     }
 
-    return [{
+    return {
       ...positionalCssAttributes,
       ...attributes,
-    }, relativePositionSetCopy];
+    };
   }
 
   attributes["display"] = "flex";
@@ -863,10 +855,10 @@ export const getPositionalCssAttributes = (
   const [justifyContentValue, alignItemsValue]: [JustifyContent, AlignItems] = setJustifyContentAndAlignItemsValues(node, direction, attributes);
   setPaddingAndMarginValues(node, direction, attributes, justifyContentValue, alignItemsValue);
 
-  return [{
+  return {
     ...positionalCssAttributes,
     ...attributes,
-  }, relativePositionSet];
+  };
 };
 
 const setJustifyContentAndAlignItemsValues = (

@@ -75,6 +75,7 @@
   },
   "figmaPlugin": {
     "name": "Bricks D2C Developer Edition",
+    "id": "1250317577004332206",
     "api": "1.0.0",
     "main": "./code.js",
     "editorType": [
