@@ -8,6 +8,7 @@ import {
   VectorNode as AdaptedVectorNode,
   VectorGroupNode as AdaptedVectorGroupNode,
   ImageNode as AdaptedImageNode,
+  StyledTextSegment,
 } from "../design/adapter/node";
 import { isEmpty } from "../utils";
 import { selectBox } from "./additional-css";
@@ -23,7 +24,9 @@ export enum PostionalRelationship {
 export type Option = {
   truncateNumbers?: boolean;
   zeroValueAllowed?: boolean;
-  absolutePositioningOnly?: boolean;
+  absolutePositioningFilter?: boolean;
+  marginFilter?: boolean;
+  excludeBackgroundColor?: boolean;
 };
 
 export type Node = GroupNode | VisibleNode | TextNode | VectorNode | ImageNode;
@@ -65,7 +68,8 @@ export class BaseNode {
     option: Option = {
       zeroValueAllowed: false,
       truncateNumbers: true,
-      absolutePositioningOnly: false,
+      absolutePositioningFilter: false,
+      marginFilter: false,
     }
   ): Attributes {
     return filterAttributes(this.positionalCssAttributes, option);
@@ -90,7 +94,8 @@ export class BaseNode {
     option: Option = {
       zeroValueAllowed: false,
       truncateNumbers: true,
-      absolutePositioningOnly: false,
+      absolutePositioningFilter: false,
+      marginFilter: false,
     }
   ): Attributes {
     return filterAttributes(this.cssAttributes, option);
@@ -136,11 +141,53 @@ export class BaseNode {
   }
 }
 
+function findIntersection(rectangle1: BoxCoordinates, rectangle2: BoxCoordinates): BoxCoordinates {
+  const xOverlap = Math.max(0, Math.min(rectangle1.rightBot.x, rectangle2.rightBot.x) - Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x));
+  const yOverlap = Math.max(0, Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y) - Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y));
+
+  if (xOverlap === 0 || yOverlap === 0) {
+    return null; // No intersection
+  }
+
+  const intersection: BoxCoordinates = {
+    rightBot: {
+      x: Math.max(rectangle1.rightBot.x, rectangle2.rightBot.x),
+      y: Math.min(rectangle1.rightBot.y, rectangle2.rightBot.y)
+    },
+    rightTop: {
+      x: Math.min(rectangle1.rightTop.x, rectangle2.rightTop.x),
+      y: Math.max(rectangle1.rightTop.y, rectangle2.rightTop.y)
+    },
+    leftBot: {
+      x: Math.max(rectangle1.leftBot.x, rectangle2.leftBot.x),
+      y: Math.min(rectangle1.leftBot.y, rectangle2.leftBot.y)
+    },
+    leftTop: {
+      x: Math.max(rectangle1.leftTop.x, rectangle2.leftTop.x),
+      y: Math.max(rectangle1.leftTop.y, rectangle2.leftTop.y)
+    },
+  };
+
+  return intersection;
+}
+
+
 // doOverlap determines whether two boxes overlap with one another.
 export const doOverlap = (
   currentCoordinate: BoxCoordinates,
   targetCoordinates: BoxCoordinates
 ): boolean => {
+  const intersection: BoxCoordinates = findIntersection(currentCoordinate, targetCoordinates);
+
+  if (!isEmpty(intersection)) {
+    const intersectionWidth: number = Math.abs(intersection.leftTop.x - intersection.rightBot.x);
+    const intersectionHeight: number = Math.abs(intersection.leftTop.y - intersection.rightBot.y);
+
+    if (intersectionWidth < 2 || intersectionHeight < 2) {
+      return false;
+    }
+  }
+
   if (
     currentCoordinate.leftTop.x === currentCoordinate.rightBot.x ||
     currentCoordinate.leftTop.y === currentCoordinate.rightBot.y
@@ -296,12 +343,30 @@ export class GroupNode extends BaseNode {
   setChildren(children: Node[]) {
     this.children = children;
 
+    if (!isEmpty(this.node)) {
+      const absBoundingBox: BoxCoordinates = this.node.getAbsoluteBoundingBoxCoordinates();
+      this.cssAttributes["width"] = `${Math.abs(
+        absBoundingBox.rightBot.x - absBoundingBox.leftTop.x
+      )}px`;
+      this.cssAttributes["height"] = `${Math.abs(
+        absBoundingBox.rightBot.y - absBoundingBox.rightTop.y
+      )}px`;
+    }
+
     this.absRenderingBox = this.computeAbsRenderingBox();
   }
 
   getAbsRenderingBox() {
     return this.absRenderingBox;
   }
+
+  getRenderingBoxWidthAndHeight(): number[] {
+    const coordinates = this.getAbsRenderingBox();
+    const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
+    const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
+    return [width, height];
+  }
+
 
   getAbsBoundingBox() {
     if (!isEmpty(this.node)) {
@@ -311,7 +376,7 @@ export class GroupNode extends BaseNode {
     return this.getAbsRenderingBox();
   }
 
-  getAbsBoundingBoxWidthAndHeights(): number[] {
+  getAbsBoundingBoxWidthAndHeight(): number[] {
     const coordinates = this.getAbsBoundingBox();
     const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
     const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
@@ -319,9 +384,20 @@ export class GroupNode extends BaseNode {
   }
 
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
+    let currentBox: BoxCoordinates = this.getAbsRenderingBox();
+    let targetBox: BoxCoordinates = targetNode.getAbsRenderingBox();
+
+    if (!isEmpty(this.getACssAttribute("box-shadow"))) {
+      currentBox = this.getAbsBoundingBox();
+    }
+
+    if (!isEmpty(targetNode.getACssAttribute("box-shadow"))) {
+      targetBox = targetNode.getAbsBoundingBox();
+    }
+
     return computePositionalRelationship(
-      this.absRenderingBox,
-      targetNode.getAbsRenderingBox()
+      currentBox,
+      targetBox
     );
   }
 
@@ -341,12 +417,6 @@ export class GroupNode extends BaseNode {
   private computeAbsRenderingBox(): BoxCoordinates {
     if (!isEmpty(this.node)) {
       this.absRenderingBox = this.node.getRenderingBoundsCoordinates();
-      this.cssAttributes["width"] = `${Math.abs(
-        this.absRenderingBox.rightBot.x - this.absRenderingBox.leftTop.x
-      )}px`;
-      this.cssAttributes["height"] = `${Math.abs(
-        this.absRenderingBox.rightBot.y - this.absRenderingBox.rightTop.y
-      )}px`;
       return this.absRenderingBox;
     }
 
@@ -373,16 +443,10 @@ export class GroupNode extends BaseNode {
       if (coordinates.rightBot.y > yb) {
         yb = coordinates.rightBot.y;
       }
-
-      // console.log("child: ", child);
     }
 
     this.cssAttributes["width"] = `${Math.abs(xr - xl)}px`;
     this.cssAttributes["height"] = `${Math.abs(yb - yt)}px`;
-
-    // console.log("node: ", this.node);
-    // console.log(`this.cssAttributes["width"]: `, this.cssAttributes["width"]);
-    // console.log(`this.cssAttributes["height"]: `, this.cssAttributes["height"]);
 
     return {
       leftTop: {
@@ -420,7 +484,7 @@ export class VisibleNode extends BaseNode {
     return this.node.getAbsoluteBoundingBoxCoordinates();
   }
 
-  getAbsBoundingBoxWidthAndHeights(): number[] {
+  getAbsBoundingBoxWidthAndHeight(): number[] {
     const coordinates = this.node.getAbsoluteBoundingBoxCoordinates();
     const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
     const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
@@ -435,10 +499,28 @@ export class VisibleNode extends BaseNode {
     return this.node.getRenderingBoundsCoordinates();
   }
 
+  getRenderingBoxWidthAndHeight(): number[] {
+    const coordinates = this.getAbsRenderingBox();
+    const width = Math.abs(coordinates.rightTop.x - coordinates.leftBot.x);
+    const height = Math.abs(coordinates.rightBot.y - coordinates.leftTop.y);
+    return [width, height];
+  }
+
   getPositionalRelationship(targetNode: Node): PostionalRelationship {
+    let currentBox: BoxCoordinates = this.getAbsRenderingBox();
+    let targetBox: BoxCoordinates = targetNode.getAbsRenderingBox();
+
+    if (!isEmpty(this.getACssAttribute("box-shadow"))) {
+      currentBox = this.getAbsBoundingBox();
+    }
+
+    if (!isEmpty(targetNode.getACssAttribute("box-shadow"))) {
+      targetBox = targetNode.getAbsBoundingBox();
+    }
+
     return computePositionalRelationship(
-      this.getAbsRenderingBox(),
-      targetNode.getAbsRenderingBox()
+      currentBox,
+      targetBox
     );
   }
 
@@ -470,7 +552,6 @@ export class VisibleNode extends BaseNode {
 }
 
 export class TextNode extends VisibleNode {
-  fontSource: string;
   node: AdaptedTextNode;
   constructor(node: AdaptedTextNode) {
     super(node);
@@ -489,20 +570,16 @@ export class TextNode extends VisibleNode {
     return this.node.getAbsoluteBoundingBoxCoordinates();
   }
 
-  getFontSource() {
-    return this.fontSource;
-  }
-
-  setFontSource(source: string) {
-    this.fontSource = source;
-  }
-
   getText(): string {
     return this.node.getText();
   }
 
   getType(): NodeType {
     return NodeType.TEXT;
+  }
+
+  getStyledTextSegments(): StyledTextSegment[] {
+    return this.node.getStyledTextSegments();
   }
 }
 

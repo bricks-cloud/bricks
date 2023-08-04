@@ -9,7 +9,7 @@ import { getNameMap } from "../ee/web/request";
 import { instantiateNameRegistryGlobalInstance } from "./code/name-registry/name-registry";
 import { instantiateOptionRegistryGlobalInstance } from "./code/option-registry/option-registry";
 import { instantiateFontsRegistryGlobalInstance } from "./code/generator/tailwindcss/fonts-registry";
-import { removeCompletelyOverlappingNodes, removeNode } from "./bricks/remove-node";
+import { removeChildrenNode, removeCompletelyOverlappingNodes, removeNode } from "./bricks/remove-node";
 import { isEmpty, replaceVariableNameWithinFile, trackEvent } from "./utils";
 import { instantiateCodeSampleRegistryGlobalInstance } from "../ee/loop/code-sample-registry";
 import { instantiateDataArrRegistryGlobalInstance } from "../ee/loop/data-array-registry";
@@ -18,6 +18,7 @@ import { instantiateComponentRegistryGlobalInstance } from "../ee/loop/component
 import { annotateNodeForHtmlTag } from "../ee/cv/component-recognition";
 import { instantiateAiApplicationRegistryGlobalInstance, AiApplication, aiApplicationRegistryGlobalInstance } from "../ee/ui/ai-application-registry";
 import { EVENT_AI_CODE_GEN_SUCCESS, EVENT_AI_COMPONENT_IDENTIFICATION_SUCCESS, EVENT_AI_GET_NAME_SUCCESS } from "./analytic/amplitude";
+import { removeCssFromNode } from "./bricks/remove-css";
 
 export const convertToCode = async (
   figmaNodes: readonly SceneNode[],
@@ -28,17 +29,28 @@ export const convertToCode = async (
     return [];
   }
 
+  const dedupedNodes: Node[] = [];
+  for (const node of converted) {
+    let newNode: Node = removeNode(node);
+    removeCompletelyOverlappingNodes(newNode, null);
+    removeChildrenNode(newNode);
+    dedupedNodes.push(newNode);
+  }
+
+
   let startingNode: Node =
-    converted.length > 1 ? new GroupNode(converted) : converted[0];
+    dedupedNodes.length > 1 ? new GroupNode(converted) : converted[0];
 
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
-
-  addAdditionalCssAttributesToNodes(startingNode);
+  removeChildrenNode(startingNode);
 
   instantiateRegistries(startingNode, option);
+
+  addAdditionalCssAttributesToNodes(startingNode);
+  removeCssFromNode(startingNode);
 
   return await generateCodingFiles(startingNode, option);
 };
@@ -54,17 +66,26 @@ export const convertToCodeWithAi = async (
     return [[], []];
   }
 
+  const dedupedNodes: Node[] = [];
+  for (const node of converted) {
+    let newNode: Node = removeNode(node);
+    removeCompletelyOverlappingNodes(newNode, null);
+    removeChildrenNode(newNode);
+    dedupedNodes.push(newNode);
+  }
+
   let startingNode: Node =
-    converted.length > 1 ? new GroupNode(converted) : converted[0];
+    dedupedNodes.length > 1 ? new GroupNode(dedupedNodes) : dedupedNodes[0];
 
   groupNodes(startingNode);
 
   startingNode = removeNode(startingNode);
   removeCompletelyOverlappingNodes(startingNode, null);
-
-  addAdditionalCssAttributesToNodes(startingNode);
+  removeChildrenNode(startingNode);
 
   instantiateRegistries(startingNode, option);
+
+  addAdditionalCssAttributesToNodes(startingNode);
 
   // ee features
   let startAnnotateHtmlTag: number = Date.now();

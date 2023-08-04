@@ -1,3 +1,5 @@
+import { isEmpty } from "../../utils";
+
 export let nameRegistryGlobalInstance: NameRegistry;
 export const instantiateNameRegistryGlobalInstance = () => {
   nameRegistryGlobalInstance = new NameRegistry();
@@ -66,11 +68,11 @@ class NameRegistry {
 
   getDataArrName(id: string): string {
     let name: string = this.idToNameMap[id];
-    if (name) {
+    if (!isEmpty(name)) {
       return name;
     }
 
-    name = "dataArr" + this.numberOfDataArr;
+    name = "data" + this.numberOfDataArr;
     this.idToNameMap[id] = name;
     this.numberOfDataArr++;
     return name;
@@ -78,7 +80,7 @@ class NameRegistry {
 
   getPropName(id: string): string {
     let name: string = this.idToNameMap[id];
-    if (name) {
+    if (!isEmpty(name)) {
       return name;
     }
 
@@ -90,8 +92,7 @@ class NameRegistry {
 
   getVectorName(id: string): string {
     let name: string = this.idToNameMap[id];
-    if (name) {
-      let name: string = this.idToNameMap[id];
+    if (!isEmpty(name)) {
       return name;
     }
 

@@ -1,5 +1,5 @@
 import { Node } from "./node";
-import { getLineBasedOnDirection } from "./line";
+import { getContainerLineFromNodes, getLineBasedOnDirection } from "./line";
 import { BoxCoordinates } from "../design/adapter/node";
 import { selectBox } from "./additional-css";
 
@@ -12,20 +12,33 @@ export enum Direction {
 }
 
 // getDirection figures out whether nodes are positioned using row vs column.
-export const getDirection = (nodes: Node[]): Direction => {
-  if (nodes.length <= 1) {
-    return Direction.HORIZONTAL;
+export const getDirection = (node: Node): Direction => {
+  const children: Node[] = node.getChildren();
+  if (children.length <= 1) {
+    const targetLine = getContainerLineFromNodes(children, Direction.HORIZONTAL);
+    const parentLine = getContainerLineFromNodes([node], Direction.HORIZONTAL);
+
+    const counterTargetLine = getContainerLineFromNodes(children, Direction.VERTICAL);
+    const counterParentLine = getContainerLineFromNodes([node], Direction.VERTICAL);
+
+    let useHorizontal: boolean = Math.abs(parentLine.upper - parentLine.lower - (targetLine.upper - targetLine.lower)) > Math.abs(counterParentLine.upper - counterParentLine.lower - (counterTargetLine.upper - counterTargetLine.lower));
+
+    if (useHorizontal) {
+      return Direction.HORIZONTAL;
+    }
+
+    return Direction.VERTICAL;
   }
 
   let noVerticalOverlap = true;
-  for (let i = 0; i < nodes.length; i++) {
-    const currentLine = getLineBasedOnDirection(nodes[i], Direction.HORIZONTAL);
-    for (let j = 0; j < nodes.length; j++) {
+  for (let i = 0; i < children.length; i++) {
+    const currentLine = getLineBasedOnDirection(children[i], Direction.HORIZONTAL);
+    for (let j = 0; j < children.length; j++) {
       if (i === j) {
         continue;
       }
       const targetLine = getLineBasedOnDirection(
-        nodes[j],
+        children[j],
         Direction.HORIZONTAL
       );
       noVerticalOverlap = noVerticalOverlap && !currentLine.overlap(targetLine);

@@ -1,7 +1,12 @@
 import { useContext, PropsWithChildren } from "react";
 import * as settingsLogo from "../assets/setting-logo.png";
 import PageContext, { PAGES } from "../context/page-context";
-import { CssFramework, UiFramework, Language, GenerationMethod } from "../constants";
+import {
+  CssFramework,
+  UiFramework,
+  Language,
+  GenerationMethod,
+} from "../constants";
 import {
   EVENT_GENERATE_BUTTON_CLICK,
   EVENT_INSTALLATION_LINK_CLICK,
@@ -38,6 +43,9 @@ const Home = (props: PropsWithChildren<Props>) => {
   const { setCurrentPage } = useContext(PageContext);
 
   const handleGenerateCodeButtonClick = () => {
+    setIsGeneratingCode(true);
+    setCurrentPage(PAGES.CODE_GENERATION);
+
     parent.postMessage(
       {
         pluginMessage: {
@@ -51,8 +59,6 @@ const Home = (props: PropsWithChildren<Props>) => {
       },
       "*"
     );
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {
@@ -71,6 +77,10 @@ const Home = (props: PropsWithChildren<Props>) => {
   };
 
   const handleGenerateCodeWithAiButtonClick = () => {
+    setIsGeneratingCodeWithAi(true);
+    setIsGeneratingCode(true);
+    setCurrentPage(PAGES.CODE_GENERATION);
+
     parent.postMessage(
       {
         pluginMessage: {
@@ -84,10 +94,6 @@ const Home = (props: PropsWithChildren<Props>) => {
       },
       "*"
     );
-
-    setIsGeneratingCodeWithAi(true);
-    setIsGeneratingCode(true);
-    setCurrentPage(PAGES.CODE_GENERATION);
 
     parent.postMessage(
       {
@@ -146,7 +152,11 @@ const Home = (props: PropsWithChildren<Props>) => {
   const isGenerateCodeButtonEnabled = isComponentSelected && connectedToVSCode;
 
   const getGenerateCodeButton = () => {
-    if (selectedGenerationMethod === GenerationMethod.withai && limit > 0 && selectedUiFramework !== UiFramework.html) {
+    if (
+      selectedGenerationMethod === GenerationMethod.withai &&
+      limit > 0 &&
+      selectedUiFramework !== UiFramework.html
+    ) {
       return (
         <Button
           onClick={handleGenerateCodeWithAiButtonClick}
@@ -215,25 +225,19 @@ const Home = (props: PropsWithChildren<Props>) => {
     );
   };
 
-  const ranOutOfAiCredits = limit === 0 ? (
-    <div className="h-16 border-t-2 font-vietnam text-sm text-gray-400 w-full flex justify-center items-start pt-3">
-      Ran out of daily AI credits?<span>&nbsp;</span>
-      <Tooltip
-        content={
-          <p className="w-40 text-center">
-            spike@bricks-tech.com
-          </p>
-        }
-        trigger="hover"
-        arrow={false}
-      >
-        <div className="underline">
-          Contact us.
-        </div>
-
-      </Tooltip>
-    </div>
-  ) : null;
+  const ranOutOfAiCredits =
+    limit === 0 ? (
+      <div className="h-16 border-t-2 font-vietnam text-sm text-gray-400 w-full flex justify-center items-start pt-3">
+        Ran out of daily AI credits?<span>&nbsp;</span>
+        <Tooltip
+          content={<p className="w-40 text-center">spike@bricks-tech.com</p>}
+          trigger="hover"
+          arrow={false}
+        >
+          <div className="underline">Contact us.</div>
+        </Tooltip>
+      </div>
+    ) : null;
 
   return (
     <div className="h-full w-full flex flex-col justify-between items-center">
@@ -241,14 +245,16 @@ const Home = (props: PropsWithChildren<Props>) => {
       <div className="h-28 w-full flex justify-center items-center">
         <div className="h-28 w-full flex flex-col justify-center items-center gap-4 mb-2">
           {getGenerateCodeButton()}
-          {connectedToVSCode ? <Button onClick={handleOutputSettingButtonClick} secondary>
-            <img className="h-4 mr-2" src={settingsLogo.default} />
-            Setting
-          </Button> : null}
+          {connectedToVSCode ? (
+            <Button onClick={handleOutputSettingButtonClick} secondary>
+              <img className="h-4 mr-2" src={settingsLogo.default} />
+              Setting
+            </Button>
+          ) : null}
         </div>
       </div>
       {ranOutOfAiCredits}
-    </div >
+    </div>
   );
 };
 

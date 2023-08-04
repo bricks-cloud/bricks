@@ -77,7 +77,6 @@ export const gatherExtraFilesAndImportedComponentsMeta = (node: Node) => {
     const vectorNode: VectorNode = node as VectorNode;
     extraFileRegistryGlobalInstance.addExportableFile(vectorNode);
     extraFileRegistryGlobalInstance.addImportStatement(vectorNode);
-    return;
   }
 
   if (node.getType() === NodeType.VECTOR_GROUP) {

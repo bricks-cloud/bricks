@@ -2,8 +2,8 @@ import { isEmpty } from "../utils";
 import * as rawData from "./google-fonts-metadata.json";
 import { FontMetadataMap } from "../code/generator/font";
 
-const baseURL = "https://fonts.googleapis.com/css?family=";
-const regularFontSize = "400";
+const BASE_URL = "https://fonts.googleapis.com/css?family=";
+const REGULAR_FONT_SIZE = 400;
 
 interface GoogleFontMetadata {
   family: string;
@@ -56,7 +56,9 @@ export class GoogleFonts {
 
 export const GoogleFontsInstance = new GoogleFonts();
 
-export const computeGoogleFontURL = (fontsMetadata: FontMetadataMap): string => {
+export const computeGoogleFontURL = (
+  fontsMetadata: FontMetadataMap
+): string => {
   if (isEmpty(fontsMetadata)) {
     return "";
   }
@@ -64,39 +66,37 @@ export const computeGoogleFontURL = (fontsMetadata: FontMetadataMap): string => 
   let googleFontFamily = "";
 
   const fontMetadataEntries = Object.entries(fontsMetadata);
-  fontMetadataEntries.forEach(([family, { isItalic, weights }], index: number) => {
-    let fontDetails = "";
+  fontMetadataEntries.forEach(
+    ([family, { isItalic, weights }], index: number) => {
+      let fontDetails = "";
 
-    const familyName = family.replaceAll(" ", "+");
+      const familyName = family.replaceAll(" ", "+");
 
-    const fontVariants: string[] = [];
-    for (const fontWeight of weights) {
-      const isRegular = fontWeight === regularFontSize;
-      if (isRegular) {
-        fontVariants.push("regular");
-        continue;
+      const fontVariants: string[] = [];
+      for (const fontWeight of weights) {
+        fontVariants.push(
+          fontWeight === REGULAR_FONT_SIZE ? "regular" : fontWeight.toString()
+        );
       }
 
-      fontVariants.push(fontWeight);
+      if (isItalic) {
+        fontVariants.push("italic");
+      }
+
+      const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(
+        fontVariants,
+        family
+      );
+
+      fontDetails += familyName + ":" + googleFontsVariants.join(",");
+
+      if (index !== fontMetadataEntries.length - 1) {
+        fontDetails += "|";
+      }
+
+      googleFontFamily += fontDetails;
     }
+  );
 
-    if (isItalic) {
-      fontVariants.push("italic");
-    }
-
-    const googleFontsVariants = GoogleFontsInstance.getAvailableVariants(
-      fontVariants,
-      family
-    );
-
-    fontDetails += familyName + ":" + googleFontsVariants.join(",");
-
-    if (index !== fontMetadataEntries.length - 1) {
-      fontDetails += "|";
-    }
-
-    googleFontFamily += fontDetails;
-  });
-
-  return baseURL + googleFontFamily;
+  return BASE_URL + googleFontFamily;
 };

@@ -6,14 +6,11 @@ import { isEmpty } from "bricks-core/src/utils";
 
 export interface Props {
   limit: number;
-  aiApplications: AiApplication[],
+  aiApplications: AiApplication[];
 }
 
 const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
-  const {
-    limit,
-    aiApplications,
-  } = props;
+  const { limit, aiApplications } = props;
 
   const { setCurrentPage } = useContext(PageContext);
 
@@ -25,7 +22,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
     if (isEmpty(aiApplications)) {
       return (
         <p className="font-vietnam text-black font-bold text-base mb-4 text-start">
-          Ai is not applied in this code generation. No credits deducted.
+          We didnt detect any looped components, buttons, or links so we switched to instant version. No credits have been deducted.
         </p>
       );
     }
@@ -36,7 +33,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
       if (aiApplication === AiApplication.componentIdentification) {
         applications.push(
           <p className="font-vietnam text-black text-base mb-4 text-start">
-            * Auto identification of buttons and links.
+            * Auto identification of buttons.
           </p>
         );
       }
@@ -56,9 +53,7 @@ const PostCodeGenerationAi = (props: PropsWithChildren<Props>) => {
           Here is how Ai is applied:
         </p>
         <div className="max-w-xs mx-auto flex flex-col justify-start items-start mb-8">
-          {applications.map((application) => (
-            application
-          ))}
+          {applications.map((application) => application)}
         </div>
       </div>
     );

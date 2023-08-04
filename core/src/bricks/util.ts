@@ -1,8 +1,17 @@
 import { isEmpty } from "../utils";
 import { Attributes } from "../design/adapter/node";
-import { Option } from "./node";
+import { Node, NodeType, Option } from "./node";
 
 const toOneDecimal = (num: number): number => Math.round(num * 10) / 10;
+
+// backgroundColorFilter filters background color
+export const backgroundColorFilter = (key: string, _: string): boolean => {
+  if (key === "background-color") {
+    return false;
+  }
+
+  return true;
+};
 
 // absolutePositioningFilter filters non absolute positioning related attributes
 export const absolutePositioningFilter = (key: string, _: string): boolean => {
@@ -20,6 +29,23 @@ export const absolutePositioningFilter = (key: string, _: string): boolean => {
 
   return false;
 };
+
+// marignFilter filters non marign related attributes
+export const marignFilter = (key: string, _: string): boolean => {
+  const marginFilter: string[] = [
+    "margin-left",
+    "margin-right",
+    "margin-top",
+    "margin-bottom",
+  ];
+
+  if (marginFilter.includes(key)) {
+    return true;
+  }
+
+  return false;
+};
+
 
 // values taken from different sources could have a lot of fractional digits.
 // for readability purposes, these numbers should be truncated
@@ -81,8 +107,17 @@ export const filterAttributes = (
     modifiers.push(truncateNumbers);
   }
 
-  if (option.absolutePositioningOnly) {
+  if (option.excludeBackgroundColor) {
+    filters.push(backgroundColorFilter);
+  }
+
+
+  if (option.absolutePositioningFilter) {
     filters.push(absolutePositioningFilter);
+  }
+
+  if (option.marginFilter) {
+    filters.push(marignFilter);
   }
 
   if (isEmpty(modifiers) && isEmpty(filters)) {
@@ -119,7 +154,7 @@ export const filterCssValue = (cssValue: string, option: Option): string => {
     filters.push(zeroValueFilter);
   }
 
-  if (option.absolutePositioningOnly) {
+  if (option.absolutePositioningFilter) {
     filters.push(absolutePositioningFilter);
   }
 
@@ -137,7 +172,7 @@ export const filterCssValue = (cssValue: string, option: Option): string => {
 
   let pass: boolean = true;
   for (const filterFunction of filters) {
-    pass = pass && filterFunction("", cssValue);
+    pass = pass || filterFunction("", cssValue);
   }
 
   if (!pass) {
@@ -152,38 +187,14 @@ export const filterCssValue = (cssValue: string, option: Option): string => {
   return updated;
 };
 
-// // calculateOutsidePercentage calculates the area of the target rectangle that is outside of the current rectangle
-// // as percentage of the current rectangle's area
-// export const calculateOutsidePercentage = (target: BoxCoordinates, current: BoxCoordinates): number => {
-//   // Calculate the area of rectangle a
-//   const areaOfA = calculateArea(target);
+export const shouldUseAsBackgroundImage = (node: Node): boolean => {
+  if (node.getType() === NodeType.VECTOR && !isEmpty(node.getChildren())) {
+    return true;
+  }
 
-//   // Calculate the area of the intersection between a and b
-//   const intersectionArea = calculateIntersectionArea(target, current);
+  if (node.getType() === NodeType.IMAGE && !isEmpty(node.getChildren())) {
+    return true;
+  }
 
-//   // Calculate the area of rectangle b
-//   const areaOfB = calculateArea(current);
-
-//   // Calculate the area of rectangle a that is outside of rectangle b
-//   const areaOfAOutsideB = areaOfA - intersectionArea;
-
-//   // Calculate the percentage of area of a that is outside of b as a percentage of b's overall area
-//   return (areaOfAOutsideB / areaOfB) * 100;
-// };
-
-// const calculateArea = (box: BoxCoordinates): number => {
-//   const { leftTop, leftBot, rightTop } = box;
-//   const width = Math.abs(rightTop.x - leftTop.x);
-//   const height = Math.abs(leftTop.y - leftBot.y);
-//   return width * height;
-// };
-
-// const calculateIntersectionArea = (a: BoxCoordinates, b: BoxCoordinates): number => {
-//   const left = Math.max(a.leftTop.x, b.leftTop.x);
-//   const right = Math.min(a.rightTop.x, b.rightTop.x);
-//   const top = Math.max(a.leftTop.y, b.leftTop.y);
-//   const bottom = Math.min(a.leftBot.y, b.leftBot.y);
-//   const width = Math.max(right - left, 0);
-//   const height = Math.max(bottom - top, 0);
-//   return width * height;
-// };
+  return false;
+};

@@ -3,10 +3,11 @@ import { isEmpty } from "../../src/utils";
 import { CssFramework } from "../../src/code/code";
 import { getTwcssClass } from "../../src/code/generator/tailwindcss/css-to-twcss";
 import { optionRegistryGlobalInstance } from "../../src/code/option-registry/option-registry";
-import { areAllNodesSimilar, vectorGroupAnnotation } from "./loop";
+import { areAllNodesSimilar } from "./loop";
 import { nameRegistryGlobalInstance } from "../../src/code/name-registry/name-registry";
 import { IdToPropBindingMap, propRegistryGlobalInstance } from "./prop-registry";
 import uuid from "react-native-uuid";
+import { shouldUseAsBackgroundImage } from "../../src/bricks/util";
 
 type PropLocation = {
   type: string;
@@ -393,39 +394,32 @@ export const gatherPropsFromSimilarNodes = (nodes: Node[], instanceIds: string[]
     return [false, {}];
   }
 
-  const cssProps: ComponentProperties = optionRegistryGlobalInstance.getOption().cssFramework === CssFramework.tailwindcss ? gatherTwcssPropsFromNodes(nodes, instanceIds) : gatherCssPropsFromNodes(nodes, instanceIds);
-  let componentProps: ComponentProperties = {
-    ...gatherPropsFromImageNodes(nodes, instanceIds),
-    ...gatherPropsFromVectorNodes(nodes, instanceIds),
-    ...gatherTextPropsFromNodes(nodes, instanceIds),
-    ...cssProps,
-  };
-
-
-  let allVectorGroups: boolean = true;
-  for (const node of nodes) {
-    if (!node.hasAnnotation(vectorGroupAnnotation)) {
-      allVectorGroups = false;
-    }
-  }
-
-  if (allVectorGroups) {
-    return [true, componentProps];
-  }
-
-  if (!areAllNodesSimilar(nodes)) {
+  const [result, similarNodes] = areAllNodesSimilar(nodes);
+  if (!result) {
     return [false, {}];
   }
 
-  let children: Node[] = nodes[0].getChildren();
+  const cssProps: ComponentProperties = optionRegistryGlobalInstance.getOption().cssFramework === CssFramework.tailwindcss ? gatherTwcssPropsFromNodes(similarNodes, instanceIds) : gatherCssPropsFromNodes(similarNodes, instanceIds);
+  let componentProps: ComponentProperties = {
+    ...gatherPropsFromImageNodes(similarNodes, instanceIds),
+    ...gatherPropsFromVectorNodes(similarNodes, instanceIds),
+    ...gatherTextPropsFromNodes(similarNodes, instanceIds),
+    ...cssProps,
+  };
+
+  let children: Node[] = similarNodes[0].getChildren();
+  if (isEmpty(children)) {
+    return [true, componentProps];
+  }
+
   for (let i = 0; i < children.length; i++) {
-    let similarNodes: Node[] = [];
-    for (const targetNode of nodes) {
+    let similarChildrenNodes: Node[] = [];
+    for (const targetNode of similarNodes) {
       const targetChildren: Node[] = targetNode.getChildren();
-      similarNodes.push(targetChildren[i]);
+      similarChildrenNodes.push(targetChildren[i]);
     }
 
-    const [result, targetProps] = gatherPropsFromSimilarNodes(similarNodes, instanceIds);
+    const [result, targetProps] = gatherPropsFromSimilarNodes(similarChildrenNodes, instanceIds);
     if (!result) {
       return [result, {}];
     }
@@ -447,7 +441,7 @@ export const gatherPropsFromVectorNodes = (nodes: Node[], instanceIds: string[])
   }
 
   for (const node of nodes) {
-    if (!node.hasAnnotation(vectorGroupAnnotation)) {
+    if (node.getType() !== NodeType.VECTOR || shouldUseAsBackgroundImage(node)) {
       return properties;
     }
   }
@@ -503,7 +497,7 @@ export const gatherPropsFromImageNodes = (nodes: Node[], instanceIds: string[]):
   }
 
   for (const node of nodes) {
-    if (node.getType() !== NodeType.IMAGE) {
+    if (node.getType() !== NodeType.IMAGE || shouldUseAsBackgroundImage(node)) {
       return properties;
     }
   }
@@ -606,7 +600,8 @@ export const gatherCssPropsFromNodes = (potentiallyRepeatedNode: Node[], instanc
     return properties;
   }
 
-  const sampleNodeType: NodeType = potentiallyRepeatedNode[0].getType();
+  const sampleNode: Node = potentiallyRepeatedNode[0];
+  const sampleNodeType: NodeType = sampleNode.getType();
 
   let existingCssKeys: Set<string> = new Set<string>();
   for (const node of potentiallyRepeatedNode) {
@@ -676,7 +671,7 @@ export const gatherCssPropsFromNodes = (potentiallyRepeatedNode: Node[], instanc
 
   Object.entries(properties).forEach(([id, { cssKey, bindings }]) => {
     let firstBinding: PropValueBinding = bindings[0];
-    if (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR) {
+    if (!shouldUseAsBackgroundImage(sampleNode) && (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR)) {
       if (cssKey !== "width" && cssKey !== "height") {
         delete properties[id];
         return;
@@ -702,7 +697,8 @@ export const gatherTwcssPropsFromNodes = (potentiallyRepeatedNode: Node[], insta
     return properties;
   }
 
-  const sampleNodeType: NodeType = potentiallyRepeatedNode[0].getType();
+  const sampleNode: Node = potentiallyRepeatedNode[0];
+  const sampleNodeType: NodeType = sampleNode.getType();
 
   let existingCssKeys: Set<string> = new Set<string>();
   for (const node of potentiallyRepeatedNode) {
@@ -778,7 +774,7 @@ export const gatherTwcssPropsFromNodes = (potentiallyRepeatedNode: Node[], insta
   }
 
   Object.entries(properties).forEach(([id, { cssKey, bindings }]) => {
-    if (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR) {
+    if (!shouldUseAsBackgroundImage(sampleNode) && (sampleNodeType === NodeType.IMAGE || sampleNodeType === NodeType.VECTOR_GROUP || sampleNodeType === NodeType.VECTOR)) {
       if (cssKey !== "width" && cssKey !== "height") {
         delete properties[id];
         return;

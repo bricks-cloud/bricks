@@ -10,9 +10,7 @@ import {
   convertCssClassesToTwcssClasses,
   getImageFileNameFromUrl,
 } from "./css-to-twcss";
-import {
-  FontsRegistryGlobalInstance,
-} from "./fonts-registry";
+import { FontsRegistryGlobalInstance } from "./fonts-registry";
 import {
   Generator as HtmlGenerator,
   ImportedComponentMeta,
@@ -22,13 +20,18 @@ import {
 import { Generator as ReactGenerator } from "../react/generator";
 import { filterAttributes } from "../../../bricks/util";
 import { extraFileRegistryGlobalInstance } from "../../extra-file-registry/extra-file-registry";
+import { shouldUseAsBackgroundImage } from "../util";
+import { Attributes } from "../../../design/adapter/node";
 
 export class Generator {
   htmlGenerator: HtmlGenerator;
   reactGenerator: ReactGenerator;
 
   constructor() {
-    this.htmlGenerator = new HtmlGenerator(getProps);
+    this.htmlGenerator = new HtmlGenerator(
+      getPropsFromNode,
+      convertCssClassesToTwcssClasses
+    );
     this.reactGenerator = new ReactGenerator();
   }
 
@@ -37,11 +40,14 @@ export class Generator {
     option: Option,
     mainComponentName: string
   ): Promise<[string, ImportedComponentMeta[]]> {
-    const mainFileContent =
-      await this.htmlGenerator.generateHtml(node, option);
+    const mainFileContent = await this.htmlGenerator.generateHtml(node, option);
 
-    const importComponents: ImportedComponentMeta[] = extraFileRegistryGlobalInstance.getImportComponentMeta();
-    const [inFileComponents, inFileData]: [InFileComponentMeta[], InFileDataMeta[]] = this.htmlGenerator.getExtraComponentsMetaData();
+    const importComponents: ImportedComponentMeta[] =
+      extraFileRegistryGlobalInstance.getImportComponentMeta();
+    const [inFileComponents, inFileData]: [
+      InFileComponentMeta[],
+      InFileDataMeta[]
+    ] = this.htmlGenerator.getExtraComponentsMetaData();
 
     if (option.uiFramework === UiFramework.react) {
       return [
@@ -92,28 +98,31 @@ export class Generator {
 }
 
 // getProps converts a single node to formated tailwindcss classes
-const getProps = (node: Node, option: Option): string => {
-
+const getPropsFromNode = (node: Node, option: Option): string => {
   switch (node.getType()) {
-    case NodeType.TEXT:
-      return convertCssClassesToTwcssClasses(
-        {
-          ...node.getCssAttributes(),
+    case NodeType.TEXT: {
+      const attributes: Attributes = {
+        ...{
           ...filterAttributes(node.getPositionalCssAttributes(), {
-            absolutePositioningOnly: true,
-          })
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
         },
-        node.getId(),
-        option,
-      );
+        ...node.getCssAttributes(),
+      };
+
+      return convertCssClassesToTwcssClasses(attributes, option, node.getId());
+    }
     case NodeType.GROUP:
       return convertCssClassesToTwcssClasses(
         {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
         option,
+        node.getId()
       );
     case NodeType.VISIBLE:
       return convertCssClassesToTwcssClasses(
@@ -121,34 +130,79 @@ const getProps = (node: Node, option: Option): string => {
           ...node.getPositionalCssAttributes(),
           ...node.getCssAttributes(),
         },
-        node.getId(),
-        option
+        option,
+        node.getId()
       );
 
     case NodeType.IMAGE:
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToTwcssClasses(
+          {
+            ...filterAttributes(node.getCssAttributes(), {
+              excludeBackgroundColor: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
+          option,
+          node.getId()
+        );
+      }
+
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
-        node.getId(),
-        option
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
+        option,
+        node.getId()
       );
 
     case NodeType.VECTOR:
+      if (isEmpty(node.getChildren())) {
+        return convertCssClassesToTwcssClasses(
+          {
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              absolutePositioningFilter: true,
+            }),
+            ...filterAttributes(node.getPositionalCssAttributes(), {
+              marginFilter: true,
+            }),
+          },
+          option,
+          node.getId()
+        );
+      }
+
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
-        node.getId(),
-        option
+        {
+          ...node.getPositionalCssAttributes(),
+          ...filterAttributes(node.getCssAttributes(), {
+            excludeBackgroundColor: true,
+          }),
+        },
+        option,
+        node.getId()
       );
+    // TODO: VECTOR_GROUP node type is deprecated
     case NodeType.VECTOR_GROUP:
       return convertCssClassesToTwcssClasses(
-        filterAttributes(node.getPositionalCssAttributes(), {
-          absolutePositioningOnly: true,
-        }),
-        node.getId(),
-        option
+        {
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            absolutePositioningFilter: true,
+          }),
+          ...filterAttributes(node.getPositionalCssAttributes(), {
+            marginFilter: true,
+          }),
+        },
+        option,
+        node.getId()
       );
 
     default:
@@ -175,6 +229,15 @@ export const buildTwcssConfigFileContent = (
     importComponents.forEach((importComponent: ImportedComponentMeta) => {
       const extension = getExtensionFromFilePath(importComponent.importPath);
       if (extension === "png" && !isEmpty(importComponent.node.getChildren())) {
+        backgroundImages += `"${getImageFileNameFromUrl(
+          importComponent.importPath
+        )}": "url(.${importComponent.importPath})",`;
+      }
+
+      if (
+        extension === "svg" &&
+        shouldUseAsBackgroundImage(importComponent.node)
+      ) {
         backgroundImages += `"${getImageFileNameFromUrl(
           importComponent.importPath
         )}": "url(.${importComponent.importPath})",`;
@@ -216,11 +279,11 @@ export const buildTwcssCssFileContent = () => {
     fontImportStatements = `@import url("${googleFontUrl}");`;
   }
 
-  const file = `@tailwind base;
+  const file = `${fontImportStatements}
+  @tailwind base;
   @tailwind components;
   @tailwind utilities;
-  ${fontImportStatements}
-  `;
+`;
 
   return file;
 };

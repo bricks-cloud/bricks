@@ -9,7 +9,13 @@ import CodeOutputSetting from "./pages/code-output-setting";
 import Error from "./pages/error";
 import PageContext, { PAGES } from "./context/page-context";
 import { io } from "socket.io-client";
-import { AiApplication, CssFramework, GenerationMethod, Language, UiFramework } from "./constants";
+import {
+  AiApplication,
+  CssFramework,
+  GenerationMethod,
+  Language,
+  UiFramework,
+} from "./constants";
 import { withTimeout } from "./utils";
 import { EVENT_ERROR } from "./analytic/amplitude";
 import { isEmpty } from "bricks-core/src/utils";
@@ -23,7 +29,10 @@ const UI = () => {
   const [connectedToVSCode, setConnectedToVSCode] = useState(false);
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isGeneratingCodeWithAi, setIsGeneratingCodeWithAi] = useState(false);
-  const [aiApplications, setAiApplications] = useState([AiApplication.componentIdentification, AiApplication.autoNaming]);
+  const [aiApplications, setAiApplications] = useState([
+    AiApplication.componentIdentification,
+    AiApplication.autoNaming,
+  ]);
   const [limit, setLimit] = useState(0);
 
   // User settings
@@ -143,7 +152,6 @@ const UI = () => {
   }, []);
 
   const resetLimit = () => {
-    console.log("called!!!");
     parent.postMessage(
       {
         pluginMessage: {
@@ -179,7 +187,6 @@ const UI = () => {
       }, 1000);
 
       if (settings) {
-
       }
 
       setSelectedLanguage(settings.language);
@@ -189,8 +196,6 @@ const UI = () => {
     }
 
     if (pluginMessage.type === "get-limit") {
-      // resetLimit();
-
       if (Number.isInteger(pluginMessage.limit) && pluginMessage.limit >= 0) {
         setLimit(pluginMessage.limit);
       } else {
@@ -348,7 +353,9 @@ const UI = () => {
           />
         )}
         {currentPage === PAGES.POST_CODE_GENERATION && <PostCodeGeneration />}
-        {currentPage === PAGES.POST_CODE_GENERATION_AI && <PostCodeGenerationAi limit={limit} aiApplications={aiApplications} />}
+        {currentPage === PAGES.POST_CODE_GENERATION_AI && (
+          <PostCodeGenerationAi limit={limit} aiApplications={aiApplications} />
+        )}
         {currentPage === PAGES.ERROR && <Error />}
       </div>
     </PageContext.Provider>

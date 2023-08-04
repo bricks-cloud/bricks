@@ -1,7 +1,4 @@
-import {
-  convertToCode,
-  convertToCodeWithAi,
-} from "bricks-core/src";
+import { convertToCode, convertToCodeWithAi } from "bricks-core/src";
 import { isEmpty } from "bricks-core/src/utils";
 import { init, Identify, identify, track } from "@amplitude/analytics-browser";
 import { EVENT_ERROR } from "./analytic/amplitude";
@@ -27,22 +24,29 @@ figma.showUI(__html__, { height: 300, width: 350 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "styled-bricks-nodes") {
-    try {
-      const files = await convertToCode(figma.currentPage.selection, {
-        language: msg.options.language,
-        cssFramework: msg.options.cssFramework,
-        uiFramework: msg.options.uiFramework,
-      });
+    const promise = convertToCode(figma.currentPage.selection, {
+      language: msg.options.language,
+      cssFramework: msg.options.cssFramework,
+      uiFramework: msg.options.uiFramework,
+    });
 
+    promise.then((files) => {
       figma.ui.postMessage({
         type: "generated-files",
         files,
       });
-    } catch (e) {
-      console.error("Error from Figma core:\n", e.stack);
+
+    }).catch((e) => {
+      const errorDetails = {
+        error: e.name,
+        message: e.message,
+        stack: e.stack,
+      };
+
+      console.error("Error from Figma core:\n", errorDetails);
       trackEvent(EVENT_ERROR, {
         source: "figma",
-        error: e.stack,
+        ...errorDetails,
       });
 
       figma.ui.postMessage({
@@ -50,27 +54,37 @@ figma.ui.onmessage = async (msg) => {
         files: [],
         error: true,
       });
-    }
+    });
   }
 
   if (msg.type === "generate-code-with-ai") {
-    try {
-      const [files, applications] = await convertToCodeWithAi(figma.currentPage.selection, {
+    const promise = convertToCodeWithAi(
+      figma.currentPage.selection,
+      {
         language: msg.options.language,
         cssFramework: msg.options.cssFramework,
         uiFramework: msg.options.uiFramework,
-      });
+      }
+    );
 
+    promise.then(([files, applications]) => {
       figma.ui.postMessage({
         type: "generated-files",
         files,
         applications,
       });
-    } catch (e) {
-      console.error("Error from Figma core:\n", e.stack);
+
+    }).catch((e) => {
+      const errorDetails = {
+        error: e.name,
+        message: e.message,
+        stack: e.stack,
+      };
+
+      console.error("Error from Figma core:\n", errorDetails);
       trackEvent(EVENT_ERROR, {
         source: "figma",
-        error: e.stack,
+        ...errorDetails,
       });
 
       figma.ui.postMessage({
@@ -79,7 +93,7 @@ figma.ui.onmessage = async (msg) => {
         applications: [],
         error: true,
       });
-    }
+    });
   }
 
   if (msg.type === "update-settings") {
@@ -154,7 +168,6 @@ figma.ui.onmessage = async (msg) => {
 };
 
 figma.on("selectionchange", async () => {
-
   figma.ui.postMessage({
     type: "selection-change",
     isComponentSelected: figma.currentPage.selection.length > 0,

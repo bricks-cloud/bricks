@@ -2,6 +2,7 @@ import { isEmpty } from "../../utils";
 import { ImportedComponentMeta } from "./html/generator";
 import { ExportFormat } from "../../design/adapter/node";
 import { Option, File, UiFramework, Language } from "../code";
+import { Node, NodeType } from "../../bricks/node";
 
 // getFileExtensionFromLanguage determines file extension for the main file depending on the input option
 export const getFileExtensionFromLanguage = (option: Option): string => {
@@ -34,6 +35,10 @@ const isNumeric = (str: string): boolean => {
 
 
 export const cssStrToNum = (value: string): number => {
+  if (isEmpty(value)) {
+    return 0;
+  }
+
   if (value.endsWith("px")) {
     return parseInt(value.slice(0, -2));
   }
@@ -95,4 +100,16 @@ export const snakeCaseToCamelCase = (prop: string) => {
   }
 
   return camel.join("");
+};
+
+export const shouldUseAsBackgroundImage = (node: Node): boolean => {
+  if (node.getType() === NodeType.VECTOR && !isEmpty(node.getChildren())) {
+    return true;
+  }
+
+  if (node.getType() === NodeType.IMAGE && !isEmpty(node.getChildren())) {
+    return true;
+  }
+
+  return false;
 };

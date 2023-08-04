@@ -8,10 +8,10 @@ export const getFontsMetadata = (node: Node): FontMetadataMap => {
 };
 
 type Font = {
-  sizes: string[];
+  sizes: number[];
   isItalic: boolean;
   familyCss: string;
-  weights: string[];
+  weights: number[];
 };
 
 export type FontMetadataMap = {
@@ -22,33 +22,36 @@ export type FontMetadataMap = {
 const findAllFonts = (node: Node, fonts: FontMetadataMap) => {
   if (node.getType() === NodeType.TEXT) {
     const textNode = node as TextNode;
-    const attributes = textNode.getCssAttributes();
-    const fontFamily = textNode.getFamilyName();
-    const fontFamilyCss = attributes["font-family"];
-    const fontSize = attributes["font-size"];
-    const fontWeight = attributes["font-weight"];
 
-    if (fontFamily && fontSize) {
-      const font = fonts[fontFamily];
-      if (!font) {
-        fonts[fontFamily] = {
-          isItalic: textNode.isItalic(),
-          familyCss: fontFamilyCss,
-          sizes: [fontSize],
-          weights: [fontWeight],
-        };
+    const styledTextSegments = textNode.node.getStyledTextSegments();
 
-        return;
+    styledTextSegments.forEach((styledTextSegment) => {
+      const { fontName, fontSize, fontWeight, fontFamily } = styledTextSegment;
+      const { family, style } = fontName;
+      const isItalic = style.toLowerCase().includes("italic");
+
+      if (family && fontSize) {
+        const font = fonts[family];
+        if (!font) {
+          fonts[family] = {
+            isItalic,
+            familyCss: fontFamily,
+            sizes: [fontSize],
+            weights: [fontWeight],
+          };
+
+          return;
+        }
+
+        if (!font.weights.includes(fontWeight)) {
+          font.weights.push(fontWeight);
+        }
+
+        if (fontSize) {
+          fonts[family].sizes.push(fontSize);
+        }
       }
-
-      if (!font.weights.includes(fontWeight)) {
-        font.weights.push(fontWeight);
-      }
-
-      if (fontSize) {
-        fonts[fontFamily].sizes.push(fontSize);
-      }
-    }
+    });
 
     return;
   }

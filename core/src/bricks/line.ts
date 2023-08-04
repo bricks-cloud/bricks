@@ -10,8 +10,20 @@ enum RelativePoisition {
 }
 
 // getLineBasedOnDirection gets the boundary of a node depending on the input direction.
-export const getLineBasedOnDirection = (node: Node, direction: Direction) => {
-  const coordinates = selectBox(node);
+export const getLineBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+  const coordinates = selectBox(node, useBoundingBox);
+
+  if (direction === Direction.HORIZONTAL) {
+    return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
+  }
+
+  return new Line(coordinates.leftTop.x, coordinates.rightBot.x);
+};
+
+
+// getLineUsingRenderingBoxBasedOnDirection gets the rendering boundary of a node depending on the input direction.
+export const getLineUsingRenderingBoxBasedOnDirection = (node: Node, direction: Direction, useBoundingBox: boolean = false) => {
+  const coordinates = node.getAbsRenderingBox();
 
   if (direction === Direction.HORIZONTAL) {
     return new Line(coordinates.leftTop.y, coordinates.rightBot.y);
@@ -67,12 +79,24 @@ export class Line {
     return distanceFromUpper - distanceFromLower;
   };
 
-  overlap(l: Line): boolean {
+  overlapStrict(l: Line): boolean {
     if (this.lower > l.upper) {
       return false;
     }
 
     if (this.upper < l.lower) {
+      return false;
+    }
+
+    return true;
+  }
+
+  overlap(l: Line): boolean {
+    if (this.lower + 2 > l.upper) {
+      return false;
+    }
+
+    if (this.upper - 2 < l.lower) {
       return false;
     }
 
@@ -87,7 +111,7 @@ export const getLinesFromNodes = (
 ): Line[] => {
   const lines: Line[] = [];
   for (const node of nodes) {
-    const renderingBox = node.getAbsRenderingBox();
+    const renderingBox = selectBox(node);
 
     if (direction === Direction.VERTICAL) {
       lines.push(new Line(renderingBox.leftTop.x, renderingBox.rightBot.x));
@@ -128,3 +152,30 @@ export const getContainerLineFromNodes = (
 
   return new Line(lower, upper);
 };
+
+export const getContainerRenderingLineFromNodes = (
+  nodes: Node[],
+  direction: Direction,
+  useBoundingBox: boolean = false
+): Line => {
+  let lower: number = Infinity;
+  let upper: number = -Infinity;
+  if (direction === Direction.HORIZONTAL) {
+    for (let i = 0; i < nodes.length; i++) {
+      const renderingBox = nodes[i].getAbsRenderingBox();
+      lower = renderingBox.leftTop.y < lower ? renderingBox.leftTop.y : lower;
+      upper = renderingBox.rightBot.y > upper ? renderingBox.rightBot.y : upper;
+    }
+
+    return new Line(lower, upper);
+  }
+
+  for (let i = 0; i < nodes.length; i++) {
+    const renderingBox = nodes[i].getAbsRenderingBox();
+    lower = renderingBox.leftTop.x < lower ? renderingBox.leftTop.x : lower;
+    upper = renderingBox.rightBot.x > upper ? renderingBox.rightBot.x : upper;
+  }
+
+  return new Line(lower, upper);
+};
+

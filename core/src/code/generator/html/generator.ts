@@ -8,7 +8,11 @@ import {
   VectorNode,
   TextNode,
 } from "../../../bricks/node";
-import { Attributes, ExportFormat } from "../../../design/adapter/node";
+import {
+  Attributes,
+  ExportFormat,
+  StyledTextSegment,
+} from "../../../design/adapter/node";
 import { generateProps } from "../../../../ee/loop/data-array-registry";
 import { nameRegistryGlobalInstance } from "../../name-registry/name-registry";
 import { Component, Data, DataArr } from "../../../../ee/loop/component";
@@ -20,7 +24,14 @@ import {
 import { componentRegistryGlobalInstance } from "../../../../ee/loop/component-registry";
 import { codeSampleRegistryGlobalInstance } from "../../../../ee/loop/code-sample-registry";
 
-export type GetProps = (node: Node, option: Option) => string;
+type GetPropsFromNode = (node: Node, option: Option) => string;
+export type GetPropsFromAttributes = (
+  attributes: Attributes,
+  option: Option,
+  id?: string,
+  // sometimes needed because the value of an attribute can depend on the parent's attributes
+  parentCssAttributes?: Attributes
+) => string;
 
 export type ImportedComponentMeta = {
   node: VectorGroupNode | VectorNode | ImageNode;
@@ -37,27 +48,60 @@ export type InFileDataMeta = {
 };
 
 export class Generator {
-  getProps: GetProps;
+  getPropsFromNode: GetPropsFromNode;
+  getPropsFromAttributes: GetPropsFromAttributes;
   inFileComponents: InFileComponentMeta[];
   inFileData: InFileDataMeta[];
 
-  constructor(getProps: GetProps) {
-    this.getProps = getProps;
+  constructor(
+    getPropsFromNode: GetPropsFromNode,
+    getPropsFromAttributes: GetPropsFromAttributes
+  ) {
+    this.getPropsFromNode = getPropsFromNode;
+    this.getPropsFromAttributes = getPropsFromAttributes;
 
     this.inFileComponents = [];
     this.inFileData = [];
   }
 
   async generateHtml(node: Node, option: Option): Promise<string> {
-    const importComponents: ImportedComponentMeta[] = [];
     const htmlTag = node.getAnnotation("htmlTag") || "div";
 
     switch (node.getType()) {
-      case NodeType.TEXT:
-        const textNodeClassProps = this.getProps(node, option);
+      case NodeType.TEXT: {
+        const textNodeClassProps = this.getPropsFromNode(node, option);
         const attributes = htmlTag === "a" ? 'href="#" ' : "";
-        const textProp = getTextProp(node);
-        return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        const textProp = this.getText(node, option);
+
+        // if textProp is enclosed in a <ul> or <ol> tag, we don't want to wrap another <div> around it
+        const result = /^<(ul|ol)>.*<\/(ul|ol)>$/s.exec(textProp);
+        if (result && result[1] === result[2]) {
+          const listTag = result[1];
+          const textPropWithoutListTag = textProp.substring(
+            4, // length of <ul> or <ol>
+            textProp.length - 5 // length of </ul> or </ol>
+          );
+          return `<${listTag} ${textNodeClassProps}>${textPropWithoutListTag}</${listTag}>`;
+        }
+
+        const children: Node[] = node.getChildren();
+
+        if (isEmpty(children)) {
+          return `<${htmlTag} ${attributes}${textNodeClassProps}>${textProp}</${htmlTag}>`;
+        }
+
+        for (const child of children) {
+          if (child.getType() === NodeType.TEXT) {
+            child.addAnnotations("htmlTag", "span");
+          }
+        }
+
+        return await this.generateHtmlFromNodes(
+          children,
+          [`<${htmlTag} ${attributes} ${textNodeClassProps}>${textProp} {" "}`, `</${htmlTag}>`],
+          option
+        );
+      }
 
       case NodeType.GROUP:
         // this edge case should never happen
@@ -65,7 +109,7 @@ export class Generator {
           return `<${htmlTag}></${htmlTag}>`;
         }
 
-        const groupNodeClassProps = this.getProps(node, option);
+        const groupNodeClassProps = this.getPropsFromNode(node, option);
         return await this.generateHtmlFromNodes(
           node.getChildren(),
           [`<${htmlTag} ${groupNodeClassProps}>`, `</${htmlTag}>`],
@@ -73,7 +117,7 @@ export class Generator {
         );
 
       case NodeType.VISIBLE:
-        const visibleNodeClassProps = this.getProps(node, option);
+        const visibleNodeClassProps = this.getPropsFromNode(node, option);
         if (isEmpty(node.getChildren())) {
           return `<${htmlTag} ${visibleNodeClassProps}> </${htmlTag}>`;
         }
@@ -84,12 +128,13 @@ export class Generator {
           option
         );
 
+      // TODO: VECTOR_GROUP node type is deprecated
       case NodeType.VECTOR_GROUP:
         const vectorGroupNode = node as VectorGroupNode;
         const vectorGroupCodeString =
           await this.generateHtmlElementForVectorNode(vectorGroupNode, option);
 
-        return this.renderNodeWithAbsolutePosition(
+        return this.renderNodeWithPositionalAttributes(
           vectorGroupNode,
           vectorGroupCodeString,
           option
@@ -102,9 +147,18 @@ export class Generator {
           option
         );
 
-        return this.renderNodeWithAbsolutePosition(
-          vectorNode,
-          vectorCodeString,
+        if (isEmpty(node.getChildren())) {
+          return this.renderNodeWithPositionalAttributes(
+            vectorNode,
+            vectorCodeString,
+            option
+          );
+        }
+
+        const vectorNodeClassProps = this.getPropsFromNode(node, option);
+        return await this.generateHtmlFromNodes(
+          node.getChildren(),
+          [`<div ${vectorNodeClassProps}>`, `</div>`],
           option
         );
       case NodeType.IMAGE:
@@ -220,16 +274,16 @@ export class Generator {
         }
 
         return [
-          this.renderNodeWithAbsolutePosition(
+          this.renderNodeWithPositionalAttributes(
             node,
-            `<img src=${src} alt=${alt} ${widthAndHeight}/>`,
+            `<img src=${srcValue} alt=${alt} ${widthAndHeight}/>`,
             option
           ),
         ];
       }
 
       return [
-        this.renderNodeWithAbsolutePosition(
+        this.renderNodeWithPositionalAttributes(
           node,
           `<img src="./assets/${imageComponentName}.png" alt=${alt} ${widthAndHeight}/>`,
           option
@@ -237,23 +291,31 @@ export class Generator {
       ];
     }
 
-    node.addCssAttributes({
-      "background-image": `url('./assets/${imageComponentName}.png')`,
-    });
-
-    return [`<div ${this.getProps(node, option)}>`, `</div>`];
+    return [`<div ${this.getPropsFromNode(node, option)}>`, `</div>`];
   }
 
-  renderNodeWithAbsolutePosition(
+  renderNodeWithPositionalAttributes(
     node: ImageNode | VectorNode | VectorGroupNode,
     inner: string,
     option: Option
   ): string {
     const positionalCssAttribtues: Attributes =
       node.getPositionalCssAttributes();
-    if (positionalCssAttribtues["position"] === "absolute") {
-      return `<div ${this.getProps(node, option)}>` + inner + `</div>`;
+
+    const cssAttribtues: Attributes =
+      node.getCssAttributes();
+
+    if (
+      positionalCssAttribtues["position"] === "absolute" ||
+      positionalCssAttribtues["margin-left"] ||
+      positionalCssAttribtues["margin-right"] ||
+      positionalCssAttribtues["margin-top"] ||
+      positionalCssAttribtues["margin-bottom"] ||
+      cssAttribtues["border-radius"]
+    ) {
+      return `<div ${this.getPropsFromNode(node, option)}>` + inner + `</div>`;
     }
+
     return inner;
   }
 
@@ -286,6 +348,7 @@ export class Generator {
     });
 
     let codeStr: string = "";
+
     if (renderInALoop) {
       let dataCodeStr: string = `const ${dataArr.name} = ${JSON.stringify(
         data
@@ -316,7 +379,311 @@ export class Generator {
 
     return codeStr;
   }
+
+  getText(node: Node, option: Option): string {
+    const textNode: TextNode = node as TextNode;
+
+    const prop: string = getTextVariableProp(node.getId());
+    if (!isEmpty(prop)) {
+      return prop;
+    }
+
+    const styledTextSegments = textNode.node.getStyledTextSegments();
+
+    // for keeping track of nested tags
+    const htmlTagStack: ("ol" | "ul" | "li")[] = [];
+    let prevIndentation = 0;
+
+    let resultText = styledTextSegments
+      .map(
+        (styledTextSegment, styledTextSegmentIndex, styledTextSegmentArr) => {
+          // get attributes that are different from parent attributes
+          const { cssAttributes, parentCssAttributes } = getAttributeOverrides(
+            node as TextNode,
+            styledTextSegment
+          );
+
+          const { characters, listType, indentation, href } = styledTextSegment;
+
+          if (listType === "none") {
+            const result = this.wrapTextIfHasAttributes(
+              characters,
+              href,
+              cssAttributes,
+              parentCssAttributes,
+              option
+            );
+
+
+            let newStr: string = replaceNewLine(result, option);
+            newStr = replaceLeadingWhiteSpace(newStr, option);
+
+            return newStr;
+          }
+
+          // create enough lists to match identation
+          let resultText = "";
+          const indentationToAdd = indentation - prevIndentation;
+
+          if (indentationToAdd > 0) {
+            // Open new sublists
+            for (let i = 0; i < indentationToAdd; i++) {
+              const lastOpenTag = htmlTagStack[htmlTagStack.length - 1];
+
+              // According to the HTML5 W3C spec, <ul> or <ol> can only contain <li>.
+              // Hence, we are appending a <li> tag if the last open tag is <ul> or <ol>.
+              if (lastOpenTag === "ul" || lastOpenTag === "ol") {
+                resultText += `<li>`;
+                htmlTagStack.push("li");
+              }
+
+              if (option.cssFramework === "tailwindcss") {
+                // Extra attributes needed due to Tailwind's CSS reset
+                const listProps = this.getPropsFromAttributes(
+                  {
+                    "margin-left": "40px",
+                    "list-style-type": listType === "ul" ? "disc" : "decimal",
+                  },
+                  option
+                );
+
+                resultText += `<${listType} ${listProps}>`;
+              } else {
+                resultText += `<${listType}>`;
+              }
+
+              htmlTagStack.push(listType);
+            }
+          } else if (indentationToAdd < 0) {
+            // Close sublists
+            for (
+              let numOfListClosed = 0;
+              numOfListClosed < Math.abs(indentationToAdd);
+
+            ) {
+              const htmlTag = htmlTagStack.pop();
+              if (htmlTag === "li") {
+                resultText += `</li>`;
+              } else {
+                resultText += `</${htmlTag}>`;
+                numOfListClosed++;
+              }
+            }
+          }
+          // update indentation for the next loop
+          prevIndentation = indentation;
+
+          // create list items
+          const listItems = splitByNewLine(characters);
+          resultText += listItems
+            .map((listItem, listItemIndex, listItemArr) => {
+              const hasOpenListItem =
+                htmlTagStack[htmlTagStack.length - 1] === "li";
+
+              let result = "";
+
+              if (!hasOpenListItem) {
+                htmlTagStack.push("li");
+                result += "<li>";
+              }
+
+              const lastListItem =
+                listItemArr[listItemIndex - 1] ||
+                styledTextSegmentArr[styledTextSegmentIndex - 1].characters ||
+                "";
+              if (hasOpenListItem && lastListItem.endsWith("\n")) {
+                result += "</li><li>";
+              }
+
+              result += this.wrapTextIfHasAttributes(
+                listItem,
+                href,
+                cssAttributes,
+                parentCssAttributes,
+                option
+              );
+
+              const isLastListItem = listItemIndex === listItemArr.length - 1;
+              if (listItem.endsWith("\n") && !isLastListItem) {
+                // close list item
+                htmlTagStack.pop();
+                result += "</li>";
+              }
+
+              return result;
+            })
+            .join("");
+
+          return resultText;
+        }
+      )
+      .join("");
+
+    // close all open tags
+    while (htmlTagStack.length) {
+      resultText += `</${htmlTagStack.pop()}>`;
+    }
+
+    return resultText;
+  }
+
+  wrapTextIfHasAttributes(
+    text: string,
+    href: string,
+    cssAttributes: Attributes,
+    parentCssAttributes: Attributes,
+    option: Option
+  ) {
+    const resultText = escapeHtml(text);
+
+    if (isEmpty(cssAttributes) && !href) {
+      return resultText;
+    }
+
+    const htmlTag = href ? "a" : "span";
+    const hrefAttribute = href ? ` href="${href}"` : "";
+    const styleAttribute = !isEmpty(cssAttributes)
+      ? ` ${this.getPropsFromAttributes(
+        cssAttributes,
+        option,
+        undefined,
+        parentCssAttributes
+      )}`
+      : "";
+
+    return `<${htmlTag}${hrefAttribute}${styleAttribute}>${resultText}</${htmlTag}>`;
+  }
 }
+
+const getAttributeOverrides = (
+  textNode: TextNode,
+  styledTextSegment: StyledTextSegment
+) => {
+  const defaultFontSize = textNode.getACssAttribute("font-size");
+  const defaultFontFamily = textNode.getACssAttribute("font-family");
+  const defaultFontWeight = textNode.getACssAttribute("font-weight");
+  const defaultColor = textNode.getACssAttribute("color");
+  const defaultLetterSpacing = textNode.getACssAttribute("letter-spacing");
+
+  const cssAttributes: Attributes = {};
+  const parentCssAttributes: Attributes = {};
+
+  const fontSize = `${styledTextSegment.fontSize}px`;
+  if (fontSize !== defaultFontSize) {
+    cssAttributes["font-size"] = fontSize;
+  }
+
+  const fontFamily = styledTextSegment.fontFamily;
+  if (fontFamily !== defaultFontFamily) {
+    cssAttributes["font-family"] = fontFamily;
+  }
+
+  const fontWeight = styledTextSegment.fontWeight.toString();
+  if (fontWeight !== defaultFontWeight) {
+    cssAttributes["font-weight"] = fontWeight;
+  }
+
+  const textDecoration = styledTextSegment.textDecoration;
+  if (textDecoration !== "normal") {
+    cssAttributes["text-decoration"] = textDecoration;
+  }
+
+  const textTransform = styledTextSegment.textTransform;
+  if (textTransform !== "none") {
+    cssAttributes["text-transform"] = textTransform;
+  }
+
+  const color = styledTextSegment.color;
+  if (color !== defaultColor) {
+    cssAttributes["color"] = color;
+  }
+
+  const letterSpacing = styledTextSegment.letterSpacing;
+  if (
+    letterSpacing !== defaultLetterSpacing &&
+    defaultLetterSpacing &&
+    letterSpacing !== "normal"
+  ) {
+    cssAttributes["letter-spacing"] = letterSpacing;
+    parentCssAttributes["font-size"] = defaultFontSize;
+  }
+
+  return {
+    cssAttributes,
+    parentCssAttributes,
+  };
+};
+
+const replaceNewLine = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  let start: number = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (i === str.length - 1) {
+      newStrParts.push(str.substring(start));
+    }
+
+    if (str.charAt(i) === "\n") {
+      let numberOfNewLines: number = 1;
+      let end: number = i + 1;
+      for (let j = i + 1; j < str.length; j++) {
+        if (str.charAt(j) !== "\n") {
+          break;
+        }
+
+        end = j + 1;
+        numberOfNewLines++;
+      }
+
+      if (numberOfNewLines > 1) {
+        newStrParts.push(str.substring(start, i - 1));
+
+        for (let j = 0; j < numberOfNewLines; j++) {
+          newStrParts.push(option.uiFramework === "html" ? "<br>" : "<br />");
+        }
+
+        start = end;
+        i = start;
+      }
+    }
+  }
+
+  return newStrParts.join("");
+};
+
+const replaceLeadingWhiteSpace = (str: string, option: Option) => {
+  let newStrParts: string[] = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str.charCodeAt(i) === 160) {
+      newStrParts.push("&nbsp;");
+      continue;
+    }
+
+    newStrParts.push(str.substring(i));
+    break;
+  }
+
+  return newStrParts.join("");
+};
+
+const splitByNewLine = (text: string) => {
+  let listItems = text.split("\n");
+
+  // if last item is "", it means there is a new line at the end of the last item
+  if (text !== "" && listItems[listItems.length - 1] === "") {
+    listItems.pop();
+    listItems = listItems.map((item) => item + "\n");
+  } else {
+    // otherwise, it means there is not a new line at the end of the last item
+    listItems = listItems.map((item, index, array) => {
+      if (index === array.length - 1) {
+        return item;
+      }
+      return item + "\n";
+    });
+  }
+
+  return listItems;
+};
 
 const getWidthAndHeightProp = (node: Node): string => {
   const cssAttribtues: Attributes = node.getCssAttributes();
@@ -333,7 +700,7 @@ const getWidthAndHeightProp = (node: Node): string => {
   return widthAndHeight;
 };
 
-export const getSrcProp = (node: Node): string => {
+const getSrcProp = (node: Node): string => {
   const id: string = node.getId();
 
   let fileExtension: string = "svg";
@@ -352,7 +719,7 @@ export const getSrcProp = (node: Node): string => {
   return `"./assets/${componentName}.${fileExtension}"`;
 };
 
-export const getAltProp = (node: Node): string => {
+const getAltProp = (node: Node): string => {
   const id: string = node.getId();
   const componentName: string = nameRegistryGlobalInstance.getAltName(id);
 
@@ -364,18 +731,28 @@ export const getAltProp = (node: Node): string => {
   return `"${componentName}"`;
 };
 
-export const getTextProp = (node: Node): string => {
-  const textNode: TextNode = node as TextNode;
-
-  const prop: string = getTextVariableProp(node.getId());
-  if (!isEmpty(prop)) {
-    return prop;
-  }
-
-  return textNode.getText();
+const escapeHtml = (str: string) => {
+  return str.replace(/[&<>"'{}]/g, function (match) {
+    switch (match) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      case "'":
+        return "&apos;";
+      case "{":
+        return "&#123;";
+      case "}":
+        return "&#125;";
+    }
+  });
 };
 
-export const createMiniReactFile = (
+const createMiniReactFile = (
   componentCode: string,
   dataCode: string,
   arrCode: string

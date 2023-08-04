@@ -29,10 +29,31 @@ export interface Node {
   export(exportFormat: ExportFormat): Promise<string>;
 }
 
+export interface StyledTextSegment {
+  characters: string;
+  start: number;
+  end: number;
+  fontName: {
+    family: string;
+    style: string;
+  };
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: number;
+  textDecoration: "normal" | "line-through" | "underline";
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
+  color: string;
+  letterSpacing: string;
+  listType: "none" | "ul" | "ol";
+  indentation: number;
+  href: string;
+}
+
 export interface TextNode extends Node {
   getText(): string;
   isItalic(): boolean;
   getFamilyName(): string;
+  getStyledTextSegments(): StyledTextSegment[];
 }
 
 export interface VectorNode extends Node {}
